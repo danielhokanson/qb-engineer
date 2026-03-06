@@ -1,0 +1,120 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 520" font-family="Segoe UI, Arial, sans-serif">
+  <title>Employee Offboarding Process</title>
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#334155"/>
+    </marker>
+    <marker id="arrow-red" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#dc2626"/>
+    </marker>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1000" height="520" fill="#f8fafc" rx="8"/>
+
+  <!-- Title -->
+  <text x="500" y="40" text-anchor="middle" font-size="22" font-weight="bold" fill="#0f172a">Employee Offboarding Process</text>
+  <text x="500" y="62" text-anchor="middle" font-size="13" fill="#64748b">Admin-initiated deactivation — records preserved, access revoked</text>
+
+  <!-- === ROW 1: Admin Initiates === -->
+  <text x="40" y="105" font-size="12" font-weight="600" fill="#64748b">ADMIN</text>
+
+  <!-- Step 1: Initiate Deactivation -->
+  <rect x="40" y="120" width="180" height="70" rx="4" fill="#fee2e2" stroke="#dc2626" stroke-width="1.5"/>
+  <text x="130" y="147" text-anchor="middle" font-size="13" font-weight="600" fill="#991b1b">Deactivate User</text>
+  <text x="130" y="165" text-anchor="middle" font-size="10" fill="#dc2626">From User Management</text>
+  <text x="130" y="178" text-anchor="middle" font-size="10" fill="#dc2626">Confirmation required</text>
+
+  <line x1="220" y1="155" x2="260" y2="155" stroke="#334155" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <!-- Step 2: Reassign Active Tasks -->
+  <rect x="260" y="120" width="200" height="70" rx="4" fill="#fef3c7" stroke="#d97706" stroke-width="1.5"/>
+  <text x="360" y="145" text-anchor="middle" font-size="13" font-weight="600" fill="#92400e">Reassign Tasks</text>
+  <text x="360" y="163" text-anchor="middle" font-size="10" fill="#b45309">Active tasks → pick new owner</text>
+  <text x="360" y="176" text-anchor="middle" font-size="10" fill="#b45309">or return to backlog</text>
+
+  <line x1="460" y1="155" x2="500" y2="155" stroke="#334155" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <!-- Decision: Immediate lockout? -->
+  <polygon points="590,120 680,155 590,190 500,155" fill="#fee2e2" stroke="#dc2626" stroke-width="1.5"/>
+  <text x="590" y="152" text-anchor="middle" font-size="11" font-weight="600" fill="#991b1b">Immediate</text>
+  <text x="590" y="165" text-anchor="middle" font-size="11" font-weight="600" fill="#991b1b">lockout?</text>
+
+  <!-- Yes branch (top) — Revoke Sessions -->
+  <line x1="590" y1="120" x2="590" y2="85" stroke="#dc2626" stroke-width="1.5"/>
+  <line x1="590" y1="85" x2="760" y2="85" stroke="#dc2626" stroke-width="1.5" marker-end="url(#arrow-red)"/>
+  <text x="675" y="77" text-anchor="middle" font-size="10" fill="#dc2626">Yes (termination)</text>
+
+  <rect x="760" y="55" width="200" height="60" rx="4" fill="#fee2e2" stroke="#dc2626" stroke-width="2"/>
+  <text x="860" y="80" text-anchor="middle" font-size="13" font-weight="600" fill="#991b1b">Revoke Sessions</text>
+  <text x="860" y="96" text-anchor="middle" font-size="10" fill="#dc2626">All active sessions killed</text>
+
+  <!-- No branch (bottom) — Standard deactivation -->
+  <line x1="590" y1="190" x2="590" y2="215" stroke="#334155" stroke-width="1.5"/>
+  <line x1="590" y1="215" x2="760" y2="215" stroke="#334155" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="675" y="207" text-anchor="middle" font-size="10" fill="#64748b">No (standard)</text>
+
+  <rect x="760" y="185" width="200" height="60" rx="4" fill="#f1f5f9" stroke="#64748b" stroke-width="1.5"/>
+  <text x="860" y="210" text-anchor="middle" font-size="13" font-weight="600" fill="#334155">Login Blocked</text>
+  <text x="860" y="226" text-anchor="middle" font-size="10" fill="#64748b">On next session expiry</text>
+
+  <!-- === ROW 2: System Actions === -->
+  <text x="40" y="275" font-size="12" font-weight="600" fill="#64748b">SYSTEM</text>
+
+  <rect x="40" y="290" width="200" height="65" rx="4" fill="#f1f5f9" stroke="#64748b" stroke-width="1.5"/>
+  <text x="140" y="315" text-anchor="middle" font-size="13" font-weight="600" fill="#334155">Remove from Dropdowns</text>
+  <text x="140" y="332" text-anchor="middle" font-size="10" fill="#64748b">Assignee lists, presence board</text>
+
+  <line x1="240" y1="322" x2="280" y2="322" stroke="#334155" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <rect x="280" y="290" width="200" height="65" rx="4" fill="#d1fae5" stroke="#059669" stroke-width="1.5"/>
+  <text x="380" y="315" text-anchor="middle" font-size="13" font-weight="600" fill="#065f46">Preserve Records</text>
+  <text x="380" y="332" text-anchor="middle" font-size="10" fill="#059669">Time, tasks, expenses, audit</text>
+
+  <line x1="480" y1="322" x2="520" y2="322" stroke="#334155" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <rect x="520" y="290" width="200" height="65" rx="4" fill="#fef3c7" stroke="#d97706" stroke-width="1.5"/>
+  <text x="620" y="315" text-anchor="middle" font-size="13" font-weight="600" fill="#92400e">Sync to Accounting</text>
+  <text x="620" y="332" text-anchor="middle" font-size="10" fill="#b45309">Mark inactive in QB</text>
+
+  <line x1="720" y1="322" x2="760" y2="322" stroke="#334155" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <rect x="760" y="290" width="200" height="65" rx="4" fill="#f1f5f9" stroke="#64748b" stroke-width="1.5"/>
+  <text x="860" y="315" text-anchor="middle" font-size="13" font-weight="600" fill="#334155">Audit Log Entry</text>
+  <text x="860" y="332" text-anchor="middle" font-size="10" fill="#64748b">Who, when, reason</text>
+
+  <!-- === ROW 3: Reactivation (rehire) === -->
+  <text x="40" y="405" font-size="12" font-weight="600" fill="#64748b">REACTIVATION (REHIRE)</text>
+
+  <rect x="40" y="420" width="200" height="60" rx="4" fill="#dbeafe" stroke="#2563eb" stroke-width="1.5"/>
+  <text x="140" y="445" text-anchor="middle" font-size="13" font-weight="600" fill="#1e40af">Admin Reactivates</text>
+  <text x="140" y="461" text-anchor="middle" font-size="10" fill="#3b82f6">From User Management</text>
+
+  <line x1="240" y1="450" x2="280" y2="450" stroke="#334155" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <rect x="280" y="420" width="200" height="60" rx="4" fill="#f1f5f9" stroke="#64748b" stroke-width="1.5"/>
+  <text x="380" y="445" text-anchor="middle" font-size="13" font-weight="600" fill="#334155">Existing Password</text>
+  <text x="380" y="461" text-anchor="middle" font-size="10" fill="#64748b">No reset required</text>
+
+  <line x1="480" y1="450" x2="520" y2="450" stroke="#334155" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <rect x="520" y="420" width="200" height="60" rx="4" fill="#d1fae5" stroke="#059669" stroke-width="2"/>
+  <text x="620" y="445" text-anchor="middle" font-size="14" font-weight="700" fill="#065f46">ACCOUNT RESTORED</text>
+  <text x="620" y="458" text-anchor="middle" font-size="10" fill="#059669">Full history intact</text>
+  <text x="620" y="471" text-anchor="middle" font-size="10" fill="#059669">QB synced active</text>
+
+  <!-- Legend -->
+  <rect x="40" y="500" width="920" height="35" rx="4" fill="#f1f5f9" stroke="#e2e8f0" stroke-width="1"/>
+  <rect x="55" y="510" width="14" height="14" rx="2" fill="#fee2e2" stroke="#dc2626" stroke-width="1"/>
+  <text x="75" y="522" font-size="10" fill="#334155">Deactivation / Lockout</text>
+  <rect x="205" y="510" width="14" height="14" rx="2" fill="#fef3c7" stroke="#d97706" stroke-width="1"/>
+  <text x="225" y="522" font-size="10" fill="#334155">System Sync</text>
+  <rect x="315" y="510" width="14" height="14" rx="2" fill="#d1fae5" stroke="#059669" stroke-width="1"/>
+  <text x="335" y="522" font-size="10" fill="#334155">Data Preserved</text>
+  <rect x="435" y="510" width="14" height="14" rx="2" fill="#f1f5f9" stroke="#64748b" stroke-width="1"/>
+  <text x="455" y="522" font-size="10" fill="#334155">System Action</text>
+  <rect x="555" y="510" width="14" height="14" rx="2" fill="#dbeafe" stroke="#2563eb" stroke-width="1"/>
+  <text x="575" y="522" font-size="10" fill="#334155">Reactivation</text>
+  <polygon points="695,510 709,517 695,524 681,517" fill="#fee2e2" stroke="#dc2626" stroke-width="1"/>
+  <text x="720" y="522" font-size="10" fill="#334155">Decision</text>
+</svg>

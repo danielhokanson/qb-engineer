@@ -1,0 +1,225 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 900" font-family="Segoe UI, Arial, sans-serif">
+  <title>Inventory Management — Receiving, Stock, Allocation &amp; Counting</title>
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#334155"/>
+    </marker>
+    <marker id="arrow-green" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#059669"/>
+    </marker>
+    <marker id="arrow-blue" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#2563eb"/>
+    </marker>
+  </defs>
+
+  <rect width="1200" height="900" fill="#f8fafc" rx="8"/>
+
+  <text x="600" y="40" text-anchor="middle" font-size="22" font-weight="bold" fill="#0f172a">Inventory Management</text>
+  <text x="600" y="63" text-anchor="middle" font-size="13" fill="#64748b">Receiving, general stock, job allocation, low-stock alerts, and cycle counting</text>
+
+  <!-- ═══ RECEIVING WORKFLOW (top) ═══ -->
+  <rect x="30" y="85" width="1140" height="25" rx="4" fill="#e0e7ff"/>
+  <text x="600" y="103" text-anchor="middle" font-size="12" font-weight="600" fill="#3730a3">RECEIVING WORKFLOW</text>
+
+  <!-- PO Arrives -->
+  <rect x="40" y="125" width="180" height="80" rx="4" fill="#dbeafe" stroke="#2563eb" stroke-width="1.5"/>
+  <text x="130" y="150" text-anchor="middle" font-size="13" font-weight="600" fill="#1e40af">PO Arrives</text>
+  <text x="130" y="170" text-anchor="middle" font-size="10" fill="#3b82f6">Materials delivered</text>
+  <text x="130" y="185" text-anchor="middle" font-size="10" fill="#3b82f6">to receiving area</text>
+
+  <line x1="220" y1="165" x2="260" y2="165" stroke="#334155" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <!-- Scan / Select Items -->
+  <rect x="260" y="125" width="180" height="80" rx="4" fill="#fef3c7" stroke="#d97706" stroke-width="1.5"/>
+  <text x="350" y="150" text-anchor="middle" font-size="13" font-weight="600" fill="#92400e">Scan / Select</text>
+  <text x="350" y="170" text-anchor="middle" font-size="10" fill="#b45309">Identify items received</text>
+  <text x="350" y="185" text-anchor="middle" font-size="10" fill="#b45309">Enter quantities</text>
+
+  <line x1="440" y1="165" x2="480" y2="165" stroke="#334155" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <!-- Decision: Job-linked? -->
+  <polygon points="580,125 680,165 580,205 480,165" fill="#f1f5f9" stroke="#334155" stroke-width="1.5"/>
+  <text x="580" y="162" text-anchor="middle" font-size="11" font-weight="600" fill="#334155">PO linked</text>
+  <text x="580" y="177" text-anchor="middle" font-size="11" font-weight="600" fill="#334155">to a job?</text>
+
+  <!-- YES: Job-linked -->
+  <line x1="580" y1="125" x2="580" y2="95" stroke="#059669" stroke-width="1.5"/>
+  <line x1="580" y1="95" x2="780" y2="95" stroke="#059669" stroke-width="1.5"/>
+  <line x1="780" y1="95" x2="780" y2="125" stroke="#059669" stroke-width="1.5" marker-end="url(#arrow-green)"/>
+  <text x="680" y="88" text-anchor="middle" font-size="10" font-weight="600" fill="#059669">YES — Job-linked</text>
+
+  <rect x="700" y="125" width="190" height="80" rx="4" fill="#d1fae5" stroke="#059669" stroke-width="1.5"/>
+  <text x="795" y="148" text-anchor="middle" font-size="12" font-weight="600" fill="#065f46">Job Inventory</text>
+  <text x="795" y="168" text-anchor="middle" font-size="10" fill="#047857">Parts associated with job</text>
+  <text x="795" y="183" text-anchor="middle" font-size="10" fill="#047857">Bin pre-filled from default</text>
+  <text x="795" y="198" text-anchor="middle" font-size="10" fill="#047857">Status: stored (job ref set)</text>
+
+  <!-- NO: General stock -->
+  <line x1="680" y1="165" x2="700" y2="165" stroke="#334155" stroke-width="0"/>
+  <line x1="580" y1="205" x2="580" y2="235" stroke="#2563eb" stroke-width="1.5"/>
+  <line x1="580" y1="235" x2="780" y2="235" stroke="#2563eb" stroke-width="1.5"/>
+  <line x1="780" y1="235" x2="780" y2="215" stroke="#2563eb" stroke-width="0"/>
+  <text x="680" y="228" text-anchor="middle" font-size="10" font-weight="600" fill="#2563eb">NO — General Stock</text>
+
+  <rect x="700" y="215" width="190" height="80" rx="4" fill="#dbeafe" stroke="#2563eb" stroke-width="1.5"/>
+  <text x="795" y="238" text-anchor="middle" font-size="12" font-weight="600" fill="#1e40af">General Inventory</text>
+  <text x="795" y="258" text-anchor="middle" font-size="10" fill="#3b82f6">No job reference</text>
+  <text x="795" y="273" text-anchor="middle" font-size="10" fill="#3b82f6">Prompt for bin location</text>
+  <text x="795" y="288" text-anchor="middle" font-size="10" fill="#3b82f6">Status: stored (unallocated)</text>
+
+  <!-- Both paths: Sync to accounting -->
+  <line x1="890" y1="165" x2="950" y2="165" stroke="#334155" stroke-width="1.5"/>
+  <line x1="890" y1="255" x2="950" y2="255" stroke="#334155" stroke-width="1.5"/>
+  <line x1="950" y1="165" x2="950" y2="255" stroke="#334155" stroke-width="1.5"/>
+  <line x1="950" y1="210" x2="1000" y2="210" stroke="#334155" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <rect x="1000" y="175" width="160" height="70" rx="4" fill="#d1fae5" stroke="#059669" stroke-width="2"/>
+  <text x="1080" y="200" text-anchor="middle" font-size="12" font-weight="600" fill="#065f46">Sync to</text>
+  <text x="1080" y="218" text-anchor="middle" font-size="12" font-weight="600" fill="#065f46">Accounting</text>
+  <text x="1080" y="236" text-anchor="middle" font-size="9" fill="#047857">PO status updated</text>
+
+  <!-- ═══ INVENTORY DASHBOARD (middle) ═══ -->
+  <rect x="30" y="320" width="1140" height="25" rx="4" fill="#e2e8f0"/>
+  <text x="600" y="338" text-anchor="middle" font-size="12" font-weight="600" fill="#475569">INVENTORY DASHBOARD — Per-Part Summary</text>
+
+  <rect x="40" y="360" width="1120" height="115" rx="6" fill="#fff" stroke="#94a3b8" stroke-width="1"/>
+
+  <!-- Column headers -->
+  <rect x="55" y="370" width="140" height="25" rx="3" fill="#e2e8f0"/>
+  <text x="125" y="388" text-anchor="middle" font-size="10" font-weight="600" fill="#475569">Part / Material</text>
+
+  <rect x="210" y="370" width="110" height="25" rx="3" fill="#d1fae5"/>
+  <text x="265" y="388" text-anchor="middle" font-size="10" font-weight="600" fill="#065f46">On-Hand</text>
+
+  <rect x="335" y="370" width="110" height="25" rx="3" fill="#fef3c7"/>
+  <text x="390" y="388" text-anchor="middle" font-size="10" font-weight="600" fill="#92400e">Reserved</text>
+
+  <rect x="460" y="370" width="110" height="25" rx="3" fill="#dbeafe"/>
+  <text x="515" y="388" text-anchor="middle" font-size="10" font-weight="600" fill="#1e40af">Available</text>
+
+  <rect x="585" y="370" width="110" height="25" rx="3" fill="#e0e7ff"/>
+  <text x="640" y="388" text-anchor="middle" font-size="10" font-weight="600" fill="#3730a3">On Order</text>
+
+  <rect x="710" y="370" width="180" height="25" rx="3" fill="#f1f5f9"/>
+  <text x="800" y="388" text-anchor="middle" font-size="10" font-weight="600" fill="#475569">Bin Locations</text>
+
+  <rect x="905" y="370" width="100" height="25" rx="3" fill="#f1f5f9"/>
+  <text x="955" y="388" text-anchor="middle" font-size="10" font-weight="600" fill="#475569">Min Stock</text>
+
+  <rect x="1020" y="370" width="120" height="25" rx="3" fill="#f1f5f9"/>
+  <text x="1080" y="388" text-anchor="middle" font-size="10" font-weight="600" fill="#475569">Status</text>
+
+  <!-- Example row 1 -->
+  <text x="125" y="418" text-anchor="middle" font-size="10" fill="#334155">ABS Pellets (Black)</text>
+  <text x="265" y="418" text-anchor="middle" font-size="10" fill="#065f46">1,200 lbs</text>
+  <text x="390" y="418" text-anchor="middle" font-size="10" fill="#92400e">400 lbs</text>
+  <text x="515" y="418" text-anchor="middle" font-size="10" font-weight="600" fill="#1e40af">800 lbs</text>
+  <text x="640" y="418" text-anchor="middle" font-size="10" fill="#3730a3">500 lbs</text>
+  <text x="800" y="418" text-anchor="middle" font-size="10" fill="#475569">BIN-0012, BIN-0013</text>
+  <text x="955" y="418" text-anchor="middle" font-size="10" fill="#475569">500 lbs</text>
+  <text x="1080" y="418" text-anchor="middle" font-size="10" fill="#059669">OK</text>
+
+  <!-- Example row 2 (low stock) -->
+  <rect x="50" y="428" width="1100" height="22" rx="2" fill="#fef2f2" opacity="0.5"/>
+  <text x="125" y="443" text-anchor="middle" font-size="10" fill="#334155">Nylon 6/6 Rod</text>
+  <text x="265" y="443" text-anchor="middle" font-size="10" fill="#065f46">15 pcs</text>
+  <text x="390" y="443" text-anchor="middle" font-size="10" fill="#92400e">8 pcs</text>
+  <text x="515" y="443" text-anchor="middle" font-size="10" font-weight="600" fill="#dc2626">7 pcs</text>
+  <text x="640" y="443" text-anchor="middle" font-size="10" fill="#3730a3">0</text>
+  <text x="800" y="443" text-anchor="middle" font-size="10" fill="#475569">BIN-0031</text>
+  <text x="955" y="443" text-anchor="middle" font-size="10" fill="#475569">20 pcs</text>
+  <text x="1080" y="443" text-anchor="middle" font-size="10" font-weight="bold" fill="#dc2626">LOW STOCK</text>
+
+  <!-- Example row 3 -->
+  <text x="125" y="467" text-anchor="middle" font-size="10" fill="#334155">Widget Housing (FG)</text>
+  <text x="265" y="467" text-anchor="middle" font-size="10" fill="#065f46">340 pcs</text>
+  <text x="390" y="467" text-anchor="middle" font-size="10" fill="#92400e">250 pcs</text>
+  <text x="515" y="467" text-anchor="middle" font-size="10" font-weight="600" fill="#1e40af">90 pcs</text>
+  <text x="640" y="467" text-anchor="middle" font-size="10" fill="#3730a3">0</text>
+  <text x="800" y="467" text-anchor="middle" font-size="10" fill="#475569">BIN-0042, BIN-0043</text>
+  <text x="955" y="467" text-anchor="middle" font-size="10" fill="#475569">—</text>
+  <text x="1080" y="467" text-anchor="middle" font-size="10" fill="#059669">OK</text>
+
+  <!-- ═══ ALLOCATION & PICK LIST ═══ -->
+  <rect x="30" y="495" width="550" height="25" rx="4" fill="#fef3c7"/>
+  <text x="305" y="513" text-anchor="middle" font-size="12" font-weight="600" fill="#92400e">ALLOCATION &amp; PICK LIST</text>
+
+  <rect x="40" y="535" width="240" height="100" rx="4" fill="#fff" stroke="#d97706" stroke-width="1.5"/>
+  <text x="160" y="558" text-anchor="middle" font-size="12" font-weight="600" fill="#92400e">Production Run Starts</text>
+  <text x="160" y="578" text-anchor="middle" font-size="10" fill="#475569">System checks BOM for</text>
+  <text x="160" y="593" text-anchor="middle" font-size="10" fill="#475569">required parts</text>
+  <text x="160" y="608" text-anchor="middle" font-size="10" fill="#475569">Checks general inventory</text>
+  <text x="160" y="623" text-anchor="middle" font-size="10" fill="#475569">for available stock</text>
+
+  <line x1="280" y1="585" x2="320" y2="585" stroke="#334155" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <rect x="320" y="535" width="240" height="100" rx="4" fill="#fff" stroke="#2563eb" stroke-width="1.5"/>
+  <text x="440" y="558" text-anchor="middle" font-size="12" font-weight="600" fill="#1e40af">Reserve &amp; Pick</text>
+  <text x="440" y="578" text-anchor="middle" font-size="10" fill="#475569">General stock → reserved</text>
+  <text x="440" y="593" text-anchor="middle" font-size="10" fill="#475569">Pick list generated:</text>
+  <text x="440" y="608" text-anchor="middle" font-size="10" font-weight="600" fill="#2563eb">Part name — Qty — Bin #</text>
+  <text x="440" y="623" text-anchor="middle" font-size="10" fill="#475569">Worker collects items</text>
+
+  <!-- ═══ LOW STOCK ALERTS ═══ -->
+  <rect x="620" y="495" width="550" height="25" rx="4" fill="#fef2f2"/>
+  <text x="895" y="513" text-anchor="middle" font-size="12" font-weight="600" fill="#991b1b">LOW STOCK ALERTS &amp; REORDER</text>
+
+  <rect x="630" y="535" width="230" height="100" rx="4" fill="#fef2f2" stroke="#dc2626" stroke-width="1.5"/>
+  <text x="745" y="558" text-anchor="middle" font-size="12" font-weight="600" fill="#991b1b">On-Hand &lt; Min Level</text>
+  <text x="745" y="578" text-anchor="middle" font-size="10" fill="#dc2626">Low-stock alert fires</text>
+  <text x="745" y="598" text-anchor="middle" font-size="10" fill="#dc2626">→ Dashboard (mgr/owner)</text>
+  <text x="745" y="613" text-anchor="middle" font-size="10" fill="#dc2626">→ Notification bell</text>
+  <text x="745" y="628" text-anchor="middle" font-size="10" fill="#dc2626">→ Inventory list highlight</text>
+
+  <line x1="860" y1="585" x2="900" y2="585" stroke="#334155" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <rect x="900" y="535" width="260" height="100" rx="4" fill="#fff" stroke="#94a3b8" stroke-width="1.5"/>
+  <text x="1030" y="558" text-anchor="middle" font-size="12" font-weight="600" fill="#334155">Suggested Reorder</text>
+  <text x="1030" y="578" text-anchor="middle" font-size="10" fill="#475569">System suggests a PO</text>
+  <text x="1030" y="593" text-anchor="middle" font-size="10" fill="#475569">using reorder qty from part</text>
+  <text x="1030" y="613" text-anchor="middle" font-size="10" font-weight="600" fill="#334155">Manual approval required</text>
+  <text x="1030" y="628" text-anchor="middle" font-size="10" fill="#64748b">(No auto-ordering)</text>
+
+  <!-- ═══ CYCLE COUNTING ═══ -->
+  <rect x="30" y="660" width="1140" height="25" rx="4" fill="#e2e8f0"/>
+  <text x="600" y="678" text-anchor="middle" font-size="12" font-weight="600" fill="#475569">CYCLE COUNTING</text>
+
+  <rect x="40" y="700" width="200" height="80" rx="4" fill="#e0e7ff" stroke="#4f46e5" stroke-width="1.5"/>
+  <text x="140" y="725" text-anchor="middle" font-size="12" font-weight="600" fill="#3730a3">Admin Initiates</text>
+  <text x="140" y="745" text-anchor="middle" font-size="10" fill="#475569">Scope: location, area,</text>
+  <text x="140" y="760" text-anchor="middle" font-size="10" fill="#475569">or full inventory</text>
+
+  <line x1="240" y1="740" x2="280" y2="740" stroke="#334155" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <rect x="280" y="700" width="200" height="80" rx="4" fill="#fff" stroke="#94a3b8" stroke-width="1.5"/>
+  <text x="380" y="725" text-anchor="middle" font-size="12" font-weight="600" fill="#334155">Count Sheet</text>
+  <text x="380" y="745" text-anchor="middle" font-size="10" fill="#475569">Printable list: expected</text>
+  <text x="380" y="760" text-anchor="middle" font-size="10" fill="#475569">items &amp; qty per bin</text>
+
+  <line x1="480" y1="740" x2="520" y2="740" stroke="#334155" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <rect x="520" y="700" width="200" height="80" rx="4" fill="#fef3c7" stroke="#d97706" stroke-width="1.5"/>
+  <text x="620" y="725" text-anchor="middle" font-size="12" font-weight="600" fill="#92400e">Worker Counts</text>
+  <text x="620" y="745" text-anchor="middle" font-size="10" fill="#475569">Actual quantities entered</text>
+  <text x="620" y="760" text-anchor="middle" font-size="10" fill="#475569">per bin</text>
+
+  <line x1="720" y1="740" x2="760" y2="740" stroke="#334155" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <rect x="760" y="700" width="200" height="80" rx="4" fill="#fef2f2" stroke="#dc2626" stroke-width="1.5"/>
+  <text x="860" y="725" text-anchor="middle" font-size="12" font-weight="600" fill="#991b1b">Discrepancies</text>
+  <text x="860" y="745" text-anchor="middle" font-size="10" fill="#dc2626">Flagged for review</text>
+  <text x="860" y="760" text-anchor="middle" font-size="10" fill="#dc2626">Admin approves adjustments</text>
+
+  <line x1="960" y1="740" x2="1000" y2="740" stroke="#334155" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <rect x="1000" y="700" width="160" height="80" rx="4" fill="#d1fae5" stroke="#059669" stroke-width="2"/>
+  <text x="1080" y="725" text-anchor="middle" font-size="12" font-weight="600" fill="#065f46">Adjusted</text>
+  <text x="1080" y="745" text-anchor="middle" font-size="10" fill="#047857">Bin contents updated</text>
+  <text x="1080" y="760" text-anchor="middle" font-size="10" fill="#047857">Synced to accounting</text>
+
+  <!-- ═══ FOOTER ═══ -->
+  <rect x="30" y="810" width="1140" height="70" rx="6" fill="#fff" stroke="#e2e8f0" stroke-width="1"/>
+  <text x="600" y="833" text-anchor="middle" font-size="11" font-weight="600" fill="#475569">KEY PRINCIPLES</text>
+  <text x="600" y="851" text-anchor="middle" font-size="10" fill="#64748b">• App owns physical inventory (quantities, locations, movements). Accounting system owns financial value (cost, valuation).</text>
+  <text x="600" y="866" text-anchor="middle" font-size="10" fill="#64748b">• Every movement logged immutably. General stock and job-specific procurement coexist. No auto-ordering — manual PO approval only.</text>
+</svg>

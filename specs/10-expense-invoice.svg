@@ -1,0 +1,156 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 700" font-family="Segoe UI, Arial, sans-serif">
+  <title>Expense Capture &amp; Invoice Workflow</title>
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#334155"/>
+    </marker>
+    <marker id="arrow-green" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#059669"/>
+    </marker>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1100" height="700" fill="#f8fafc" rx="8"/>
+
+  <!-- Title -->
+  <text x="550" y="35" text-anchor="middle" font-size="22" font-weight="bold" fill="#0f172a">Expense Capture &amp; Invoice Workflow</text>
+
+  <!-- ====== EXPENSE CAPTURE (top half) ====== -->
+  <rect x="30" y="60" width="1040" height="25" rx="4" fill="#e0e7ff"/>
+  <text x="550" y="78" text-anchor="middle" font-size="12" font-weight="600" fill="#3730a3">EXPENSE CAPTURE — 5 Questions, Under 60 Seconds</text>
+
+  <!-- 5 questions -->
+  <rect x="40" y="100" width="150" height="55" rx="4" fill="#fff" stroke="#4f46e5" stroke-width="1.5"/>
+  <text x="115" y="120" text-anchor="middle" font-size="11" font-weight="600" fill="#3730a3">1. Category</text>
+  <text x="115" y="140" text-anchor="middle" font-size="9" fill="#475569">Dropdown selection</text>
+
+  <line x1="190" y1="127" x2="210" y2="127" stroke="#334155" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <rect x="210" y="100" width="150" height="55" rx="4" fill="#fff" stroke="#4f46e5" stroke-width="1.5"/>
+  <text x="285" y="120" text-anchor="middle" font-size="11" font-weight="600" fill="#3730a3">2. Amount</text>
+  <text x="285" y="140" text-anchor="middle" font-size="9" fill="#475569">Dollar amount</text>
+
+  <line x1="360" y1="127" x2="380" y2="127" stroke="#334155" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <rect x="380" y="100" width="150" height="55" rx="4" fill="#fff" stroke="#4f46e5" stroke-width="1.5"/>
+  <text x="455" y="120" text-anchor="middle" font-size="11" font-weight="600" fill="#3730a3">3. Job</text>
+  <text x="455" y="140" text-anchor="middle" font-size="9" fill="#475569">Optional job picker</text>
+
+  <line x1="530" y1="127" x2="550" y2="127" stroke="#334155" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <rect x="550" y="100" width="170" height="55" rx="4" fill="#fff" stroke="#4f46e5" stroke-width="1.5"/>
+  <text x="635" y="120" text-anchor="middle" font-size="11" font-weight="600" fill="#3730a3">4. Receipt</text>
+  <text x="635" y="140" text-anchor="middle" font-size="9" fill="#475569">Camera / file upload</text>
+
+  <line x1="720" y1="127" x2="740" y2="127" stroke="#334155" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <rect x="740" y="100" width="150" height="55" rx="4" fill="#fff" stroke="#4f46e5" stroke-width="1.5"/>
+  <text x="815" y="120" text-anchor="middle" font-size="11" font-weight="600" fill="#3730a3">5. Notes</text>
+  <text x="815" y="140" text-anchor="middle" font-size="9" fill="#475569">Optional</text>
+
+  <line x1="890" y1="127" x2="920" y2="127" stroke="#334155" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <!-- Approval Decision -->
+  <polygon points="1000,95 1070,127 1000,160 930,127" fill="#fef3c7" stroke="#d97706" stroke-width="1.5"/>
+  <text x="1000" y="125" text-anchor="middle" font-size="9" font-weight="600" fill="#92400e">Self-</text>
+  <text x="1000" y="137" text-anchor="middle" font-size="9" font-weight="600" fill="#92400e">approve?</text>
+
+  <!-- Self-approve YES -->
+  <line x1="1000" y1="160" x2="1000" y2="195" stroke="#059669" stroke-width="1.5" marker-end="url(#arrow-green)"/>
+  <text x="1010" y="182" font-size="9" font-weight="600" fill="#059669">YES</text>
+
+  <rect x="920" y="195" width="160" height="45" rx="4" fill="#d1fae5" stroke="#059669" stroke-width="1.5"/>
+  <text x="1000" y="215" text-anchor="middle" font-size="10" font-weight="600" fill="#065f46">→ Accounting system</text>
+  <text x="1000" y="230" text-anchor="middle" font-size="9" fill="#047857">Written immediately</text>
+
+  <!-- Self-approve NO -->
+  <line x1="930" y1="127" x2="890" y2="127" stroke="#334155" stroke-width="0" />
+  <line x1="1070" y1="127" x2="1080" y2="127" stroke="#dc2626" stroke-width="1.5"/>
+  <line x1="1080" y1="127" x2="1080" y2="200" stroke="#dc2626" stroke-width="1.5"/>
+  <line x1="1080" y1="200" x2="1080" y2="255" stroke="#dc2626" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="1085" y="170" font-size="9" font-weight="600" fill="#dc2626">NO</text>
+
+  <rect x="990" y="255" width="90" height="35" rx="4" fill="#fef3c7" stroke="#d97706" stroke-width="1"/>
+  <text x="1035" y="277" text-anchor="middle" font-size="9" font-weight="600" fill="#92400e">→ Approval Queue</text>
+
+  <!-- Approval note -->
+  <text x="550" y="185" text-anchor="middle" font-size="10" fill="#64748b">Self-approval controlled per-user: canSelfApproveExpenses (bool) + selfApprovalLimit (dollar threshold). Bulk approve available for managers.</text>
+
+  <!-- ====== INVOICE WORKFLOW (bottom half) ====== -->
+  <rect x="30" y="310" width="1040" height="25" rx="4" fill="#fef3c7"/>
+  <text x="550" y="328" text-anchor="middle" font-size="12" font-weight="600" fill="#92400e">INVOICE WORKFLOW — Two Modes (system setting)</text>
+
+  <!-- Direct Mode -->
+  <rect x="40" y="355" width="500" height="180" rx="6" fill="#f0fdf4" stroke="#86efac" stroke-width="1.5"/>
+  <text x="290" y="380" text-anchor="middle" font-size="14" font-weight="bold" fill="#065f46">Direct Mode (Solo Operator)</text>
+  <text x="290" y="398" text-anchor="middle" font-size="10" fill="#64748b">System setting: invoiceWorkflow = "direct"</text>
+
+  <rect x="60" y="415" width="140" height="50" rx="4" fill="#fff" stroke="#94a3b8" stroke-width="1"/>
+  <text x="130" y="435" text-anchor="middle" font-size="10" font-weight="600" fill="#334155">Job → Shipped</text>
+  <text x="130" y="450" text-anchor="middle" font-size="9" fill="#64748b">Engineer confirms</text>
+
+  <line x1="200" y1="440" x2="220" y2="440" stroke="#334155" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <rect x="220" y="415" width="140" height="50" rx="4" fill="#fff" stroke="#94a3b8" stroke-width="1"/>
+  <text x="290" y="435" text-anchor="middle" font-size="10" font-weight="600" fill="#334155">Review Details</text>
+  <text x="290" y="450" text-anchor="middle" font-size="9" fill="#64748b">Adjust line items</text>
+
+  <line x1="360" y1="440" x2="380" y2="440" stroke="#334155" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <rect x="380" y="415" width="140" height="50" rx="4" fill="#d1fae5" stroke="#059669" stroke-width="1.5"/>
+  <text x="450" y="435" text-anchor="middle" font-size="10" font-weight="600" fill="#065f46">Double Confirm</text>
+  <text x="450" y="450" text-anchor="middle" font-size="9" fill="#047857">→ Invoice created</text>
+
+  <text x="290" y="500" text-anchor="middle" font-size="10" fill="#475569">Card auto-advances. Invoice sent to accounting system.</text>
+  <text x="290" y="515" text-anchor="middle" font-size="10" fill="#475569">Confirmation in plain English before consequential action.</text>
+
+  <!-- Managed Mode -->
+  <rect x="560" y="355" width="500" height="180" rx="6" fill="#fff7ed" stroke="#fb923c" stroke-width="1.5"/>
+  <text x="810" y="380" text-anchor="middle" font-size="14" font-weight="bold" fill="#9a3412">Managed Mode (With Office Manager)</text>
+  <text x="810" y="398" text-anchor="middle" font-size="10" fill="#64748b">System setting: invoiceWorkflow = "managed"</text>
+
+  <rect x="580" y="415" width="140" height="50" rx="4" fill="#fff" stroke="#94a3b8" stroke-width="1"/>
+  <text x="650" y="435" text-anchor="middle" font-size="10" font-weight="600" fill="#334155">Job → Shipped</text>
+  <text x="650" y="450" text-anchor="middle" font-size="9" fill="#64748b">Engineer confirms</text>
+
+  <line x1="720" y1="440" x2="740" y2="440" stroke="#334155" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <rect x="740" y="415" width="150" height="50" rx="4" fill="#fef3c7" stroke="#d97706" stroke-width="1.5"/>
+  <text x="815" y="435" text-anchor="middle" font-size="10" font-weight="600" fill="#92400e">Office Queue</text>
+  <text x="815" y="450" text-anchor="middle" font-size="9" fill="#b45309">Office mgr reviews</text>
+
+  <line x1="890" y1="440" x2="910" y2="440" stroke="#334155" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <rect x="910" y="415" width="130" height="50" rx="4" fill="#d1fae5" stroke="#059669" stroke-width="1.5"/>
+  <text x="975" y="435" text-anchor="middle" font-size="10" font-weight="600" fill="#065f46">Create Invoice</text>
+  <text x="975" y="450" text-anchor="middle" font-size="9" fill="#047857">or send back</text>
+
+  <text x="810" y="500" text-anchor="middle" font-size="10" fill="#475569">Office manager can send back with notes for engineer correction.</text>
+  <text x="810" y="515" text-anchor="middle" font-size="10" fill="#475569">Final invoice creation by office manager, not engineer.</text>
+
+  <!-- Nudge System -->
+  <rect x="30" y="560" width="1040" height="25" rx="4" fill="#e2e8f0"/>
+  <text x="550" y="578" text-anchor="middle" font-size="12" font-weight="600" fill="#475569">INVOICE NUDGE SYSTEM (both modes)</text>
+
+  <rect x="100" y="600" width="200" height="55" rx="4" fill="#f0fdf4" stroke="#86efac" stroke-width="1"/>
+  <text x="200" y="620" text-anchor="middle" font-size="11" font-weight="600" fill="#166534">0–2 days</text>
+  <text x="200" y="640" text-anchor="middle" font-size="10" fill="#475569">Informational — green</text>
+
+  <line x1="300" y1="627" x2="360" y2="627" stroke="#334155" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <rect x="360" y="600" width="200" height="55" rx="4" fill="#fef3c7" stroke="#d97706" stroke-width="1.5"/>
+  <text x="460" y="620" text-anchor="middle" font-size="11" font-weight="600" fill="#92400e">3–5 days</text>
+  <text x="460" y="640" text-anchor="middle" font-size="10" fill="#b45309">Warning — yellow</text>
+
+  <line x1="560" y1="627" x2="620" y2="627" stroke="#334155" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <rect x="620" y="600" width="200" height="55" rx="4" fill="#fef2f2" stroke="#dc2626" stroke-width="1.5"/>
+  <text x="720" y="620" text-anchor="middle" font-size="11" font-weight="600" fill="#991b1b">5+ days</text>
+  <text x="720" y="640" text-anchor="middle" font-size="10" fill="#dc2626">Urgent — red</text>
+
+  <text x="900" y="627" text-anchor="middle" font-size="10" fill="#64748b">Surfaces on dashboard</text>
+  <text x="900" y="643" text-anchor="middle" font-size="10" fill="#64748b">Timing configurable by admin</text>
+
+  <!-- Footer -->
+  <text x="550" y="690" text-anchor="middle" font-size="11" fill="#64748b">Billing info (order amount, deposits, balance, payment status) shown read-only on card from accounting cache. No edit capability.</text>
+</svg>

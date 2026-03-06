@@ -1,0 +1,13 @@
+{
+  "name": "qb-engineer-scripts",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Doc generation and workflow scripts",
+  "type": "commonjs",
+  "scripts": {
+    "generate-doc": "node generate-master-doc.js"
+  },
+  "devDependencies": {
+    "docx": "^9.6.0"
+  }
+}

@@ -1,0 +1,239 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 960" font-family="Segoe UI, Arial, sans-serif">
+  <title>Order to Delivery (OTD) — Production Track</title>
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#334155"/>
+    </marker>
+    <marker id="arrow-blue" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#2563eb"/>
+    </marker>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="900" fill="#f8fafc" rx="8"/>
+
+  <!-- Title -->
+  <text x="600" y="45" text-anchor="middle" font-size="22" font-weight="bold" fill="#0f172a">Order to Delivery (OTD) — Production Track</text>
+  <text x="600" y="70" text-anchor="middle" font-size="13" fill="#64748b">Core business process from incoming lead through shipment &amp; invoicing</text>
+
+  <!-- === ROW 1: Lead to Quote === -->
+  <!-- Lead Arrives -->
+  <rect x="30" y="110" width="160" height="70" rx="4" fill="#dbeafe" stroke="#2563eb" stroke-width="1.5"/>
+  <text x="110" y="140" text-anchor="middle" font-size="13" font-weight="600" fill="#1e40af">Lead Arrives</text>
+  <text x="110" y="158" text-anchor="middle" font-size="10" fill="#3b82f6">Phone / Email / Walk-in</text>
+
+  <line x1="190" y1="145" x2="230" y2="145" stroke="#334155" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <!-- Lead Record Created -->
+  <rect x="230" y="110" width="160" height="70" rx="4" fill="#dbeafe" stroke="#2563eb" stroke-width="1.5"/>
+  <text x="310" y="135" text-anchor="middle" font-size="13" font-weight="600" fill="#1e40af">Create Lead</text>
+  <text x="310" y="153" text-anchor="middle" font-size="10" fill="#3b82f6">Company, contacts,</text>
+  <text x="310" y="166" text-anchor="middle" font-size="10" fill="#3b82f6">source, notes, files</text>
+
+  <line x1="390" y1="145" x2="430" y2="145" stroke="#334155" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <!-- Quoting -->
+  <rect x="430" y="110" width="160" height="70" rx="4" fill="#fef3c7" stroke="#d97706" stroke-width="1.5"/>
+  <text x="510" y="135" text-anchor="middle" font-size="13" font-weight="600" fill="#92400e">Quoting</text>
+  <text x="510" y="153" text-anchor="middle" font-size="10" fill="#b45309">Internal quote created</text>
+  <text x="510" y="166" text-anchor="middle" font-size="10" fill="#b45309">Parts/BOM referenced</text>
+
+  <line x1="590" y1="145" x2="630" y2="145" stroke="#334155" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <!-- Convert to Customer -->
+  <rect x="630" y="110" width="180" height="70" rx="4" fill="#d1fae5" stroke="#059669" stroke-width="1.5"/>
+  <text x="720" y="135" text-anchor="middle" font-size="13" font-weight="600" fill="#065f46">Convert Lead</text>
+  <text x="720" y="153" text-anchor="middle" font-size="10" fill="#047857">→ Accounting customer</text>
+  <text x="720" y="166" text-anchor="middle" font-size="10" fill="#047857">→ Estimate created</text>
+
+  <line x1="810" y1="145" x2="850" y2="145" stroke="#334155" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <!-- Job Card Created -->
+  <rect x="850" y="110" width="160" height="70" rx="4" fill="#d1fae5" stroke="#059669" stroke-width="1.5"/>
+  <text x="930" y="135" text-anchor="middle" font-size="13" font-weight="600" fill="#065f46">Job Card Created</text>
+  <text x="930" y="153" text-anchor="middle" font-size="10" fill="#047857">Enters Kanban board</text>
+  <text x="930" y="166" text-anchor="middle" font-size="10" fill="#047857">→ Backlog or Sprint</text>
+
+  <!-- Arrow down from Job Card to Kanban Stages -->
+  <line x1="930" y1="180" x2="930" y2="220" stroke="#334155" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <!-- === ROW 2: Kanban Stages (Production Track) === -->
+  <rect x="30" y="220" width="1140" height="30" rx="4" fill="#e2e8f0"/>
+  <text x="600" y="241" text-anchor="middle" font-size="12" font-weight="600" fill="#475569">KANBAN BOARD — Production Track Stages</text>
+
+  <!-- Stage boxes -->
+  <rect x="30" y="260" width="130" height="60" rx="4" fill="#fff" stroke="#94a3b8" stroke-width="1.5"/>
+  <text x="95" y="285" text-anchor="middle" font-size="11" font-weight="600" fill="#334155">Backlog</text>
+  <text x="95" y="300" text-anchor="middle" font-size="9" fill="#64748b">Prioritized queue</text>
+
+  <line x1="160" y1="290" x2="180" y2="290" stroke="#334155" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <rect x="180" y="260" width="130" height="60" rx="4" fill="#fef3c7" stroke="#d97706" stroke-width="1.5"/>
+  <text x="245" y="285" text-anchor="middle" font-size="11" font-weight="600" fill="#92400e">Quoted</text>
+  <text x="245" y="300" text-anchor="middle" font-size="9" fill="#b45309">Estimate sent</text>
+
+  <line x1="310" y1="290" x2="330" y2="290" stroke="#334155" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <rect x="330" y="260" width="130" height="60" rx="4" fill="#fef3c7" stroke="#d97706" stroke-width="1.5"/>
+  <text x="395" y="285" text-anchor="middle" font-size="11" font-weight="600" fill="#92400e">Approved</text>
+  <text x="395" y="300" text-anchor="middle" font-size="9" fill="#b45309">Sales Order</text>
+
+  <line x1="460" y1="290" x2="480" y2="290" stroke="#334155" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <rect x="480" y="260" width="130" height="60" rx="4" fill="#dbeafe" stroke="#2563eb" stroke-width="1.5"/>
+  <text x="545" y="285" text-anchor="middle" font-size="11" font-weight="600" fill="#1e40af">Purchasing</text>
+  <text x="545" y="300" text-anchor="middle" font-size="9" fill="#3b82f6">PO for materials</text>
+
+  <line x1="610" y1="290" x2="630" y2="290" stroke="#334155" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <rect x="630" y="260" width="130" height="60" rx="4" fill="#e0e7ff" stroke="#4f46e5" stroke-width="1.5"/>
+  <text x="695" y="285" text-anchor="middle" font-size="11" font-weight="600" fill="#3730a3">In Production</text>
+  <text x="695" y="300" text-anchor="middle" font-size="9" fill="#4f46e5">Runs logged</text>
+
+  <line x1="760" y1="290" x2="780" y2="290" stroke="#334155" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <rect x="780" y="260" width="130" height="60" rx="4" fill="#fce7f3" stroke="#db2777" stroke-width="1.5"/>
+  <text x="845" y="285" text-anchor="middle" font-size="11" font-weight="600" fill="#9d174d">QC / Review</text>
+  <text x="845" y="300" text-anchor="middle" font-size="9" fill="#db2777">Inspection</text>
+
+  <line x1="910" y1="290" x2="930" y2="290" stroke="#334155" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <rect x="930" y="260" width="130" height="60" rx="4" fill="#d1fae5" stroke="#059669" stroke-width="1.5"/>
+  <text x="995" y="285" text-anchor="middle" font-size="11" font-weight="600" fill="#065f46">Shipped</text>
+  <text x="995" y="300" text-anchor="middle" font-size="9" fill="#047857">Packing slip</text>
+
+  <!-- Arrow down from In Production to Production Detail -->
+  <line x1="695" y1="320" x2="695" y2="370" stroke="#2563eb" stroke-width="1.5" stroke-dasharray="6,3" marker-end="url(#arrow-blue)"/>
+
+  <!-- === ROW 3: Production Detail === -->
+  <rect x="100" y="370" width="1000" height="180" rx="6" fill="#f0f4ff" stroke="#93c5fd" stroke-width="1"/>
+  <text x="600" y="395" text-anchor="middle" font-size="14" font-weight="600" fill="#1e40af">Production Detail (In Production Stage)</text>
+
+  <!-- Production Run -->
+  <rect x="130" y="410" width="200" height="120" rx="4" fill="#fff" stroke="#60a5fa" stroke-width="1.5"/>
+  <text x="230" y="435" text-anchor="middle" font-size="12" font-weight="600" fill="#1e40af">Production Run</text>
+  <text x="230" y="455" text-anchor="middle" font-size="10" fill="#475569">Lot number assigned</text>
+  <text x="230" y="470" text-anchor="middle" font-size="10" fill="#475569">Machine &amp; operator</text>
+  <text x="230" y="485" text-anchor="middle" font-size="10" fill="#475569">Qty produced / rejected</text>
+  <text x="230" y="500" text-anchor="middle" font-size="10" fill="#475569">Process parameters</text>
+  <text x="230" y="518" text-anchor="middle" font-size="10" font-weight="600" fill="#2563eb">↓ Print Label(s) prompt</text>
+
+  <line x1="330" y1="470" x2="380" y2="470" stroke="#334155" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <!-- Label Printing -->
+  <rect x="380" y="410" width="200" height="120" rx="4" fill="#fff" stroke="#f59e0b" stroke-width="1.5"/>
+  <text x="480" y="435" text-anchor="middle" font-size="12" font-weight="600" fill="#92400e">Print Labels</text>
+  <text x="480" y="455" text-anchor="middle" font-size="10" fill="#475569">Barcode + human-readable</text>
+  <text x="480" y="470" text-anchor="middle" font-size="10" fill="#475569">Job # / Part name / Customer</text>
+  <text x="480" y="485" text-anchor="middle" font-size="10" fill="#475569">Lot # / Qty per bin</text>
+  <text x="480" y="500" text-anchor="middle" font-size="10" fill="#475569">"Label X of N"</text>
+  <text x="480" y="518" text-anchor="middle" font-size="10" font-weight="600" fill="#d97706">Multi-bin splits supported</text>
+
+  <line x1="580" y1="470" x2="630" y2="470" stroke="#334155" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <!-- Bin Assignment -->
+  <rect x="630" y="410" width="200" height="120" rx="4" fill="#fff" stroke="#059669" stroke-width="1.5"/>
+  <text x="730" y="435" text-anchor="middle" font-size="12" font-weight="600" fill="#065f46">Bin Assignment</text>
+  <text x="730" y="455" text-anchor="middle" font-size="10" fill="#475569">Scan label → scan bin</text>
+  <text x="730" y="470" text-anchor="middle" font-size="10" fill="#475569">Quantity tracked per bin</text>
+  <text x="730" y="485" text-anchor="middle" font-size="10" fill="#475569">Status: stored / ready_to_ship</text>
+  <text x="730" y="500" text-anchor="middle" font-size="10" fill="#475569">Movement audit trail</text>
+
+  <line x1="830" y1="470" x2="880" y2="470" stroke="#334155" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <!-- QC -->
+  <rect x="880" y="410" width="190" height="120" rx="4" fill="#fff" stroke="#db2777" stroke-width="1.5"/>
+  <text x="975" y="435" text-anchor="middle" font-size="12" font-weight="600" fill="#9d174d">QC Inspection</text>
+  <text x="975" y="455" text-anchor="middle" font-size="10" fill="#475569">Checklist per part/mold</text>
+  <text x="975" y="470" text-anchor="middle" font-size="10" fill="#475569">Pass / Fail with notes</text>
+  <text x="975" y="485" text-anchor="middle" font-size="10" fill="#475569">QC hold → designated bin</text>
+  <text x="975" y="500" text-anchor="middle" font-size="10" fill="#475569">Release → finished goods</text>
+
+  <!-- === ROW 4: Shipping, Labels & Invoicing === -->
+  <rect x="30" y="580" width="1140" height="30" rx="4" fill="#e2e8f0"/>
+  <text x="600" y="601" text-anchor="middle" font-size="12" font-weight="600" fill="#475569">SHIPPING, LABELS &amp; INVOICING</text>
+
+  <!-- Pick & Pack -->
+  <rect x="40" y="630" width="175" height="100" rx="4" fill="#d1fae5" stroke="#059669" stroke-width="1.5"/>
+  <text x="128" y="652" text-anchor="middle" font-size="12" font-weight="600" fill="#065f46">Pick &amp; Pack</text>
+  <text x="128" y="670" text-anchor="middle" font-size="9.5" fill="#047857">Pick list from bins</text>
+  <text x="128" y="684" text-anchor="middle" font-size="9.5" fill="#047857">Packing slip printed</text>
+  <text x="128" y="698" text-anchor="middle" font-size="9.5" fill="#047857">Items scanned out</text>
+  <text x="128" y="716" text-anchor="middle" font-size="9.5" font-weight="600" fill="#059669">Ship-to pre-filled</text>
+
+  <line x1="215" y1="680" x2="240" y2="680" stroke="#334155" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <!-- Shipping Label -->
+  <rect x="240" y="630" width="195" height="100" rx="4" fill="#ede9fe" stroke="#7c3aed" stroke-width="1.5"/>
+  <text x="338" y="652" text-anchor="middle" font-size="12" font-weight="600" fill="#5b21b6">Shipping Label</text>
+  <text x="338" y="670" text-anchor="middle" font-size="9.5" fill="#6d28d9">Carrier API: UPS/FedEx/</text>
+  <text x="338" y="684" text-anchor="middle" font-size="9.5" fill="#6d28d9">USPS/DHL or manual</text>
+  <text x="338" y="698" text-anchor="middle" font-size="9.5" fill="#6d28d9">Rate shopping (multi-carrier)</text>
+  <text x="338" y="716" text-anchor="middle" font-size="9.5" font-weight="600" fill="#7c3aed">Label PDF + tracking #</text>
+
+  <line x1="435" y1="680" x2="460" y2="680" stroke="#334155" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <!-- Shipped -->
+  <rect x="460" y="630" width="155" height="100" rx="4" fill="#d1fae5" stroke="#059669" stroke-width="1.5"/>
+  <text x="538" y="652" text-anchor="middle" font-size="12" font-weight="600" fill="#065f46">Shipped</text>
+  <text x="538" y="670" text-anchor="middle" font-size="9.5" fill="#047857">Tracking # on job card</text>
+  <text x="538" y="684" text-anchor="middle" font-size="9.5" fill="#047857">Multi-package support</text>
+  <text x="538" y="698" text-anchor="middle" font-size="9.5" fill="#047857">Delivery confirmation</text>
+  <text x="538" y="716" text-anchor="middle" font-size="9.5" font-weight="600" fill="#059669">→ triggers invoice</text>
+
+  <line x1="615" y1="680" x2="640" y2="680" stroke="#334155" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <!-- Invoice -->
+  <rect x="640" y="630" width="175" height="100" rx="4" fill="#fef3c7" stroke="#d97706" stroke-width="1.5"/>
+  <text x="728" y="652" text-anchor="middle" font-size="12" font-weight="600" fill="#92400e">Invoice</text>
+  <text x="728" y="670" text-anchor="middle" font-size="9.5" fill="#b45309">Direct: auto-create</text>
+  <text x="728" y="684" text-anchor="middle" font-size="9.5" fill="#b45309">Managed: office queue</text>
+  <text x="728" y="698" text-anchor="middle" font-size="9.5" fill="#b45309">Nudge: 3d/5d/5d+ urgency</text>
+  <text x="728" y="716" text-anchor="middle" font-size="9.5" font-weight="600" fill="#d97706">→ accounting system</text>
+
+  <line x1="815" y1="680" x2="840" y2="680" stroke="#334155" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <!-- Payment -->
+  <rect x="840" y="630" width="145" height="100" rx="4" fill="#d1fae5" stroke="#059669" stroke-width="1.5"/>
+  <text x="913" y="652" text-anchor="middle" font-size="12" font-weight="600" fill="#065f46">Payment</text>
+  <text x="913" y="670" text-anchor="middle" font-size="9.5" fill="#047857">From accounting</text>
+  <text x="913" y="684" text-anchor="middle" font-size="9.5" fill="#047857">Read-only display</text>
+  <text x="913" y="698" text-anchor="middle" font-size="9.5" fill="#047857">Billing status on card</text>
+
+  <line x1="985" y1="680" x2="1010" y2="680" stroke="#334155" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <!-- Complete -->
+  <rect x="1010" y="640" width="130" height="80" rx="4" fill="#dcfce7" stroke="#16a34a" stroke-width="2"/>
+  <text x="1075" y="667" text-anchor="middle" font-size="14" font-weight="bold" fill="#166534">COMPLETE</text>
+  <text x="1075" y="685" text-anchor="middle" font-size="9.5" fill="#15803d">Job archived</text>
+  <text x="1075" y="699" text-anchor="middle" font-size="9.5" fill="#15803d">Full traceability</text>
+  <text x="1075" y="713" text-anchor="middle" font-size="9.5" fill="#15803d">Lot lookup available</text>
+
+  <!-- === Legend === -->
+  <rect x="30" y="760" width="1140" height="170" rx="6" fill="#fff" stroke="#e2e8f0" stroke-width="1"/>
+  <text x="600" y="785" text-anchor="middle" font-size="12" font-weight="600" fill="#475569">LEGEND &amp; NOTES</text>
+
+  <rect x="60" y="800" width="16" height="16" rx="2" fill="#dbeafe" stroke="#2563eb" stroke-width="1"/>
+  <text x="84" y="813" font-size="10" fill="#334155">Lead / Sales</text>
+
+  <rect x="200" y="800" width="16" height="16" rx="2" fill="#fef3c7" stroke="#d97706" stroke-width="1"/>
+  <text x="224" y="813" font-size="10" fill="#334155">Pending / Quoting</text>
+
+  <rect x="370" y="800" width="16" height="16" rx="2" fill="#d1fae5" stroke="#059669" stroke-width="1"/>
+  <text x="394" y="813" font-size="10" fill="#334155">Action / Completion</text>
+
+  <rect x="550" y="800" width="16" height="16" rx="2" fill="#e0e7ff" stroke="#4f46e5" stroke-width="1"/>
+  <text x="574" y="813" font-size="10" fill="#334155">Production</text>
+
+  <rect x="690" y="800" width="16" height="16" rx="2" fill="#fce7f3" stroke="#db2777" stroke-width="1"/>
+  <text x="714" y="813" font-size="10" fill="#334155">QC / Inspection</text>
+
+  <rect x="860" y="800" width="16" height="16" rx="2" fill="#ede9fe" stroke="#7c3aed" stroke-width="1"/>
+  <text x="884" y="813" font-size="10" fill="#334155">Shipping / Carrier</text>
+
+  <text x="60" y="845" font-size="10" fill="#64748b">• Cards move freely forward and backward unless an accounting document at that stage is irreversible</text>
+  <text x="60" y="860" font-size="10" fill="#64748b">• Backward move on reversible stages triggers double confirmation showing the document to be voided</text>
+  <text x="60" y="875" font-size="10" fill="#64748b">• Every stage transition, production run, QC result, and bin movement is logged in the immutable audit trail</text>
+  <text x="60" y="890" font-size="10" fill="#64748b">• Shipping labels generated via carrier API (UPS, FedEx, USPS, DHL, EasyPost) or manual tracking number entry</text>
+  <text x="60" y="905" font-size="10" fill="#64748b">• Multiple carriers can be active — rate shopping compares options side-by-side</text>
+</svg>

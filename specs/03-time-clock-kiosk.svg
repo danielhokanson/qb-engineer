@@ -1,0 +1,139 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 850" font-family="Segoe UI, Arial, sans-serif">
+  <title>Time Clock Kiosk — Scan Flow</title>
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#334155"/>
+    </marker>
+    <marker id="arrow-green" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#059669"/>
+    </marker>
+    <marker id="arrow-red" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#dc2626"/>
+    </marker>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1100" height="850" fill="#f8fafc" rx="8"/>
+
+  <!-- Title -->
+  <text x="550" y="40" text-anchor="middle" font-size="22" font-weight="bold" fill="#0f172a">Time Clock Kiosk — Scan Flow</text>
+  <text x="550" y="65" text-anchor="middle" font-size="13" fill="#64748b">Passive scan listener on shop floor display. No UI buttons to initiate — worker just scans.</text>
+
+  <!-- Kiosk Idle State -->
+  <rect x="420" y="90" width="260" height="60" rx="4" fill="#e0e7ff" stroke="#4f46e5" stroke-width="2"/>
+  <text x="550" y="115" text-anchor="middle" font-size="14" font-weight="bold" fill="#3730a3">KIOSK IDLE</text>
+  <text x="550" y="133" text-anchor="middle" font-size="11" fill="#4f46e5">Shop floor overview — waiting for scan</text>
+
+  <!-- Arrow down -->
+  <line x1="550" y1="150" x2="550" y2="185" stroke="#334155" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="560" y="174" font-size="10" fill="#64748b">Badge / Barcode / NFC scan</text>
+
+  <!-- Decision: Clocked In? -->
+  <polygon points="550,185 680,230 550,275 420,230" fill="#fef3c7" stroke="#d97706" stroke-width="1.5"/>
+  <text x="550" y="228" text-anchor="middle" font-size="12" font-weight="600" fill="#92400e">Worker</text>
+  <text x="550" y="243" text-anchor="middle" font-size="12" font-weight="600" fill="#92400e">clocked in?</text>
+
+  <!-- === LEFT BRANCH: Not Clocked In === -->
+  <line x1="420" y1="230" x2="280" y2="230" stroke="#059669" stroke-width="1.5" marker-end="url(#arrow-green)"/>
+  <text x="350" y="222" text-anchor="middle" font-size="10" font-weight="600" fill="#059669">NO</text>
+
+  <rect x="130" y="200" width="150" height="60" rx="4" fill="#d1fae5" stroke="#059669" stroke-width="1.5"/>
+  <text x="205" y="225" text-anchor="middle" font-size="13" font-weight="600" fill="#065f46">CLOCK IN</text>
+  <text x="205" y="243" text-anchor="middle" font-size="10" fill="#047857">Confirmation overlay</text>
+
+  <line x1="205" y1="260" x2="205" y2="295" stroke="#334155" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <rect x="120" y="295" width="170" height="50" rx="4" fill="#f0fdf4" stroke="#86efac" stroke-width="1"/>
+  <text x="205" y="317" text-anchor="middle" font-size="11" fill="#166534">"Welcome, [Name]"</text>
+  <text x="205" y="333" text-anchor="middle" font-size="10" fill="#15803d">Shows assigned tasks (if any)</text>
+
+  <line x1="205" y1="345" x2="205" y2="375" stroke="#334155" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="215" y="365" font-size="9" fill="#64748b">idle timeout</text>
+
+  <rect x="130" y="375" width="150" height="40" rx="4" fill="#e0e7ff" stroke="#4f46e5" stroke-width="1"/>
+  <text x="205" y="400" text-anchor="middle" font-size="11" fill="#3730a3">→ Return to overview</text>
+
+  <!-- === RIGHT BRANCH: Clocked In === -->
+  <line x1="680" y1="230" x2="760" y2="230" stroke="#dc2626" stroke-width="1.5" marker-end="url(#arrow-red)"/>
+  <text x="720" y="222" text-anchor="middle" font-size="10" font-weight="600" fill="#dc2626">YES</text>
+
+  <!-- Decision: Has Tasks? -->
+  <polygon points="880,195 1000,230 880,265 760,230" fill="#fef3c7" stroke="#d97706" stroke-width="1.5"/>
+  <text x="880" y="228" text-anchor="middle" font-size="11" font-weight="600" fill="#92400e">Has assigned</text>
+  <text x="880" y="243" text-anchor="middle" font-size="11" font-weight="600" fill="#92400e">tasks?</text>
+
+  <!-- === HAS TASKS: Two Choices === -->
+  <line x1="880" y1="265" x2="880" y2="310" stroke="#334155" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="890" y="292" font-size="10" font-weight="600" fill="#059669">YES</text>
+
+  <rect x="740" y="310" width="280" height="50" rx="4" fill="#fff" stroke="#94a3b8" stroke-width="1.5"/>
+  <text x="880" y="332" text-anchor="middle" font-size="12" font-weight="600" fill="#334155">Two-Choice Prompt</text>
+  <text x="880" y="348" text-anchor="middle" font-size="10" fill="#64748b">"What would you like to do?"</text>
+
+  <!-- Update Task branch -->
+  <line x1="810" y1="360" x2="810" y2="410" stroke="#2563eb" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="780" y="392" font-size="10" font-weight="600" fill="#2563eb" text-anchor="end">Update Task</text>
+
+  <rect x="680" y="410" width="260" height="120" rx="4" fill="#dbeafe" stroke="#2563eb" stroke-width="1.5"/>
+  <text x="810" y="435" text-anchor="middle" font-size="12" font-weight="600" fill="#1e40af">Production Quick Actions</text>
+  <text x="810" y="458" text-anchor="middle" font-size="10" fill="#475569">• Mark task complete</text>
+  <text x="810" y="473" text-anchor="middle" font-size="10" fill="#475569">• Update quantity produced</text>
+  <text x="810" y="488" text-anchor="middle" font-size="10" fill="#475569">• Update status</text>
+  <text x="810" y="503" text-anchor="middle" font-size="10" fill="#475569">• Start new production run</text>
+  <text x="810" y="520" text-anchor="middle" font-size="10" font-weight="600" fill="#2563eb">Large buttons for gloved hands</text>
+
+  <!-- Clock Out branch (has tasks) -->
+  <line x1="950" y1="360" x2="950" y2="410" stroke="#dc2626" stroke-width="1.5" marker-end="url(#arrow-red)"/>
+  <text x="960" y="392" font-size="10" font-weight="600" fill="#dc2626">Clock Out</text>
+
+  <!-- Arrow from Clock Out to Outstanding Tasks Review -->
+  <line x1="950" y1="410" x2="950" y2="570" stroke="#dc2626" stroke-width="1.5" marker-end="url(#arrow-red)"/>
+
+  <!-- === NO TASKS === -->
+  <line x1="1000" y1="230" x2="1060" y2="230" stroke="#334155" stroke-width="1.5"/>
+  <line x1="1060" y1="230" x2="1060" y2="580" stroke="#334155" stroke-width="1.5"/>
+  <line x1="1060" y1="580" x2="1010" y2="580" stroke="#334155" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="1070" y="400" font-size="10" font-weight="600" fill="#dc2626" transform="rotate(90 1070 400)">NO TASKS</text>
+
+  <!-- No-Tasks Prompt -->
+  <rect x="700" y="570" width="310" height="130" rx="4" fill="#fff" stroke="#94a3b8" stroke-width="2"/>
+  <text x="855" y="595" text-anchor="middle" font-size="12" font-weight="600" fill="#334155">Three-Choice Prompt</text>
+  <text x="855" y="613" text-anchor="middle" font-size="10" fill="#64748b">(No assigned tasks/runs)</text>
+
+  <rect x="720" y="625" width="100" height="30" rx="4" fill="#fef2f2" stroke="#dc2626" stroke-width="1"/>
+  <text x="770" y="645" text-anchor="middle" font-size="10" font-weight="600" fill="#dc2626">Clock Out</text>
+
+  <rect x="830" y="625" width="100" height="30" rx="4" fill="#fef3c7" stroke="#d97706" stroke-width="1"/>
+  <text x="880" y="645" text-anchor="middle" font-size="10" font-weight="600" fill="#92400e">Break/Lunch</text>
+
+  <rect x="720" y="662" width="100" height="30" rx="4" fill="#f1f5f9" stroke="#94a3b8" stroke-width="1"/>
+  <text x="770" y="682" text-anchor="middle" font-size="10" font-weight="600" fill="#64748b">Cancel</text>
+
+  <!-- Return to overview arrows -->
+  <line x1="810" y1="530" x2="810" y2="560" stroke="#334155" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="820" y="550" font-size="9" fill="#64748b">idle timeout</text>
+  <rect x="730" y="555" width="160" height="30" rx="4" fill="#e0e7ff" stroke="#4f46e5" stroke-width="1"/>
+  <text x="810" y="575" text-anchor="middle" font-size="10" fill="#3730a3">→ Return to overview</text>
+
+  <!-- Outstanding Tasks Review (Clock Out path) -->
+  <rect x="260" y="570" width="360" height="150" rx="4" fill="#fef2f2" stroke="#dc2626" stroke-width="1.5"/>
+  <text x="440" y="595" text-anchor="middle" font-size="13" font-weight="600" fill="#991b1b">Clock Out Flow</text>
+
+  <text x="440" y="618" text-anchor="middle" font-size="11" font-weight="600" fill="#334155">Outstanding items review:</text>
+  <text x="440" y="638" text-anchor="middle" font-size="10" fill="#475569">For each in-progress task/run:</text>
+  <text x="440" y="655" text-anchor="middle" font-size="10" fill="#475569">• Update quantity / mark complete</text>
+  <text x="440" y="670" text-anchor="middle" font-size="10" fill="#475569">• Leave in progress (with note)</text>
+  <text x="440" y="690" text-anchor="middle" font-size="10" fill="#475569">After all items addressed → confirm clock out</text>
+  <text x="440" y="710" text-anchor="middle" font-size="10" font-weight="600" fill="#dc2626">Clock event syncs to accounting system</text>
+
+  <line x1="700" y1="650" x2="620" y2="650" stroke="#dc2626" stroke-width="1.5" marker-end="url(#arrow-red)"/>
+
+  <!-- Final: Return to overview -->
+  <line x1="440" y1="720" x2="440" y2="755" stroke="#334155" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <rect x="360" y="755" width="160" height="35" rx="4" fill="#e0e7ff" stroke="#4f46e5" stroke-width="1.5"/>
+  <text x="440" y="778" text-anchor="middle" font-size="11" fill="#3730a3">→ Return to overview</text>
+
+  <!-- === Fallback note === -->
+  <rect x="30" y="810" width="1040" height="30" rx="4" fill="#fff7ed" stroke="#fb923c" stroke-width="1"/>
+  <text x="550" y="830" text-anchor="middle" font-size="11" fill="#9a3412">Fallback: If no scan hardware is configured by admin, workers log in to the app normally to clock in/out and update production status.</text>
+</svg>

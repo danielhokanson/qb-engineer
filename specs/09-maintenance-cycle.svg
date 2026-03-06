@@ -1,0 +1,122 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 500" font-family="Segoe UI, Arial, sans-serif">
+  <title>Maintenance &amp; Asset Lifecycle</title>
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#334155"/>
+    </marker>
+    <marker id="arrow-red" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#dc2626"/>
+    </marker>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1100" height="500" fill="#f8fafc" rx="8"/>
+
+  <!-- Title -->
+  <text x="550" y="35" text-anchor="middle" font-size="22" font-weight="bold" fill="#0f172a">Maintenance &amp; Asset Lifecycle</text>
+  <text x="550" y="57" text-anchor="middle" font-size="13" fill="#64748b">Scheduled maintenance, unscheduled repairs, and downtime tracking</text>
+
+  <!-- Asset Record -->
+  <rect x="30" y="85" width="220" height="120" rx="4" fill="#e0e7ff" stroke="#4f46e5" stroke-width="2"/>
+  <text x="140" y="110" text-anchor="middle" font-size="14" font-weight="bold" fill="#3730a3">Asset Record</text>
+  <line x1="50" y1="118" x2="230" y2="118" stroke="#c7d2fe" stroke-width="1"/>
+  <text x="140" y="138" text-anchor="middle" font-size="10" fill="#475569">Name, type, location</text>
+  <text x="140" y="153" text-anchor="middle" font-size="10" fill="#475569">Manufacturer, model, serial</text>
+  <text x="140" y="168" text-anchor="middle" font-size="10" fill="#475569">Status: Active / Down / Retired</text>
+  <text x="140" y="183" text-anchor="middle" font-size="10" fill="#475569">Machine hours (manual update)</text>
+  <text x="140" y="198" text-anchor="middle" font-size="10" fill="#475569">Photo, notes</text>
+
+  <!-- Scheduled Maintenance -->
+  <line x1="250" y1="120" x2="310" y2="120" stroke="#334155" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <rect x="310" y="85" width="230" height="120" rx="4" fill="#fef3c7" stroke="#d97706" stroke-width="1.5"/>
+  <text x="425" y="110" text-anchor="middle" font-size="13" font-weight="600" fill="#92400e">Scheduled Maintenance</text>
+  <line x1="330" y1="118" x2="520" y2="118" stroke="#fde68a" stroke-width="1"/>
+  <text x="425" y="138" text-anchor="middle" font-size="10" fill="#475569">Recurring rules per asset</text>
+  <text x="425" y="153" text-anchor="middle" font-size="10" fill="#475569">Interval: days or machine hours</text>
+  <text x="425" y="168" text-anchor="middle" font-size="10" fill="#475569">Last completed date tracked</text>
+  <text x="425" y="183" text-anchor="middle" font-size="10" fill="#475569">Multiple schedules per asset</text>
+  <text x="425" y="198" text-anchor="middle" font-size="10" fill="#475569">(oil change, filter, calibration...)</text>
+
+  <!-- Sprint Planning Day -->
+  <line x1="540" y1="145" x2="600" y2="145" stroke="#334155" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <rect x="600" y="85" width="250" height="120" rx="4" fill="#d1fae5" stroke="#059669" stroke-width="2"/>
+  <text x="725" y="107" text-anchor="middle" font-size="11" font-weight="bold" fill="#065f46">SPRINT PLANNING DAY</text>
+  <text x="725" y="127" text-anchor="middle" font-size="13" font-weight="600" fill="#065f46">Auto-Detect Due Maint.</text>
+  <line x1="620" y1="135" x2="830" y2="135" stroke="#bbf7d0" stroke-width="1"/>
+  <text x="725" y="155" text-anchor="middle" font-size="10" fill="#475569">System scans all asset schedules</text>
+  <text x="725" y="170" text-anchor="middle" font-size="10" fill="#475569">Identifies maintenance due this sprint</text>
+  <text x="725" y="188" text-anchor="middle" font-size="10" font-weight="600" fill="#059669">Prompts to auto-create</text>
+  <text x="725" y="200" text-anchor="middle" font-size="10" font-weight="600" fill="#059669">maintenance cards + assign</text>
+
+  <!-- Maintenance Card Created -->
+  <line x1="850" y1="145" x2="900" y2="145" stroke="#334155" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <rect x="900" y="85" width="170" height="120" rx="4" fill="#dbeafe" stroke="#2563eb" stroke-width="1.5"/>
+  <text x="985" y="110" text-anchor="middle" font-size="13" font-weight="600" fill="#1e40af">Maint. Card</text>
+  <line x1="920" y1="118" x2="1050" y2="118" stroke="#bfdbfe" stroke-width="1"/>
+  <text x="985" y="138" text-anchor="middle" font-size="10" fill="#475569">On Kanban board</text>
+  <text x="985" y="153" text-anchor="middle" font-size="10" fill="#475569">(Maintenance track)</text>
+  <text x="985" y="168" text-anchor="middle" font-size="10" fill="#475569">References asset</text>
+  <text x="985" y="183" text-anchor="middle" font-size="10" fill="#475569">Assigned to worker</text>
+  <text x="985" y="198" text-anchor="middle" font-size="10" fill="#475569">Downtime start/stop</text>
+
+  <!-- === UNSCHEDULED (bottom row) === -->
+  <rect x="30" y="240" width="1040" height="25" rx="4" fill="#fef2f2"/>
+  <text x="550" y="258" text-anchor="middle" font-size="12" font-weight="600" fill="#991b1b">UNSCHEDULED MAINTENANCE &amp; BREAKDOWN</text>
+
+  <!-- Machine breaks down -->
+  <rect x="50" y="285" width="200" height="80" rx="4" fill="#fef2f2" stroke="#dc2626" stroke-width="2"/>
+  <text x="150" y="310" text-anchor="middle" font-size="13" font-weight="bold" fill="#991b1b">Machine Down!</text>
+  <text x="150" y="330" text-anchor="middle" font-size="10" fill="#dc2626">Worker reports issue</text>
+  <text x="150" y="345" text-anchor="middle" font-size="10" fill="#dc2626">Asset status → Down</text>
+  <text x="150" y="360" text-anchor="middle" font-size="10" fill="#dc2626">Downtime clock starts</text>
+
+  <line x1="250" y1="325" x2="310" y2="325" stroke="#dc2626" stroke-width="1.5" marker-end="url(#arrow-red)"/>
+
+  <!-- Emergency card -->
+  <rect x="310" y="285" width="230" height="80" rx="4" fill="#fef3c7" stroke="#d97706" stroke-width="1.5"/>
+  <text x="425" y="310" text-anchor="middle" font-size="13" font-weight="600" fill="#92400e">Emergency Card</text>
+  <text x="425" y="330" text-anchor="middle" font-size="10" fill="#475569">Auto-created on Kanban</text>
+  <text x="425" y="345" text-anchor="middle" font-size="10" fill="#475569">High priority assigned</text>
+  <text x="425" y="360" text-anchor="middle" font-size="10" fill="#475569">Links to asset record</text>
+
+  <line x1="540" y1="325" x2="600" y2="325" stroke="#334155" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <!-- Repair -->
+  <rect x="600" y="285" width="200" height="80" rx="4" fill="#dbeafe" stroke="#2563eb" stroke-width="1.5"/>
+  <text x="700" y="310" text-anchor="middle" font-size="13" font-weight="600" fill="#1e40af">Repair Work</text>
+  <text x="700" y="330" text-anchor="middle" font-size="10" fill="#475569">Worker logs actions</text>
+  <text x="700" y="345" text-anchor="middle" font-size="10" fill="#475569">Parts/materials used noted</text>
+  <text x="700" y="360" text-anchor="middle" font-size="10" fill="#475569">Photos/notes added</text>
+
+  <line x1="800" y1="325" x2="860" y2="325" stroke="#334155" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <!-- Resolved -->
+  <rect x="860" y="285" width="200" height="80" rx="4" fill="#d1fae5" stroke="#059669" stroke-width="2"/>
+  <text x="960" y="310" text-anchor="middle" font-size="13" font-weight="bold" fill="#065f46">Resolved</text>
+  <text x="960" y="330" text-anchor="middle" font-size="10" fill="#047857">Asset status → Active</text>
+  <text x="960" y="345" text-anchor="middle" font-size="10" fill="#047857">Downtime clock stops</text>
+  <text x="960" y="360" text-anchor="middle" font-size="10" fill="#047857">Total downtime recorded</text>
+
+  <!-- === Escalation === -->
+  <rect x="30" y="390" width="1040" height="25" rx="4" fill="#e2e8f0"/>
+  <text x="550" y="408" text-anchor="middle" font-size="12" font-weight="600" fill="#475569">OVERDUE ESCALATION</text>
+
+  <rect x="100" y="430" width="250" height="50" rx="4" fill="#fef3c7" stroke="#d97706" stroke-width="1"/>
+  <text x="225" y="450" text-anchor="middle" font-size="11" font-weight="600" fill="#92400e">Overdue Scheduled Maint.</text>
+  <text x="225" y="467" text-anchor="middle" font-size="10" fill="#b45309">Escalates visually on dashboard</text>
+
+  <line x1="350" y1="455" x2="410" y2="455" stroke="#334155" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <rect x="410" y="430" width="280" height="50" rx="4" fill="#fef2f2" stroke="#dc2626" stroke-width="1"/>
+  <text x="550" y="450" text-anchor="middle" font-size="11" font-weight="600" fill="#991b1b">Surfaces on Manager/Owner Dashboard</text>
+  <text x="550" y="467" text-anchor="middle" font-size="10" fill="#dc2626">Non-dismissable until addressed</text>
+
+  <line x1="690" y1="455" x2="750" y2="455" stroke="#334155" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <rect x="750" y="430" width="250" height="50" rx="4" fill="#fff" stroke="#94a3b8" stroke-width="1"/>
+  <text x="875" y="450" text-anchor="middle" font-size="11" font-weight="600" fill="#334155">Reporting</text>
+  <text x="875" y="467" text-anchor="middle" font-size="10" fill="#64748b">Scheduled vs unscheduled ratio, downtime by asset</text>
+</svg>

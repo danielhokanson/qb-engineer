@@ -1,0 +1,193 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 750" font-family="Segoe UI, Arial, sans-serif">
+  <title>R&amp;D / Tooling &amp; Internal Project Workflow</title>
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#334155"/>
+    </marker>
+    <marker id="arrow-green" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#059669"/>
+    </marker>
+    <marker id="arrow-purple" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#7c3aed"/>
+    </marker>
+  </defs>
+
+  <rect width="1200" height="750" fill="#f8fafc" rx="8"/>
+
+  <text x="600" y="40" text-anchor="middle" font-size="22" font-weight="bold" fill="#0f172a">R&amp;D / Tooling &amp; Internal Project Workflow</text>
+  <text x="600" y="63" text-anchor="middle" font-size="13" fill="#64748b">From concept through iteration, approval, and handoff to production or completion</text>
+
+  <!-- ═══ R&D TRACK STAGES ═══ -->
+  <rect x="30" y="85" width="1140" height="25" rx="4" fill="#ede9fe"/>
+  <text x="600" y="103" text-anchor="middle" font-size="12" font-weight="600" fill="#5b21b6">R&amp;D / TOOLING TRACK — Kanban Stages</text>
+
+  <!-- Concept -->
+  <rect x="30" y="125" width="130" height="65" rx="4" fill="#f5f3ff" stroke="#7c3aed" stroke-width="1.5"/>
+  <text x="95" y="150" text-anchor="middle" font-size="11" font-weight="600" fill="#5b21b6">Concept</text>
+  <text x="95" y="168" text-anchor="middle" font-size="9" fill="#7c3aed">Idea captured</text>
+  <text x="95" y="180" text-anchor="middle" font-size="9" fill="#7c3aed">Initial scope</text>
+
+  <line x1="160" y1="157" x2="178" y2="157" stroke="#334155" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <!-- Design -->
+  <rect x="178" y="125" width="130" height="65" rx="4" fill="#f5f3ff" stroke="#7c3aed" stroke-width="1.5"/>
+  <text x="243" y="150" text-anchor="middle" font-size="11" font-weight="600" fill="#5b21b6">Design</text>
+  <text x="243" y="168" text-anchor="middle" font-size="9" fill="#7c3aed">CAD work</text>
+  <text x="243" y="180" text-anchor="middle" font-size="9" fill="#7c3aed">Specs drafted</text>
+
+  <line x1="308" y1="157" x2="326" y2="157" stroke="#334155" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <!-- CAD Review -->
+  <rect x="326" y="125" width="130" height="65" rx="4" fill="#f5f3ff" stroke="#7c3aed" stroke-width="1.5"/>
+  <text x="391" y="150" text-anchor="middle" font-size="11" font-weight="600" fill="#5b21b6">CAD Review</text>
+  <text x="391" y="168" text-anchor="middle" font-size="9" fill="#7c3aed">Peer/mgr review</text>
+  <text x="391" y="180" text-anchor="middle" font-size="9" fill="#7c3aed">STL viewer</text>
+
+  <line x1="456" y1="157" x2="474" y2="157" stroke="#334155" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <!-- Prototype / Test -->
+  <rect x="474" y="125" width="140" height="65" rx="4" fill="#fef3c7" stroke="#d97706" stroke-width="1.5"/>
+  <text x="544" y="150" text-anchor="middle" font-size="11" font-weight="600" fill="#92400e">Prototype / Test</text>
+  <text x="544" y="168" text-anchor="middle" font-size="9" fill="#b45309">Physical testing</text>
+  <text x="544" y="180" text-anchor="middle" font-size="9" fill="#b45309">Results recorded</text>
+
+  <line x1="614" y1="157" x2="632" y2="157" stroke="#334155" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <!-- Iteration -->
+  <rect x="632" y="125" width="130" height="65" rx="4" fill="#fef3c7" stroke="#d97706" stroke-width="1.5"/>
+  <text x="697" y="150" text-anchor="middle" font-size="11" font-weight="600" fill="#92400e">Iteration</text>
+  <text x="697" y="168" text-anchor="middle" font-size="9" fill="#b45309">Revision cycle</text>
+  <text x="697" y="180" text-anchor="middle" font-size="9" fill="#b45309">Counter increments</text>
+
+  <line x1="762" y1="157" x2="780" y2="157" stroke="#334155" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <!-- Tooling Approval -->
+  <rect x="780" y="125" width="150" height="65" rx="4" fill="#dbeafe" stroke="#2563eb" stroke-width="1.5"/>
+  <text x="855" y="150" text-anchor="middle" font-size="11" font-weight="600" fill="#1e40af">Tooling Approval</text>
+  <text x="855" y="168" text-anchor="middle" font-size="9" fill="#3b82f6">Sign-off gate</text>
+  <text x="855" y="180" text-anchor="middle" font-size="9" fill="#3b82f6">Part → Active</text>
+
+  <line x1="930" y1="157" x2="948" y2="157" stroke="#334155" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <!-- Handoff -->
+  <rect x="948" y="125" width="220" height="65" rx="4" fill="#d1fae5" stroke="#059669" stroke-width="2"/>
+  <text x="1058" y="150" text-anchor="middle" font-size="11" font-weight="bold" fill="#065f46">Handoff to Production</text>
+  <text x="1058" y="168" text-anchor="middle" font-size="9" fill="#047857">Part catalog updated</text>
+  <text x="1058" y="180" text-anchor="middle" font-size="9" fill="#047857">Ready for production jobs</text>
+
+  <!-- Iteration loop arrow -->
+  <path d="M 697 190 L 697 210 Q 697 220 687 220 L 554 220 Q 544 220 544 210 L 544 190" stroke="#d97706" stroke-width="1.5" fill="none" marker-end="url(#arrow)"/>
+  <text x="620" y="216" text-anchor="middle" font-size="9" font-weight="600" fill="#d97706">Iterate (revise &amp; re-test)</text>
+
+  <!-- ═══ R&D CARD DETAIL ═══ -->
+  <rect x="30" y="250" width="550" height="200" rx="6" fill="#f5f3ff" stroke="#c4b5fd" stroke-width="1"/>
+  <text x="305" y="275" text-anchor="middle" font-size="14" font-weight="bold" fill="#5b21b6">R&amp;D Card Detail</text>
+
+  <text x="55" y="300" font-size="11" font-weight="600" fill="#334155">R&amp;D-specific fields:</text>
+  <text x="65" y="318" font-size="10" fill="#475569">• Iteration counter (auto-increments on each cycle)</text>
+  <text x="65" y="335" font-size="10" fill="#475569">• Per-revision test results and notes</text>
+  <text x="65" y="352" font-size="10" fill="#475569">• CAD/STL files versioned by revision (inline 3D viewer)</text>
+  <text x="65" y="369" font-size="10" fill="#475569">• Approval gate before production handoff</text>
+  <text x="65" y="386" font-size="10" fill="#475569">• Linked part record — R&amp;D card creates/updates a part</text>
+
+  <text x="320" y="300" font-size="11" font-weight="600" fill="#334155">Flow to Part Catalog:</text>
+  <text x="330" y="318" font-size="10" fill="#475569">• R&amp;D card produces/updates a Part</text>
+  <text x="330" y="335" font-size="10" fill="#475569">• At "Tooling Approval": part status → Active</text>
+  <text x="330" y="352" font-size="10" fill="#475569">• Iteration notes feed into part revision history</text>
+  <text x="330" y="369" font-size="10" fill="#475569">• Files carry over to part record</text>
+  <text x="330" y="386" font-size="10" fill="#475569">• Part then used on Production track cards</text>
+
+  <text x="305" y="435" text-anchor="middle" font-size="10" font-weight="600" fill="#7c3aed">R&amp;D card (design work) → produces Part → Part used on Production cards (manufacturing)</text>
+
+  <!-- ═══ INTERNAL PROJECT TYPES ═══ -->
+  <rect x="610" y="250" width="560" height="200" rx="6" fill="#fff7ed" stroke="#fdba74" stroke-width="1"/>
+  <text x="890" y="275" text-anchor="middle" font-size="14" font-weight="bold" fill="#9a3412">Internal Projects (No Customer)</text>
+
+  <text x="635" y="300" font-size="11" font-weight="600" fill="#334155">Use R&amp;D or Custom track — no customer required:</text>
+
+  <rect x="635" y="312" width="240" height="28" rx="3" fill="#fff" stroke="#94a3b8" stroke-width="1"/>
+  <text x="645" y="331" font-size="10" fill="#475569">🔧 </text>
+  <text x="665" y="331" font-size="10" font-weight="600" fill="#334155">New Mold/Tooling Development</text>
+
+  <rect x="635" y="348" width="240" height="28" rx="3" fill="#fff" stroke="#94a3b8" stroke-width="1"/>
+  <text x="645" y="367" font-size="10" fill="#475569">⚙ </text>
+  <text x="665" y="367" font-size="10" font-weight="600" fill="#334155">Process Improvement</text>
+
+  <rect x="635" y="384" width="240" height="28" rx="3" fill="#fff" stroke="#94a3b8" stroke-width="1"/>
+  <text x="645" y="403" font-size="10" fill="#475569">📐 </text>
+  <text x="665" y="403" font-size="10" font-weight="600" fill="#334155">Fixture / Jig Design</text>
+
+  <rect x="900" y="312" width="240" height="28" rx="3" fill="#fff" stroke="#94a3b8" stroke-width="1"/>
+  <text x="910" y="331" font-size="10" fill="#475569">🧪 </text>
+  <text x="930" y="331" font-size="10" font-weight="600" fill="#334155">Material Testing</text>
+
+  <rect x="900" y="348" width="240" height="28" rx="3" fill="#fff" stroke="#94a3b8" stroke-width="1"/>
+  <text x="910" y="367" font-size="10" fill="#475569">🏭 </text>
+  <text x="930" y="367" font-size="10" font-weight="600" fill="#334155">Machine Setup / Qualification</text>
+
+  <rect x="900" y="384" width="240" height="28" rx="3" fill="#fff" stroke="#94a3b8" stroke-width="1"/>
+  <text x="910" y="403" font-size="10" fill="#475569">📋 </text>
+  <text x="930" y="403" font-size="10" font-weight="600" fill="#334155">Custom Admin Project</text>
+
+  <text x="890" y="438" text-anchor="middle" font-size="10" fill="#9a3412">Customer field is optional on all track types. Internal projects simply leave it blank.</text>
+
+  <!-- ═══ R&D REPORTING ═══ -->
+  <rect x="30" y="475" width="1140" height="25" rx="4" fill="#e2e8f0"/>
+  <text x="600" y="493" text-anchor="middle" font-size="12" font-weight="600" fill="#475569">R&amp;D &amp; INTERNAL PROJECT REPORTING</text>
+
+  <rect x="40" y="515" width="260" height="90" rx="4" fill="#fff" stroke="#94a3b8" stroke-width="1.5"/>
+  <text x="170" y="540" text-anchor="middle" font-size="12" font-weight="600" fill="#334155">Iterations per Project</text>
+  <text x="170" y="560" text-anchor="middle" font-size="10" fill="#475569">How many design cycles</text>
+  <text x="170" y="575" text-anchor="middle" font-size="10" fill="#475569">before approval?</text>
+  <text x="170" y="595" text-anchor="middle" font-size="10" fill="#64748b">Identifies complexity patterns</text>
+
+  <rect x="330" y="515" width="260" height="90" rx="4" fill="#fff" stroke="#94a3b8" stroke-width="1.5"/>
+  <text x="460" y="540" text-anchor="middle" font-size="12" font-weight="600" fill="#334155">Concept → Handoff Time</text>
+  <text x="460" y="560" text-anchor="middle" font-size="10" fill="#475569">Total R&amp;D cycle duration</text>
+  <text x="460" y="575" text-anchor="middle" font-size="10" fill="#475569">from first card creation</text>
+  <text x="460" y="595" text-anchor="middle" font-size="10" fill="#64748b">Identifies bottleneck stages</text>
+
+  <rect x="620" y="515" width="260" height="90" rx="4" fill="#fff" stroke="#94a3b8" stroke-width="1.5"/>
+  <text x="750" y="540" text-anchor="middle" font-size="12" font-weight="600" fill="#334155">Active R&amp;D Projects</text>
+  <text x="750" y="560" text-anchor="middle" font-size="10" fill="#475569">Current by stage snapshot</text>
+  <text x="750" y="575" text-anchor="middle" font-size="10" fill="#475569">Assigned engineer workload</text>
+  <text x="750" y="595" text-anchor="middle" font-size="10" fill="#64748b">Capacity planning</text>
+
+  <rect x="910" y="515" width="260" height="90" rx="4" fill="#fff" stroke="#94a3b8" stroke-width="1.5"/>
+  <text x="1040" y="540" text-anchor="middle" font-size="12" font-weight="600" fill="#334155">Time in Stage</text>
+  <text x="1040" y="560" text-anchor="middle" font-size="10" fill="#475569">Where do R&amp;D cards stall?</text>
+  <text x="1040" y="575" text-anchor="middle" font-size="10" fill="#475569">Average days per stage</text>
+  <text x="1040" y="595" text-anchor="middle" font-size="10" fill="#64748b">Process optimization data</text>
+
+  <!-- ═══ END-TO-END FLOW ═══ -->
+  <rect x="30" y="630" width="1140" height="25" rx="4" fill="#d1fae5"/>
+  <text x="600" y="648" text-anchor="middle" font-size="12" font-weight="600" fill="#065f46">END-TO-END: R&amp;D TO PRODUCTION</text>
+
+  <rect x="50" y="670" width="180" height="55" rx="4" fill="#f5f3ff" stroke="#7c3aed" stroke-width="1.5"/>
+  <text x="140" y="693" text-anchor="middle" font-size="11" font-weight="600" fill="#5b21b6">R&amp;D Card</text>
+  <text x="140" y="710" text-anchor="middle" font-size="9" fill="#7c3aed">Design &amp; iterate</text>
+
+  <line x1="230" y1="697" x2="280" y2="697" stroke="#7c3aed" stroke-width="1.5" marker-end="url(#arrow-purple)"/>
+
+  <rect x="280" y="670" width="180" height="55" rx="4" fill="#e0e7ff" stroke="#4f46e5" stroke-width="1.5"/>
+  <text x="370" y="693" text-anchor="middle" font-size="11" font-weight="600" fill="#3730a3">Part Created</text>
+  <text x="370" y="710" text-anchor="middle" font-size="9" fill="#4f46e5">Status: Active</text>
+
+  <line x1="460" y1="697" x2="510" y2="697" stroke="#334155" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <rect x="510" y="670" width="180" height="55" rx="4" fill="#dbeafe" stroke="#2563eb" stroke-width="1.5"/>
+  <text x="600" y="693" text-anchor="middle" font-size="11" font-weight="600" fill="#1e40af">Production Job</text>
+  <text x="600" y="710" text-anchor="middle" font-size="9" fill="#3b82f6">References part + revision</text>
+
+  <line x1="690" y1="697" x2="740" y2="697" stroke="#334155" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <rect x="740" y="670" width="180" height="55" rx="4" fill="#fef3c7" stroke="#d97706" stroke-width="1.5"/>
+  <text x="830" y="693" text-anchor="middle" font-size="11" font-weight="600" fill="#92400e">Production Runs</text>
+  <text x="830" y="710" text-anchor="middle" font-size="9" fill="#b45309">Lot tracked, labels printed</text>
+
+  <line x1="920" y1="697" x2="970" y2="697" stroke="#059669" stroke-width="1.5" marker-end="url(#arrow-green)"/>
+
+  <rect x="970" y="670" width="190" height="55" rx="4" fill="#d1fae5" stroke="#059669" stroke-width="2"/>
+  <text x="1065" y="693" text-anchor="middle" font-size="11" font-weight="bold" fill="#065f46">Shipped &amp; Invoiced</text>
+  <text x="1065" y="710" text-anchor="middle" font-size="9" fill="#047857">Full traceability chain</text>
+</svg>
