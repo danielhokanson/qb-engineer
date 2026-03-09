@@ -463,7 +463,7 @@ Dark theme auto-swaps via `[data-theme='dark']` on `<html>`.
 
 ### AppDataTableComponent — Usage Guide
 
-Reusable data table replacing all hand-rolled `<table>` markup. Features: client-side sorting (click header, Shift+click for multi-sort), per-column filtering (text/number/date/enum), pagination (25/50/100), column visibility/reorder/resize via gear icon, preference persistence via `tableId`.
+Reusable data table replacing all hand-rolled `<table>` markup. Features: client-side sorting (click header, Shift+click for multi-sort), per-column filtering (text/number/date/enum), pagination (25/50/100), column visibility/reorder/resize via gear icon, preference persistence via `tableId`, right-click context menu on column headers (sort asc/desc, clear sort, filter, clear filter, clear all filters, hide column, reset width).
 
 **Converted features:** Admin, Assets, Leads, Expenses, Time Tracking, Parts, Backlog (7/8 — Inventory deferred, needs expandable row support).
 
@@ -479,6 +479,7 @@ Reusable data table replacing all hand-rolled `<table>` markup. Features: client
   emptyIcon="inventory_2"
   emptyMessage="No parts found"
   [rowClass]="partRowClass"
+  [rowStyle]="partRowStyle"
   (rowClick)="selectPart($event)"
   (selectionChange)="onSelectionChange($event)">
 
@@ -509,6 +510,12 @@ protected readonly partColumns: ColumnDef[] = [
 protected readonly partRowClass = (row: unknown) => {
   const part = row as PartListItem;
   return part.id === this.selectedPart()?.id ? 'row--selected' : '';
+};
+
+// Dynamic row inline styles (e.g., --row-tint for color-mix tinted backgrounds)
+protected readonly partRowStyle = (row: unknown): Record<string, string> => {
+  const part = row as PartListItem;
+  return part.color ? { '--row-tint': part.color } : {};
 };
 ```
 
@@ -1130,24 +1137,41 @@ docker compose exec qb-engineer-db psql -U postgres -d qb_engineer  # DB access
 
 ## Pluggable Integrations
 
+### Mock Integration Flag
+- `MockIntegrations` in appsettings.json (default `false`, `true` in Development)
+- `MockIntegrations=${MOCK_INTEGRATIONS:-false}` in docker-compose.yml
+- Program.cs conditionally registers mock vs real services based on this flag
+- All mock services log operations via `ILogger` for dev visibility
+
 ### Accounting (`IAccountingService`)
-- QuickBooks Online is default + primary provider
+- Interface: `qb-engineer.core/Interfaces/IAccountingService.cs`
+- Models: `qb-engineer.core/Models/AccountingModels.cs` (AccountingCustomer, AccountingDocument, AccountingLineItem, AccountingPayment, AccountingTimeActivity, AccountingSyncStatus)
+- Mock: `qb-engineer.integrations/MockAccountingService.cs` — returns canned data matching seeded customers
+- QuickBooks Online is default + primary provider (not yet implemented)
 - Additional providers (Xero, FreshBooks, Sage) implement same interface
-- `AccountingServiceFactory` resolves active provider from `system_settings.accountingProvider`
 - App works fully in standalone mode (no provider) — financial features degrade gracefully
 - Sync queue, caching, orphan detection are provider-agnostic
 
 ### Shipping (`IShippingService`)
-- Pluggable carrier integration: UPS, FedEx, USPS, DHL, EasyPost
+- Interface: `qb-engineer.core/Interfaces/IShippingService.cs`
+- Models: `qb-engineer.core/Models/ShippingModels.cs` (ShipmentRequest, ShippingAddress, ShippingPackage, ShippingRate, ShippingLabel, ShipmentTracking, TrackingEvent)
+- Mock: `qb-engineer.integrations/MockShippingService.cs` — returns 3 mock carrier rates
+- Pluggable carrier integration: UPS, FedEx, USPS, DHL, EasyPost (not yet implemented)
 - Manual mode always available (no API, user enters tracking number)
-- Multiple carriers active simultaneously
-- Rate shopping across configured carriers
 
 ### AI (`IAiService` — Optional)
-- Self-hosted Ollama + pgvector RAG (no cloud calls, no data leaves network)
+- Interface: `qb-engineer.core/Interfaces/IAiService.cs`
+- Models: `qb-engineer.core/Models/AiModels.cs` (AiSearchResult)
+- Mock: `qb-engineer.integrations/MockAiService.cs` — returns canned text responses
+- Self-hosted Ollama + pgvector RAG (not yet implemented)
 - Use cases: smart search, job description drafting, QC anomaly detection, document Q&A
-- `MOCK_INTEGRATIONS=true` returns canned responses
 - Graceful degradation when AI container is down
+
+### Storage (`IStorageService`)
+- Interface: `qb-engineer.core/Interfaces/IStorageService.cs`
+- Real: `qb-engineer.integrations/MinioStorageService.cs` (MinIO S3-compatible)
+- Mock: `qb-engineer.integrations/MockStorageService.cs` — in-memory ConcurrentDictionary
+- Config: `MinioOptions` in `qb-engineer.core/Models/MinioOptions.cs`
 
 ---
 
@@ -1172,6 +1196,7 @@ docker compose exec qb-engineer-db psql -U postgres -d qb_engineer  # DB access
 - Multi-select: `Ctrl+Click`, bulk actions (Move, Assign, Priority, Archive)
 - SignalR real-time sync, last-write-wins, optimistic UI
 - Cards archived (never deleted)
+- Column body: white background (`--surface`) with 2px inset border matching stage color via `--col-tint` CSS custom property
 
 ### Production Track Stages (QB-aligned)
 Quote Requested → Quoted (Estimate) → Order Confirmed (Sales Order) → Materials Ordered (PO) → Materials Received → In Production → QC/Review → Shipped (Invoice) → Invoiced/Sent → Payment Received (Payment)
