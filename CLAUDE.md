@@ -244,9 +244,9 @@ Promotion rule: used by 2+ features → move to `shared/`.
 
 ### NEVER hardcode values. Always use variables/mixins.
 
-**Spacing:** `$sp-xs: 2px` | `$sp-sm: 4px` | `$sp-md: 8px` | `$sp-lg: 16px` | `$sp-xl: 24px`
+**Spacing:** `$sp-xxs: 1px` | `$sp-xs: 2px` | `$sp-sm: 4px` | `$sp-md: 8px` | `$sp-lg: 16px` | `$sp-xl: 24px` | `$sp-2xl: 32px` | `$sp-3xl: 48px` | `$sp-4xl: 80px`
 
-**Typography:** `$font-size-xxs: 9px` | `$font-size-xs: 10px` | `$font-size-sm: 11px` | `$font-size-base: 12px` | `$font-size-title: 13px` | `$font-size-kpi: 20px`
+**Typography:** `$font-size-xxs: 9px` | `$font-size-xs: 10px` | `$font-size-sm: 11px` | `$font-size-base: 12px` | `$font-size-title: 13px` | `$font-size-md: 14px` | `$font-size-lg: 16px` | `$font-size-xl: 18px` | `$font-size-kpi: 20px` | `$font-size-heading: 32px`
 
 **Fonts:** `$font-family-primary: 'Space Grotesk'` | `$font-family-mono: 'IBM Plex Mono'`
 
@@ -258,7 +258,13 @@ Promotion rule: used by 2+ features → move to `shared/`.
 
 **Transitions:** `$transition-fast: 150ms ease` | `$transition-normal: 250ms ease` | `$transition-sidebar: 200ms ease`
 
-**Sizing:** `$sidebar-width-collapsed: 52px` | `$sidebar-width-expanded: 200px` | `$header-height: 44px`
+**Icon Sizes:** `$icon-size-xs: 14px` | `$icon-size-sm: 16px` | `$icon-size-md: 18px` | `$icon-size-lg: 20px` | `$icon-size-xl: 24px` | `$icon-size-xxl: 32px` | `$icon-size-hero: 48px`
+
+**Component Sizing:** `$btn-icon-size: 24px` | `$avatar-size-xs: 18px` | `$avatar-size-sm: 20px` | `$avatar-size-md: 28px` | `$avatar-size-lg: 36px` | `$dot-size-sm: 8px` | `$dot-size-md: 12px` | `$progress-bar-height: 4px` | `$sidebar-nav-height: 36px` | `$sidebar-icon-size: 20px` | `$badge-size-sm: 14px` | `$badge-size-md: 16px` | `$input-height: 2rem` | `$chart-height: 300px`
+
+**Sizing:** `$sidebar-width-collapsed: 52px` | `$sidebar-width-expanded: 200px` | `$header-height: 44px` | `$detail-panel-width: 400px` | `$notification-panel-width: 380px`
+
+**Shadows:** `$shadow-panel: -4px 0 12px rgba(0,0,0,0.1)` | `$shadow-dropdown: 0 4px 16px rgba(0,0,0,0.15)` | `$backdrop-color: rgba(0,0,0,0.3)`
 
 ### CSS Custom Properties (Theme Colors)
 ```

@@ -1,6 +1,6 @@
 # Implementation Status
 
-Tracks real implementation against all spec docs. Updated: 2026-03-09.
+Tracks real implementation against all spec docs. Updated: 2026-03-11.
 
 Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 
@@ -18,8 +18,8 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 | 6 — Time & Workers | Time Tracking + Worker Views | Partial |
 | 7 — Expenses & Invoicing | Expense Capture + Invoice Workflow | Partial |
 | 8 — Maintenance | Asset Registry + Scheduled Maintenance | Partial |
-| 9 — Reporting | Operational Dashboards | Not Started |
-| 10 — Backup & Polish | Production Hardening | Not Started |
+| 9 — Reporting | Operational Dashboards | Partial |
+| 10 — Backup & Polish | Production Hardening | Partial |
 | 11 — AI Assistant | Self-Hosted AI Module | Not Started |
 
 ---
@@ -31,7 +31,7 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 | Item | Spec | Status | Notes |
 |------|------|--------|-------|
 | Angular 21 + Material 21 | architecture.md §Stack | Done | Standalone, OnPush, signals, zoneless |
-| .NET 9 Web API | architecture.md §Stack | Done | MediatR CQRS, FluentValidation |
+| .NET 9 Web API | architecture.md §Stack | Done | MediatR CQRS, FluentValidation (15 validators), exception middleware (404/400/409) |
 | PostgreSQL + pgvector | architecture.md §Stack | Done | pgvector extension enabled |
 | MinIO | architecture.md §Stack | Done | 3 buckets, upload/download/presigned URLs |
 | Three.js (STL viewer) | architecture.md §Stack | Not Started | No Three.js integration |
@@ -67,9 +67,11 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 | /expenses, /expenses/:id | architecture.md §Routing | Done | CRUD |
 | /time-tracking | architecture.md §Routing | Done | Timer + manual entry |
 | /admin/users | architecture.md §Routing | Done | User management |
+| /customers | architecture.md §Routing | Done | Full feature module: list, detail, contacts, create/edit |
+| /reports | architecture.md §Routing | Done | 6 reports with charts (ng2-charts) + data tables |
 | /admin/settings | architecture.md §Routing | Partial | Reference data management, no system settings UI |
 | /sprint-planning | architecture.md §Routing | Not Started | |
-| /search | architecture.md §Routing | Not Started | |
+| /search | architecture.md §Routing | Done | Global search bar in header, searches 6 entity types |
 | /notifications | architecture.md §Routing | Partial | Backend: entity, repo, controller, 5 MediatR handlers. Frontend: panel dropdown from header bell icon. No dedicated /notifications page. |
 | /admin/qb-setup | architecture.md §Routing | Not Started | |
 | /admin/track-types | architecture.md §Routing | Done | Full CRUD: create/edit/delete with stage management |
@@ -84,7 +86,7 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 | Custom fields (JSON) | architecture.md §Custom Fields | Not Started | No template/value columns, no dynamic form generator |
 | system_settings DB table | architecture.md §Settings | Done | Entity exists, no admin UI |
 | Backup (B2 + local) | architecture.md §Backup | Not Started | Backup container is placeholder |
-| Full-text search | architecture.md §Search | Not Started | No tsvector, GIN index, or search endpoint |
+| Full-text search | architecture.md §Search | Partial | ILIKE search across 6 entities via SearchController. No tsvector/GIN index yet. |
 | Self-hosted AI (Ollama + RAG) | architecture.md §AI | Partial | Docker container configured, IAiService + MockAiService built, no Ollama/RAG implementation |
 | Theming (light/dark) | architecture.md §Theming | Done | Toggle in toolbar, CSS custom properties |
 | Admin brand colors | architecture.md §Theming | Not Started | No color picker UI |
@@ -114,7 +116,7 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 | Title, description, due date, priority | proposal.md §4.2 | Done | |
 | Customer reference | proposal.md §4.2 | Done | |
 | Assigned user(s) | proposal.md §4.2 | Done | Single assignee |
-| File attachments | proposal.md §4.2 | Done | Upload/download via MinIO |
+| File attachments | proposal.md §4.2 | Done | Upload/download via MinIO, Files tab in job detail panel with drag-drop upload |
 | Activity log | proposal.md §4.2 | Done | Entity + API + UI timeline + inline comments |
 | Subtasks (checklist) | proposal.md §4.2 | Done | CRUD with assignee + checkbox |
 | Linked cards | proposal.md §4.2 | Done | Full-stack: entity, API (CRUD), typeahead UI in detail panel |
@@ -135,19 +137,19 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 
 | Item | Spec | Status | Notes |
 |------|------|--------|-------|
-| Per-entity timeline | functional-decisions.md §Activity Log | Done | Entity + query + full UI with comment input |
+| Per-entity timeline | functional-decisions.md §Activity Log | Done | JobActivityLog + polymorphic ActivityLog entity, full UI with ActivityTimelineComponent |
 | Inline comments with @mentions | functional-decisions.md §Activity Log | Partial | Inline comments done, @mentions not yet wired |
 | Filter by action type/user | functional-decisions.md §Activity Log | Not Started | |
 | Batch field change collapsing | functional-decisions.md §Activity Log | Not Started | |
-| Reuse on parts, assets, leads | functional-decisions.md §Activity Log | Not Started | |
+| Reuse on parts, assets, leads, customers, expenses | functional-decisions.md §Activity Log | Done | Polymorphic ActivityLog entity (EntityType/EntityId), GetEntityActivity handler, activity endpoints on 5 controllers |
 
 ### Part / Product / Assembly Catalog
 
 | Item | Spec | Status | Notes |
 |------|------|--------|-------|
-| Part CRUD | proposal.md §4.3 | Done | |
+| Part CRUD | proposal.md §4.3 | Done | Create, update, soft-delete with ConfirmDialog |
 | BOM (recursive) | proposal.md §4.3 | Done | Entity + CRUD endpoints |
-| Part detail (specs, files, BOM) | proposal.md §4.3 | Partial | List view done, detail view partial |
+| Part detail (specs, files, BOM) | proposal.md §4.3 | Partial | List view done, detail panel with info/BOM/usage tabs. BOM uses EntityPicker for part search. |
 | Revision control | proposal.md §4.3 | Not Started | |
 | Where Used (reverse BOM lookup) | proposal.md §4.3 | Not Started | |
 | STL inline viewer | proposal.md §4.3 | Not Started | |
@@ -168,7 +170,7 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 
 | Item | Spec | Status | Notes |
 |------|------|--------|-------|
-| Widget-based layout | proposal.md §4.5 | Partial | 5 widgets built, no gridstack drag/resize |
+| Widget-based layout | proposal.md §4.5 | Partial | 5 widgets with real KPI data, CSV export, no gridstack drag/resize |
 | Role-based default layouts | proposal.md §4.5 | Not Started | |
 | Daily Priority Card | proposal.md §4.5 | Partial | TodaysTasksWidget exists |
 | End-of-Day Prompt | proposal.md §4.5 | Not Started | |
@@ -190,7 +192,7 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 
 | Item | Spec | Status | Notes |
 |------|------|--------|-------|
-| Lead CRUD | proposal.md §4.7 | Done | |
+| Lead CRUD | proposal.md §4.7 | Done | Create, update, soft-delete (not Converted) with ConfirmDialog |
 | Lead statuses (New → Lost) | proposal.md §4.7 | Done | LeadStatus enum |
 | Convert to Customer | proposal.md §4.7 | Done | Creates Customer + optional Contact from lead fields |
 | Convert and Create Job | proposal.md §4.7 | Done | Option in conversion flow, creates Job linked to new customer |
@@ -201,9 +203,9 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 
 | Item | Spec | Status | Notes |
 |------|------|--------|-------|
-| Customer CRUD | proposal.md §4.8 | Done | Entity, API, seeded |
-| Multiple contacts per customer | proposal.md §4.8 | Partial | Contact entity exists, no UI |
-| Contact role tags | proposal.md §4.8 | Not Started | |
+| Customer CRUD | proposal.md §4.8 | Done | Full feature module: entity, API (8+ endpoints), DataTable UI, detail panel, create/edit dialog, soft-delete with ConfirmDialog |
+| Multiple contacts per customer | proposal.md §4.8 | Done | Contact CRUD endpoints, contacts tab in customer detail panel |
+| Contact role tags | proposal.md §4.8 | Done | Role field on contact entity, editable in contact forms |
 | Accounting sync (read/write) | proposal.md §4.8 | Not Started | |
 
 ### Vendor Management
@@ -218,12 +220,12 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 
 | Item | Spec | Status | Notes |
 |------|------|--------|-------|
-| Expense CRUD | proposal.md §4.10 | Done | |
+| Expense CRUD | proposal.md §4.10 | Done | Create, update, soft-delete (Pending only) with ConfirmDialog |
 | Receipt upload (camera/file) | proposal.md §4.10 | Partial | File upload exists, no camera integration |
 | Approval workflow | proposal.md §4.10 | Partial | Status field exists, no queue UI |
 | Self-approval settings | proposal.md §4.10 | Not Started | |
 | Accounting sync | proposal.md §4.10 | Not Started | |
-| CSV export | proposal.md §4.10 | Not Started | |
+| CSV export | proposal.md §4.10 | Partial | Dashboard CSV export done; expense-specific CSV not yet |
 
 ### Invoice Workflow
 
@@ -248,7 +250,7 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 
 | Item | Spec | Status | Notes |
 |------|------|--------|-------|
-| Asset CRUD | proposal.md §4.13 | Done | |
+| Asset CRUD | proposal.md §4.13 | Done | Create, update, soft-delete with ConfirmDialog |
 | Maintenance card linking | proposal.md §4.13 | Not Started | |
 | Scheduled maintenance rules | proposal.md §4.13 | Not Started | |
 | Machine hours tracking | proposal.md §4.13 | Not Started | |
@@ -259,7 +261,7 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 | Item | Spec | Status | Notes |
 |------|------|--------|-------|
 | Start/stop timer | proposal.md §4.14 | Done | TimerHub + ClockEvent |
-| Manual time entry | proposal.md §4.14 | Done | |
+| Manual time entry | proposal.md §4.14 | Done | Create, update, soft-delete with ConfirmDialog |
 | Accounting sync (Time Activities) | proposal.md §4.14 | Not Started | |
 | Same-day edit lock | proposal.md §4.14 | Not Started | |
 | Overlapping timer block | proposal.md §4.14 | Not Started | |
@@ -293,8 +295,8 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 
 | Item | Spec | Status | Notes |
 |------|------|--------|-------|
-| Location hierarchy (Area → Rack → Bin) | proposal.md §4.18 | Done | StorageLocation entity, recursive |
-| Bin contents CRUD | proposal.md §4.18 | Done | BinContent entity, API |
+| Location hierarchy (Area → Rack → Bin) | proposal.md §4.18 | Done | StorageLocation entity, recursive, soft-delete (empty only) |
+| Bin contents CRUD | proposal.md §4.18 | Done | BinContent entity, API, soft-delete with audit trail |
 | Barcode scanning | proposal.md §4.18 | Not Started | |
 | Movement audit trail | proposal.md §4.18 | Done | BinMovement entity |
 | Production label printing | proposal.md §4.18 | Not Started | |
@@ -365,10 +367,10 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 
 | Item | Spec | Status | Notes |
 |------|------|--------|-------|
-| Month/week/day layouts | proposal.md §4.26 | Partial | Basic calendar component exists |
-| Color coding by type | proposal.md §4.26 | Not Started | |
-| Dense day handling | proposal.md §4.26 | Not Started | |
-| Filtering | proposal.md §4.26 | Not Started | |
+| Month/week/day layouts | proposal.md §4.26 | Partial | Month view with navigation, click-through to kanban |
+| Color coding by type | proposal.md §4.26 | Partial | Job chips with border-left color |
+| Dense day handling | proposal.md §4.26 | Done | Max 3 jobs per cell, "+N more" overflow chip |
+| Filtering | proposal.md §4.26 | Done | Track type filter dropdown |
 | .ics export | proposal.md §4.26 | Not Started | |
 
 ---
@@ -416,8 +418,8 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 | DatepickerComponent (CVA) | Done | All features |
 | ToggleComponent (CVA) | Done | Admin |
 | AutocompleteComponent (CVA) | Done | Ready for adoption |
-| EntityPickerComponent (CVA) | Done | Ready for adoption |
-| DateRangePickerComponent (CVA) | Done | Ready for adoption |
+| EntityPickerComponent (CVA) | Done | Parts BOM, Customer dialogs |
+| DateRangePickerComponent (CVA) | Done | Reports (time-based) |
 
 ### Layout & Chrome (All Done)
 
@@ -437,13 +439,13 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 | DataTableComponent | Done | 7/8 features (Inventory pending) |
 | ColumnFilterPopoverComponent | Done | DataTable |
 | ColumnManagerPanelComponent | Done | DataTable |
-| ConfirmDialogComponent | Done | Ready for adoption |
+| ConfirmDialogComponent | Done | Parts, Expenses, Assets, Time Tracking, Leads, Customers |
 | AvatarComponent | Done | Job cards, admin |
 | KpiChipComponent | Done | Dashboard |
 | StatusBadgeComponent | Done | Ready for adoption |
-| ActivityTimelineComponent | Done | Ready for adoption |
+| ActivityTimelineComponent | Done | Job detail panel (compact mode) |
 | ListPanelComponent | Done | Ready for adoption |
-| FileUploadZoneComponent | Done | Ready for adoption |
+| FileUploadZoneComponent | Done | Job detail files tab |
 
 ### Specialized (All Done)
 
@@ -463,7 +465,7 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 |---------|--------|-------|
 | AuthService | Done | Login, logout, tokens |
 | ThemeService | Done | Light/dark toggle |
-| SnackbarService | Done | Bottom-center notifications |
+| SnackbarService | Done | All feature mutations (Parts, Expenses, Assets, Time Tracking, Customers, Leads, Kanban) |
 | ToastService | Done | Upper-right stackable |
 | FormValidationService | Done | Derives violations from FormGroup |
 | LoadingService | Done | Global overlay |
@@ -498,14 +500,14 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 | inject() for DI | Done | No constructor injection |
 | @if/@for control flow | Done | No *ngIf/*ngFor |
 | Reactive forms only | Done | No FormsModule/ngModel |
-| Shared form wrappers | Done | No raw `<input>` in features |
+| Shared form wrappers | Done | No raw `<input>` in features (job detail panel + reports remediated in Batch 3) |
 | Validation popover (no mat-error) | Done | |
 | MediatR CQRS | Done | All handlers in Features/ |
 | Repository pattern | Done | Interfaces in Core, implementations in Data |
 | Soft deletes only | Done | Global query filter |
 | Snake_case DB naming | Done | Auto-applied by DbContext |
 | No "DTO" suffix | Done | *ResponseModel / *RequestModel |
-| EF migrations | Done | InitialCreate migration generated, MigrateAsync replaces EnsureCreatedAsync |
+| EF migrations | Done | InitialCreate + AddActivityLogs migrations, MigrateAsync replaces EnsureCreatedAsync |
 
 ---
 
@@ -517,15 +519,15 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 | My Time Log | Not Started |
 | My Expense History | Not Started |
 | My Cycle Summary | Not Started |
-| Jobs by Stage | Partial (dashboard widget) |
-| Overdue Jobs | Not Started |
+| Jobs by Stage | Done | Full-stack: bar chart + data table, track type filter |
+| Overdue Jobs | Done | Full-stack: data table with days overdue, assignee |
 | On-Time Delivery Rate | Not Started |
 | Average Lead Time | Not Started |
 | Time in Stage (Bottleneck) | Not Started |
 | Team Workload | Partial (dashboard widget) |
 | Employee Productivity | Not Started |
-| Labor Hours by Job | Not Started |
-| Expense Summary | Not Started |
+| Labor Hours by Job | Done | Time by User report: bar chart + data table, date range filter |
+| Expense Summary | Done | Full-stack: pie chart + data table, date range filter |
 | Cycle Review | Not Started |
 | Customer Activity | Not Started |
 | Quote-to-Close Rate | Not Started |
@@ -533,10 +535,12 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 | Quality / Scrap Rate | Not Started |
 | Shipping Summary | Not Started |
 | Maintenance Reports | Not Started |
+| Lead Pipeline Report | Done | Full-stack: bar chart + data table |
 | Lead & Sales Reports | Not Started |
 | R&D Reports | Not Started |
 | System Audit Log | Not Started |
 | Storage Usage | Not Started |
+| Job Completion Trend | Done | Full-stack: line chart (created vs completed per month) |
 | Scheduled Email Digest | Not Started |
 
 ---
@@ -592,7 +596,7 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 | @angular/cdk (scrolling) | Yes | No (virtual scroll) |
 | gridstack | No | Not Started |
 | three + @types/three | No | Not Started |
-| ng2-charts | No | Not Started |
+| ng2-charts + chart.js | Yes | Yes (reports) |
 | driver.js | No | Not Started |
 | @ngx-translate/core | No | Not Started |
 | @ngx-dropzone | No | Not Started (custom FileUploadZone built) |
@@ -639,20 +643,74 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 | Category | Done | Partial | Not Started |
 |----------|------|---------|-------------|
 | Core Entities & Schema | 24/24 | — | — |
-| API Controllers | 16/16 | — | — |
-| MediatR Handlers | 59 | — | — |
+| API Controllers | 19/19 | — | — |
+| MediatR Handlers | 82 | — | — |
 | Shared UI Components | 31/31 | — | — |
-| Feature UIs | 13/13 | — | — |
+| Feature UIs | 15/15 | — | — |
 | Auth & Security | — | 1 | 2 |
 | Accounting Integration | — | — | 9 |
 | Planning Cycles | — | — | 6 |
 | Production Traceability | — | — | 5 |
-| Reporting | — | 2 | 24 |
+| Reporting | 7 | 2 | 18 |
 | Notifications | — | — | 8 |
 | Chat | — | — | 4 |
-| Search | — | — | 1 |
+| Search | 1 | — | — |
 | i18n | — | 2 | 4 |
 | Testing | — | — | 5 |
 | Background Jobs | — | — | 1 |
 | Backup | — | — | 1 |
 | AI Module | — | — | 1 |
+
+---
+
+## Batch 3 Changelog — Quality, Completeness & Hardening (2026-03-11)
+
+### Exception Handling Hardening
+- `ExceptionHandlingMiddleware` now maps `InvalidOperationException` → 409 Conflict
+- 5 handlers changed from `InvalidOperationException("... not found")` to `KeyNotFoundException` for proper 404 responses
+- Affected: UpdateAsset, UpdateExpenseStatus, UpdateLead, PlaceBinContent, CreateStorageLocation
+
+### FluentValidation Validators (15 new)
+- Added validators to existing handler files: CreatePart, UpdatePart, CreateBOMEntry, CreateExpense, CreateAsset, UpdateAsset, CreateLead, UpdateLead, CreateTimeEntry, UpdateTimeEntry, CreateStorageLocation, PlaceBinContent, CreateTrackType, CreateSubtask, UpdateJob
+- All wired through MediatR `ValidationBehavior` pipeline
+
+### Backend Soft-Delete Handlers (7 new) + Controller Endpoints (8 new)
+- New handlers: DeletePart, DeleteExpense, DeleteAsset, DeleteTimeEntry, DeleteLead, DeleteStorageLocation, RemoveBinContent
+- Business rules enforced: Parts (no BOM parents), Expenses (Pending only), Leads (not Converted), StorageLocations (no bin contents), BinContents (creates audit BinMovement)
+- DELETE endpoints added to 6 controllers (Inventory has 2)
+
+### Polymorphic Activity Log Entity
+- New `ActivityLog` entity with `EntityType`/`EntityId` polymorphism (alongside existing `JobActivityLog`)
+- New `ActivityLogConfiguration` with composite index on (EntityType, EntityId)
+- New `GetEntityActivity` handler for generic activity queries
+- Activity endpoints added to 5 controllers: Parts, Leads, Expenses, Assets, Customers
+- EF Core migration: `20260309143609_AddActivityLogs`
+
+### Raw Input Remediation
+- Job detail panel: 3 raw `<input>` → `<app-input>`, 1 raw `<select>` → `<app-select>`
+- Reports: 2 raw `<input type="date">` → `<app-datepicker>` with `FormControl<Date | null>`
+- Custom SCSS removed (`.date-field`, input/select styles in subtask-add, link-add, comment-add)
+
+### Frontend Delete + ConfirmDialog Adoption
+- Delete methods added to 5 services: Parts, Expenses, Assets, Time Tracking, Leads
+- ConfirmDialogComponent adopted in 5 components (Customers already had it)
+- All destructive actions now require user confirmation
+
+### Snackbar Feedback for All Mutations
+- Success messages added to Parts, Expenses, Assets, Time Tracking, Job Detail Panel
+- Customers and Leads already had snackbar calls
+- Every create/update/delete action now shows feedback
+
+### ActivityTimeline Adoption in Job Detail
+- Replaced ~24 lines of custom `.activity-list` rendering with `<app-activity-timeline [compact]="true">`
+- Added `mappedActivity` computed signal mapping `Activity` → `ActivityItem`
+- Removed custom activity SCSS (~740 bytes saved, panel SCSS 8.83kB → 8.09kB)
+
+### Coding Standards Remediation
+- **One Object Per File (Angular):** Split 16 model files into 115 individual files. TrackType + Stage promoted to `shared/models/` (used by 3+ features). 35 consumer files had imports updated.
+- **One Object Per File (.NET):** Split 18 model files into 103 individual files in `qb-engineer.core/Models/`. Namespace unchanged, no import updates needed.
+- **Inline Template Extraction:** 8 shared components extracted from `template:` → `templateUrl:` + `.component.html` files (page-header, dialog, select, datepicker, toggle, textarea, input, toast).
+- **Inline Style Extraction:** Same 8 components extracted from `styles:` → `styleUrl:` + `.component.scss` files.
+- **SCSS Variable Remediation:** 22 component SCSS files remediated — 80+ hardcoded values replaced with design system variables. New variables added to `_variables.scss`: `$sp-xxs`, `$sp-2xl`–`$sp-4xl`, `$icon-size-xs`–`$icon-size-hero`, `$font-size-md`/`lg`/`xl`/`heading`, `$avatar-size-*`, `$dot-size-*`, `$badge-size-*`, `$progress-bar-height`, `$sidebar-nav-height`, `$sidebar-icon-size`, `$btn-icon-size`, `$input-height`, `$chip-padding-sm`, `$chart-height`, `$detail-panel-width`, `$notification-panel-width`, `$shadow-panel`, `$shadow-dropdown`, `$backdrop-color`.
+- **console.log Removal:** Removed 13 console.log/warn/error statements from `board-hub.service.ts` and `signalr.service.ts`.
+- **Constructor Injection Audit:** All 12 audited components confirmed compliant — all use `inject()` pattern.
