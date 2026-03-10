@@ -627,9 +627,9 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 | TerminologyPipe | Done | |
 | TerminologyService | Done | |
 | Admin terminology UI | Done | Tab in admin page, editable key-label table, bulk upsert via PUT /api/v1/terminology |
-| ngx-translate integration | Not Started | |
-| Spanish language pack | Not Started | |
-| Per-user language preference | Not Started | |
+| ngx-translate integration | Done | @ngx-translate/core v17 + http-loader, provideTranslateService in app.config |
+| Spanish language pack | Done | Full es.json with all nav, common, auth, dashboard, jobs, parts, errors keys |
+| Per-user language preference | Done | LanguageService with localStorage persistence, document.lang attribute |
 
 ---
 
@@ -640,7 +640,7 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 | Angular unit tests (Vitest) | Partial | 11 spec files (131 tests): AuthService, ThemeService, FormValidationService, LoadingService, TerminologyPipe, AppComponent, SnackbarService, NotificationService, CacheService, BroadcastService, OfflineQueueService |
 | .NET unit tests (xUnit) | Partial | 13 test classes (75 tests): CreateJob, UpdateJob, MoveJobStage, CreatePart, StartTimer, StopTimer, CreateExpense, CreateCustomer, AdjustStock, CreateInvoiceFromJob, CreateLead, CreateVendor, CreateQuote |
 | Integration tests | Partial | 24 tests via WebApplicationFactory: health, auth, protected endpoints (InMemory DB + Hangfire MemoryStorage) |
-| E2E tests (Cypress) | Partial | 4 spec files (login, dashboard, kanban, accessibility), custom cy.login() command |
+| E2E tests (Cypress) | Partial | 8 spec files (login, dashboard, kanban, accessibility, parts, expenses, admin, inventory), custom cy.login() command |
 | axe-core accessibility tests | Partial | 5 page tests (dashboard, kanban, login, parts, inventory) — critical + serious violations |
 
 ---
@@ -658,9 +658,9 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 | three + @types/three | Yes | Yes (STL viewer) |
 | ng2-charts + chart.js | Yes | Yes (reports) |
 | driver.js | Yes | Yes (TourService + 2 tour definitions) |
-| @ngx-translate/core | No | Not Started |
+| @ngx-translate/core | Yes | Yes (LanguageService, en.json + es.json) |
 | @ngx-dropzone | No | Not Started (custom FileUploadZone built) |
-| ngx-extended-pdf-viewer | No | Not Started |
+| ngx-extended-pdf-viewer | Yes | Yes (PdfViewerComponent wrapper) |
 | ngx-quill | Yes | Yes (RichTextEditorComponent CVA wrapper) |
 | angularx-qrcode | Yes | Yes (QrCodeComponent wrapper) |
 | bwip-js | Yes | Yes (LabelPrintService) |
@@ -670,7 +670,7 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 | @ngx-gallery/lightbox | No | Not Started |
 | ngx-markdown | Yes | Yes (MarkdownViewComponent wrapper) |
 | vitest | Yes | Yes (11 spec files) |
-| cypress | Yes | Yes (4 E2E specs + axe-core a11y) |
+| cypress | Yes | Yes (8 E2E specs + axe-core a11y) |
 
 ### Backend
 
@@ -690,7 +690,7 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 | MailKit | Yes | Yes (SmtpEmailService) |
 | CsvHelper | Yes | Yes (CsvExportService) |
 | QuestPDF | Yes | Yes (Invoice PDF, Packing Slip PDF) |
-| ImageSharp | No | Not Started |
+| ImageSharp | Yes | Yes (ImageService: thumbnails, dimensions, JPEG conversion) |
 | Xabaril Health Checks | Done | PostgreSQL + Hangfire + MinIO + SignalR, detailed JSON response |
 | Data Protection API (EF) | No | Not Started |
 | EFCore.BulkExtensions.MIT | No | Not Started |
@@ -1063,3 +1063,31 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 - Installed `cypress-axe` + `axe-core`
 - 5 accessibility tests: dashboard, kanban, login, parts, inventory
 - Filters to critical + serious impact violations only
+
+---
+
+## Batch 19 Changelog — i18n, PDF Viewer, Image Processing & E2E Expansion (2026-03-14)
+
+### i18n Infrastructure
+- Installed `@ngx-translate/core` v17 + `@ngx-translate/http-loader` v17
+- English (`en.json`) and Spanish (`es.json`) translation files with nav, common, auth, dashboard, jobs, parts, errors keys
+- `LanguageService` with signal-based state, localStorage persistence, `document.documentElement.lang` attribute
+- `provideTranslateService` + `provideTranslateHttpLoader` configured in app.config.ts
+- Initialized in AppComponent — TranslatePipe available for incremental adoption
+
+### ngx-extended-pdf-viewer
+- Installed `ngx-extended-pdf-viewer` with asset copy in angular.json
+- Shared `PdfViewerComponent` wrapper at `shared/components/pdf-viewer/`
+- Inputs: `src`, `height`, `showToolbar`, `showSidebarButton`. Print/download/zoom/paging enabled.
+
+### ImageSharp Image Processing
+- Installed `SixLabors.ImageSharp` v3.1.12
+- `IImageService` interface in Core: `GenerateThumbnailAsync`, `GetDimensionsAsync`, `ConvertToJpegAsync`
+- `ImageService` implementation in API using ImageSharp resize + JPEG encoding
+- Registered as singleton in Program.cs
+
+### Expanded Cypress E2E (4 new spec files)
+- `parts.cy.ts` (4 tests): page display, data table, search, create button
+- `expenses.cy.ts` (3 tests): page display, table/empty state, create button
+- `admin.cy.ts` (3 tests): page display, tabs, user management table
+- `inventory.cy.ts` (3 tests): page display, tabs, data table
