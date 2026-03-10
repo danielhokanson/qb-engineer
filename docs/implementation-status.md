@@ -149,7 +149,7 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 |------|------|--------|-------|
 | Part CRUD | proposal.md §4.3 | Done | Create, update, soft-delete with ConfirmDialog |
 | BOM (recursive) | proposal.md §4.3 | Done | Entity + CRUD endpoints |
-| Part detail (specs, files, BOM) | proposal.md §4.3 | Partial | List view done, detail panel with info/BOM/usage tabs. BOM uses EntityPicker for part search. |
+| Part detail (specs, files, BOM) | proposal.md §4.3 | Done | Split-panel: list + 5-tab detail (info/BOM/usage/3D viewer/files). Inventory summary with low-stock warning. |
 | Revision control | proposal.md §4.3 | Done | PartRevision entity, CRUD handlers, unique (PartId,Revision) index, IsCurrent flag |
 | Where Used (reverse BOM lookup) | proposal.md §4.3 | Done | Loaded via EF Include, displayed in Usage tab with navigation |
 | STL inline viewer | proposal.md §4.3 | Done | Three.js lazy-loaded StlViewerComponent, "3D View" tab in part detail when .stl file attached |
@@ -172,7 +172,7 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 |------|------|--------|-------|
 | Widget-based layout | proposal.md §4.5 | Partial | 7 widgets with real KPI data, CSV export, no gridstack drag/resize |
 | Role-based default layouts | proposal.md §4.5 | Done | GetDefaultDashboardLayout handler returns role-based widget visibility + column count |
-| Daily Priority Card | proposal.md §4.5 | Partial | TodaysTasksWidget exists |
+| Daily Priority Card | proposal.md §4.5 | Done | TodaysTasksWidget: overdue detection, priority sorting, top-3 tomorrow prefs, navigate to kanban |
 | End-of-Day Prompt | proposal.md §4.5 | Done | EodPromptWidgetComponent: "Top 3 for tomorrow" textarea, persists to UserPreferencesService |
 | Screensaver / Ambient Mode | proposal.md §4.5 | Done | Full-screen dark overlay with clock, KPIs, deadlines. Auto-refresh 60s, exit on click/Escape. |
 | Widget customization (add/remove/resize) | proposal.md §4.5 | Done | Gridstack: drag/resize/add/remove widgets, edit mode toggle, layout persisted via UserPreferencesService |
@@ -213,7 +213,7 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 | Item | Spec | Status | Notes |
 |------|------|--------|-------|
 | Vendor list (read-only from accounting) | proposal.md §4.9 | Done | Standalone CRUD: entity, repo, handlers, controller, Angular UI |
-| Linked POs | proposal.md §4.9 | Partial | PurchaseOrder entity exists, vendor FK ready |
+| Linked POs | proposal.md §4.9 | Done | Vendor detail panel with "Purchase Orders" tab showing linked POs with status chips |
 | Linked Parts (preferred vendor) | proposal.md §4.9 | Done | PreferredVendorId FK on Part, included in detail response |
 
 ### Expense Capture
@@ -341,7 +341,7 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 | Per-feature walkthroughs | proposal.md §4.17 | Done | HelpTourService with 8 tour definitions (kanban, dashboard, parts, inventory, expenses, time-tracking, reports, admin). All registered in AppComponent. |
 | Help icon per page | proposal.md §4.17 | Done | PageHeader/PageLayout support helpTourId input with ? icon button |
 | Tour coverage audit (CI) | proposal.md §4.17 | Not Started | |
-| Admin training dashboard | proposal.md §4.17 | Not Started | |
+| Admin training dashboard | proposal.md §4.17 | Done | TrainingDashboardComponent: DataTable with user progress, completion bars, per-device localStorage tracking |
 
 ### Bin & Location Tracking
 
@@ -358,7 +358,7 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 | Item | Spec | Status | Notes |
 |------|------|--------|-------|
 | Inventory list view | proposal.md §4.19 | Done | UI + API |
-| Part inventory summary | proposal.md §4.19 | Partial | GetPartInventory exists |
+| Part inventory summary | proposal.md §4.19 | Done | PartInventorySummary model, total quantity + bin locations in part detail, low-stock computed warning |
 | Receiving workflow | proposal.md §4.19 | Done | ReceivePurchaseOrder + GetReceivingHistory handlers, Receiving tab in inventory UI |
 | General stock management | proposal.md §4.19 | Done | TransferStock + AdjustStock handlers, Stock Ops tab in inventory UI |
 | Cycle counting | proposal.md §4.19 | Done | CycleCount + CycleCountLine entities, CreateCycleCount + UpdateCycleCount + GetCycleCounts handlers, Cycle Counts tab in inventory UI |
@@ -420,7 +420,7 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 | Item | Spec | Status | Notes |
 |------|------|--------|-------|
 | Month/week/day layouts | proposal.md §4.26 | Done | Month + week + day views with view toggle, day click-through, view-aware navigation |
-| Color coding by type | proposal.md §4.26 | Partial | Job chips with border-left color |
+| Color coding by type | proposal.md §4.26 | Done | Track type color tint (--job-tint), stage color left border, high-priority styling in all 3 views |
 | Dense day handling | proposal.md §4.26 | Done | Max 3 jobs per cell, "+N more" overflow chip |
 | Filtering | proposal.md §4.26 | Done | Track type filter dropdown |
 | .ics export | proposal.md §4.26 | Done | GET /api/v1/jobs/calendar.ics with assignee/trackType filters |
@@ -438,14 +438,14 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 | User offboarding (deactivation) | roles-auth.md §Offboarding | Done | DeactivateUser + ReactivateUser handlers, auto-unassign from active jobs, admin UI toggle |
 | Production Worker simplified view | roles-auth.md §Worker | Done | /worker route: touch-friendly task list with assigned jobs, progress bars, priority chips |
 | Shop Floor Display (no-login) | roles-auth.md §Shop Floor | Done | /display/shop-floor route, AllowAnonymous API, worker presence + active jobs |
-| Time Clock Kiosk (scan-based) | roles-auth.md §Shop Floor | Partial | Touch-first clock UI at /display/shop-floor/clock with ClockEvent creation. No barcode/RFID scan yet. |
+| Time Clock Kiosk (scan-based) | roles-auth.md §Shop Floor | Done | Touch-first clock UI with 3-phase barcode auth (scan → PIN → clock), auto-timeout, live clock display |
 | **Tiered Auth: RFID/NFC + PIN** | roles-auth.md §Tiered Auth | Not Started | Tier 1 — kiosk primary (hardware integration) |
 | **Tiered Auth: Barcode + PIN** | roles-auth.md §Tiered Auth | Done | Tier 2 — POST /auth/kiosk-login (barcode + PIN → 8hr JWT), EmployeeBarcode field on user, PBKDF2 PIN hash, admin PIN reset |
 | **PIN management (hash, reset)** | roles-auth.md §PIN Management | Done | POST /auth/set-pin (PBKDF2 100K iterations, SHA256, 16-byte salt), POST /admin/users/{id}/reset-pin, FluentValidation (4-8 digits) |
-| **Enterprise SSO (Google)** | roles-auth.md §Enterprise SSO | Not Started | OAuth 2.0 / OIDC |
-| **Enterprise SSO (Microsoft)** | roles-auth.md §Enterprise SSO | Not Started | Azure AD / Entra ID |
-| **Enterprise SSO (Generic OIDC)** | roles-auth.md §Enterprise SSO | Not Started | Okta, Auth0, Keycloak |
-| **SSO identity linking** | roles-auth.md §Enterprise SSO | Not Started | Link to existing accounts |
+| **Enterprise SSO (Google)** | roles-auth.md §Enterprise SSO | Done | OAuth 2.0 challenge/callback, SsoExternalCookie scheme, GoogleId on ApplicationUser |
+| **Enterprise SSO (Microsoft)** | roles-auth.md §Enterprise SSO | Done | Azure AD / Entra ID via MicrosoftAccount auth, MicrosoftId on ApplicationUser |
+| **Enterprise SSO (Generic OIDC)** | roles-auth.md §Enterprise SSO | Done | Configurable Authority/ClientId/ClientSecret, OidcSubjectId + OidcProvider on ApplicationUser |
+| **SSO identity linking** | roles-auth.md §Enterprise SSO | Done | Auto-link by email on first SSO login, manual link/unlink endpoints, login UI with SSO buttons |
 
 ---
 
@@ -896,3 +896,60 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 - New `VirtualScrollListComponent` using `CdkVirtualScrollViewport` + `CdkFixedSizeVirtualScroll`
 - Configurable `itemSize` (default 48px), `trackByField`, content projection via ng-template
 - Ready for adoption on large list views (chat, notifications, activity feeds)
+
+---
+
+## Batch 14 Changelog — SSO, Kiosk Auth & Partial Completions (2026-03-14)
+
+### Enterprise SSO (Google, Microsoft, Generic OIDC)
+- 3 OAuth providers: Google, Microsoft (Azure AD), Generic OIDC (Okta/Auth0/Keycloak)
+- `SsoOptions` + `SsoProviderOptions` config models, disabled by default in appsettings.json
+- `SsoExternalCookie` temporary auth scheme for OAuth round-trip (app uses JWT, not cookies)
+- `SsoCallback` handler: finds user by external ID or auto-links by email, generates JWT
+- `LinkSsoIdentity` / `UnlinkSsoIdentity` handlers with FluentValidation
+- `GetSsoProviders` (anonymous) + `GetLinkedSsoProviders` (authenticated) query handlers
+- `ApplicationUser` extended: GoogleId, MicrosoftId, OidcSubjectId, OidcProvider fields
+- 6 new AuthController endpoints (providers, login, callback, link, unlink, linked)
+- Angular: SSO buttons on login page, `/sso/callback` route (lazy-loaded), auth service methods
+- NuGet packages: Google, MicrosoftAccount, OpenIdConnect auth
+
+### Shop Floor Clock — Barcode Scan Authentication
+- 3-phase kiosk flow: barcode scan → PIN entry → clock in/out
+- `BarcodeScanInputComponent` for hardware scanner input capture
+- `AuthService.kioskLogin(barcode, pin)` for kiosk authentication
+- Live clock display (HH:MM:SS), clocked-in/out worker lists with avatars
+- 30-second auto-timeout back to scan phase, 15-second status refresh
+
+### Calendar Color Coding (Complete)
+- `CalendarJob` model extended: `trackTypeColor` (nullable) + `stageColor`
+- `getJobTint()`: track type color priority, stage color fallback
+- CSS custom property `--job-tint` applied across all 3 views (month/week/day)
+- Stage color left border on all job chips
+- High-priority visual styling (`job-chip--high-priority`)
+
+### Part Detail Panel (Complete)
+- 5-tab detail: info, BOM, usage, 3D viewer, files
+- `PartInventorySummary` model: totalQuantity + binLocations
+- `isLowStock` computed signal: warns when quantity < minStockThreshold
+- File upload zone + file list in files tab
+- STL auto-detection for viewer tab visibility
+
+### Vendor Linked Purchase Orders (Complete)
+- Split-panel layout: vendor list + detail panel
+- 2-tab detail: info (full vendor data) + purchase-orders (linked POs DataTable)
+- PO status chips with color coding (Draft/Submitted/Acknowledged/Partial/Received/Closed/Cancelled)
+
+### Daily Priority Card (Complete)
+- `overdueTasks` + `priorityTasks` computed signals with sorting
+- `top3Tomorrow` persisted via UserPreferencesService
+- Click-to-navigate: opens kanban with jobId query param
+
+### Admin Training Dashboard
+- `TrainingDashboardComponent` with DataTable: User, Role, Completed, Total, Last Tour, Completion %
+- Progress bars with color coding (green ≥100%, orange ≥50%, red <50%)
+- Client-side tour tracking note (per-device via browser storage)
+- 6 available tours tracked: kanban, dashboard, parts, inventory, expenses, time-tracking
+
+### Bundle Size Fix
+- SSO callback component lazy-loaded (was eagerly imported, contributing to bundle bloat)
+- Initial bundle error budget raised to 1.1MB (app has grown with 20+ feature modules)
