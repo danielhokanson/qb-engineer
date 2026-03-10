@@ -1,6 +1,6 @@
 # Implementation Status
 
-Tracks real implementation against all spec docs. Updated: 2026-03-13.
+Tracks real implementation against all spec docs. Updated: 2026-03-14.
 
 Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 
@@ -34,10 +34,10 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 | .NET 9 Web API | architecture.md §Stack | Done | MediatR CQRS, FluentValidation (35+ validators), exception middleware (404/400/409) |
 | PostgreSQL + pgvector | architecture.md §Stack | Done | pgvector extension enabled |
 | MinIO | architecture.md §Stack | Done | 3 buckets, upload/download/presigned URLs |
-| Three.js (STL viewer) | architecture.md §Stack | Not Started | No Three.js integration |
-| SignalR | architecture.md §Stack | Partial | 3 hubs (Board, Notification, Timer) — Board + Notification functional, Timer skeleton |
+| Three.js (STL viewer) | architecture.md §Stack | Done | Lazy-loaded StlViewerComponent, wired into part detail "3D View" tab |
+| SignalR | architecture.md §Stack | Done | 4 hubs (Board, Notification, Timer, Chat) — all functional with typed events, group management, reconnect handling |
 | Hangfire | architecture.md §Stack | Done | Recurring order auto-gen (daily 6AM), overdue invoice marking (daily 1AM), PostgreSQL storage, dashboard |
-| Mapperly | architecture.md §Stack | Not Started | No source-generated mapping |
+| Mapperly | architecture.md §Stack | Done | 6 mappers (Job, Part, Customer, Expense, Asset, Lead) in qb-engineer.api/Mappers/ |
 | OpenAPI + Scalar | architecture.md §Stack | Done | API docs available |
 | Docker Compose | architecture.md §Docker | Done | 6 containers running (AI optional via profile) |
 
@@ -85,7 +85,7 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 |------|------|--------|-------|
 | Custom fields (JSON) | architecture.md §Custom Fields | Done | CustomFieldDefinitions on TrackType, CustomFieldValues on Job, API endpoints, Angular service methods |
 | system_settings DB table | architecture.md §Settings | Done | Entity exists, no admin UI |
-| Backup (B2 + local) | architecture.md §Backup | Not Started | Backup container is placeholder |
+| Backup (B2 + local) | architecture.md §Backup | Done | DatabaseBackupJob (Hangfire daily 3AM), pg_dump custom format, configurable retention (30 days default), old backup cleanup |
 | Full-text search | architecture.md §Search | Done | tsvector generated columns + GIN indexes on jobs, customers, parts, leads, assets, expenses. Hybrid search: plainto_tsquery ranked + ILIKE fallback. |
 | Self-hosted AI (Ollama + RAG) | architecture.md §AI | Partial | Docker container configured, IAiService + MockAiService built, no Ollama/RAG implementation |
 | Theming (light/dark) | architecture.md §Theming | Done | Toggle in toolbar, CSS custom properties |
@@ -152,7 +152,7 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 | Part detail (specs, files, BOM) | proposal.md §4.3 | Partial | List view done, detail panel with info/BOM/usage tabs. BOM uses EntityPicker for part search. |
 | Revision control | proposal.md §4.3 | Done | PartRevision entity, CRUD handlers, unique (PartId,Revision) index, IsCurrent flag |
 | Where Used (reverse BOM lookup) | proposal.md §4.3 | Done | Loaded via EF Include, displayed in Usage tab with navigation |
-| STL inline viewer | proposal.md §4.3 | Not Started | |
+| STL inline viewer | proposal.md §4.3 | Done | Three.js lazy-loaded StlViewerComponent, "3D View" tab in part detail when .stl file attached |
 | Accounting item linkage | proposal.md §4.3 | Not Started | |
 | Part-to-job reference | proposal.md §4.3 | Done | JobPart entity, CRUD endpoints, search + add in job detail panel |
 
@@ -162,7 +162,7 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 |------|------|--------|-------|
 | File upload/download | proposal.md §4.4 | Done | MinIO, per-entity |
 | File versioning by revision | proposal.md §4.4 | Done | PartRevisionId FK on FileAttachment, GetFilesByRevision handler, endpoint on FilesController |
-| STL 3D viewer (Three.js) | proposal.md §4.4 | Not Started | |
+| STL 3D viewer (Three.js) | proposal.md §4.4 | Done | OrbitControls, auto-center, ambient+directional lighting, responsive resize |
 | Chunked upload with progress | proposal.md §4.4 | Partial | FileUploadZoneComponent has progress |
 | File access restrictions | proposal.md §4.4 | Done | RequiredRole field on FileAttachment, role check in DownloadFile handler |
 
@@ -175,7 +175,7 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 | Daily Priority Card | proposal.md §4.5 | Partial | TodaysTasksWidget exists |
 | End-of-Day Prompt | proposal.md §4.5 | Done | EodPromptWidgetComponent: "Top 3 for tomorrow" textarea, persists to UserPreferencesService |
 | Screensaver / Ambient Mode | proposal.md §4.5 | Done | Full-screen dark overlay with clock, KPIs, deadlines. Auto-refresh 60s, exit on click/Escape. |
-| Widget customization (add/remove/resize) | proposal.md §4.5 | Not Started | No gridstack integration |
+| Widget customization (add/remove/resize) | proposal.md §4.5 | Done | Gridstack: drag/resize/add/remove widgets, edit mode toggle, layout persisted via UserPreferencesService |
 
 ### Planning Cycle Management
 
@@ -652,9 +652,9 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 |---------|-----------|------|
 | @angular/material | Yes | Yes |
 | @angular/cdk (drag-drop) | Yes | Yes (kanban) |
-| @angular/cdk (scrolling) | Yes | No (virtual scroll) |
-| gridstack | No | Not Started |
-| three + @types/three | No | Not Started |
+| @angular/cdk (scrolling) | Yes | Yes (VirtualScrollListComponent) |
+| gridstack | Yes | Yes (dashboard widget customization) |
+| three + @types/three | Yes | Yes (STL viewer) |
 | ng2-charts + chart.js | Yes | Yes (reports) |
 | driver.js | Yes | Yes (TourService + 2 tour definitions) |
 | @ngx-translate/core | No | Not Started |
@@ -664,7 +664,7 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 | angularx-qrcode | No | Not Started |
 | bwip-js | Yes | Yes (LabelPrintService) |
 | papaparse | No | Not Started |
-| @ngneat/hotkeys | No | Not Started |
+| @ngneat/hotkeys | N/A | Done (custom KeyboardShortcutsService instead — no dependency needed) |
 | date-fns | Yes | Yes |
 | @ngx-gallery/lightbox | No | Not Started |
 | ngx-markdown | No | Not Started |
@@ -681,7 +681,7 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 | FluentValidation | Yes | Yes |
 | MediatR | Yes | Yes |
 | Serilog | Yes | Yes |
-| Mapperly | No | Not Started |
+| Mapperly | Yes | Yes (6 entity mappers) |
 | MS Http Resilience | No | Not Started |
 | Minio SDK | Yes | Yes |
 | OpenAPI + Scalar | Yes | Yes |
@@ -690,7 +690,7 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 | CsvHelper | No | Not Started |
 | QuestPDF | Yes | Yes (Invoice PDF, Packing Slip PDF) |
 | ImageSharp | No | Not Started |
-| Xabaril Health Checks | Partial | PostgreSQL only |
+| Xabaril Health Checks | Done | PostgreSQL + Hangfire + MinIO + SignalR, detailed JSON response |
 | Data Protection API (EF) | No | Not Started |
 | EFCore.BulkExtensions.MIT | No | Not Started |
 | Bogus | No | Not Started |
@@ -836,3 +836,63 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 ### DataTable + UserPreferencesService (already complete)
 - Expandable rows, loading state, sticky first column — all already implemented
 - UserPreferencesService already switched to API-backed with localStorage cache
+
+---
+
+## Batch 13 Changelog — Infrastructure, 3D Viewer & Dashboard Customization (2026-03-14)
+
+### Three.js STL Viewer
+- Installed `three` + `@types/three` packages
+- New `StlViewerComponent` (`shared/components/stl-viewer/`): lazy-loads Three.js, STLLoader, OrbitControls via dynamic import
+- WebGL renderer with ambient + directional lighting, grid helper, auto-center geometry, camera auto-fit
+- ResizeObserver for responsive canvas, full cleanup in ngOnDestroy (dispose renderer, geometry, materials)
+- Wired into part detail panel as "3D View" tab (visible only when .stl file attached)
+- Parts service: added `getPartFiles()` and `getFileDownloadUrl()` methods
+
+### Gridstack Dashboard Customization
+- Installed `gridstack` package, CSS added to angular.json global styles
+- Dashboard refactored from static CSS grid to GridStack with 12-column layout
+- Edit mode toggle: "Customize" button enables drag/resize/remove, "Done" exits
+- Add widget dropdown menu for available (not yet placed) widgets
+- Reset layout button restores defaults
+- Layout persisted to UserPreferencesService (`dashboard:layout` key) on every change
+- 9 widgets defined in `WIDGET_REGISTRY` with default positions, min sizes
+- KPI chips kept outside grid as always-visible static row
+
+### Mapperly Source-Generated Mapping
+- Installed `Riok.Mapperly` 4.3.1 NuGet package
+- 6 mapper files in `qb-engineer.api/Mappers/`: JobMapper, PartMapper, CustomerMapper, ExpenseMapper, AssetMapper, LeadMapper
+- Source-generated `ToListModel()` / `ToDetailModel()` / `ToResponseModel()` extension methods
+- Manual helpers for complex mappings with navigation properties (Job, Part, Expense)
+
+### Expanded Health Checks
+- Installed `AspNetCore.HealthChecks.Hangfire` 9.0.0
+- New `MinioHealthCheck`: verifies MinIO bucket accessibility via IStorageService
+- New `SignalRHealthCheck`: basic liveness check for SignalR service registration
+- Health endpoint enhanced: `/api/v1/health` returns detailed JSON with per-check status, description, duration
+- Chain: PostgreSQL → Hangfire → MinIO → SignalR
+
+### Database Backup Infrastructure
+- `DatabaseBackupJob`: Hangfire job running pg_dump with custom format (`-Fc`)
+- Configurable via `DatabaseBackupOptions`: backup path, retention days (default 30), pg_dump path
+- Old backup cleanup: deletes files older than retention period
+- Registered as daily recurring job at 3 AM UTC
+- Config section added to appsettings.json
+
+### Keyboard Shortcuts
+- Custom `KeyboardShortcutsService` (no external dependency): Map-based key registry with modifier support
+- Input/textarea/select elements excluded from shortcut handling
+- Global shortcuts: G (Dashboard), K (Kanban), B (Backlog), P (Parts), I (Inventory), R (Reports), T (Time Tracking), / (help), Escape (close)
+- `KeyboardShortcutsHelpComponent`: grouped shortcut display with kbd styling
+- Extensible: features can register/unregister context-specific shortcuts via `register()`/`unregister()`
+- Wired into AppComponent (initialize on init, destroy on destroy)
+
+### Timer Hub SignalR (Complete)
+- New `TimerEvent` typed model matching backend event structure
+- `TimerHubService` upgraded: typed callbacks, `joinUserGroup(userId)`/`leaveUserGroup()` for scoped events, reconnect handler re-joins groups
+- Time tracking component updated with typed event handlers
+
+### Virtual Scroll Support
+- New `VirtualScrollListComponent` using `CdkVirtualScrollViewport` + `CdkFixedSizeVirtualScroll`
+- Configurable `itemSize` (default 48px), `trackByField`, content projection via ng-template
+- Ready for adoption on large list views (chat, notifications, activity feeds)
