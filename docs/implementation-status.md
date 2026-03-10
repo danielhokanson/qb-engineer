@@ -92,7 +92,7 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 | Admin brand colors | architecture.md §Theming | Done | System settings for primary/accent colors, runtime CSS variable override, public brand endpoint |
 | Accessibility (WCAG 3) | architecture.md §Accessibility | Partial | aria-labels on all icon buttons, focus-visible outlines, skip-to-content link, prefers-reduced-motion. No axe-core tests. |
 | Mobile responsiveness | architecture.md §Mobile | Done | LayoutService with breakpoint detection, hamburger menu, mobile sidebar overlay. Per-page responsive grids on dashboard, parts, inventory, kanban. |
-| Offline resilience / PWA | architecture.md §Offline | Partial | Service Worker (ngsw-config.json), IndexedDB cache service, BroadcastChannel multi-tab sync (logout + theme). No offline action queue yet. |
+| Offline resilience / PWA | architecture.md §Offline | Partial | Service Worker (ngsw-config.json), IndexedDB cache service, BroadcastChannel multi-tab sync (logout + theme), offline action queue (OfflineQueueService). |
 
 ---
 
@@ -637,8 +637,8 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 
 | Area | Status | Notes |
 |------|--------|-------|
-| Angular unit tests (Vitest) | Partial | 6 spec files: AuthService, ThemeService, FormValidationService, LoadingService, TerminologyPipe, AppComponent |
-| .NET unit tests (xUnit) | Partial | 6 test classes: CreateJob, UpdateJob, MoveJobStage, CreatePart, StartTimer, StopTimer handlers |
+| Angular unit tests (Vitest) | Partial | 9 spec files (109 tests): AuthService, ThemeService, FormValidationService, LoadingService, TerminologyPipe, AppComponent, SnackbarService, NotificationService, CacheService |
+| .NET unit tests (xUnit) | Partial | 10 test classes (57 tests): CreateJob, UpdateJob, MoveJobStage, CreatePart, StartTimer, StopTimer, CreateExpense, CreateCustomer, AdjustStock, CreateInvoiceFromJob |
 | Integration tests | Not Started | |
 | E2E tests (Cypress) | Not Started | |
 | axe-core accessibility tests | Not Started | |
@@ -662,14 +662,14 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 | @ngx-dropzone | No | Not Started (custom FileUploadZone built) |
 | ngx-extended-pdf-viewer | No | Not Started |
 | ngx-quill | No | Not Started |
-| angularx-qrcode | No | Not Started |
+| angularx-qrcode | Yes | Yes (QrCodeComponent wrapper) |
 | bwip-js | Yes | Yes (LabelPrintService) |
-| papaparse | No | Not Started |
+| papaparse | Yes | Yes (DataTable CSV export) |
 | @ngneat/hotkeys | N/A | Done (custom KeyboardShortcutsService instead — no dependency needed) |
 | date-fns | Yes | Yes |
 | @ngx-gallery/lightbox | No | Not Started |
 | ngx-markdown | No | Not Started |
-| vitest | Yes | No tests written |
+| vitest | Yes | Yes (6 spec files) |
 | cypress | No | Not Started |
 
 ### Backend
@@ -694,7 +694,7 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 | Xabaril Health Checks | Done | PostgreSQL + Hangfire + MinIO + SignalR, detailed JSON response |
 | Data Protection API (EF) | No | Not Started |
 | EFCore.BulkExtensions.MIT | No | Not Started |
-| Bogus | No | Not Started |
+| Bogus | Yes | Yes (test data generation) |
 
 ---
 
@@ -979,3 +979,29 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 - `BroadcastService`: BroadcastChannel `qb-engineer-sync` for multi-tab logout propagation and theme sync
 - AuthService + ThemeService integrated with BroadcastService
 - `provideServiceWorker()` registered in app.config.ts (production only)
+
+---
+
+## Batch 16 Changelog — QR Codes, Offline Queue & Expanded Tests (2026-03-14)
+
+### angularx-qrcode Integration
+- Installed `angularx-qrcode@21.0.4`
+- Shared `QrCodeComponent` wrapper at `shared/components/qr-code/` — inputs: `value`, `size`, `errorCorrectionLevel`
+- Canvas-based rendering, works alongside existing bwip-js barcode generation
+
+### Offline Action Queue
+- `OfflineQueueService` at `shared/services/offline-queue.service.ts` — IndexedDB-based mutation queue
+- `OfflineQueueEntry` + `DrainResult` models at `shared/models/offline-queue-entry.model.ts`
+- Auto-drains on `window.online` event, FIFO processing, stops on first failure
+- Reactive `queueSize` signal, concurrent drain guard
+
+### Expanded Angular Tests (3 new spec files, 39 tests)
+- `SnackbarService` (8 tests): success/info/warn/error calls, successWithNav navigation
+- `NotificationService` (22 tests): push, markAsRead, markAllRead, dismiss, togglePanel, setTab, filteredNotifications, togglePin, load
+- `CacheService` (9 tests): IndexedDB set/get/clear/clearAll with lastSynced timestamps
+
+### Expanded .NET Tests (4 new test classes, 23 tests)
+- `CreateExpenseHandlerTests` (5): expense creation, user ID extraction, field trimming
+- `CreateCustomerHandlerTests` (5): full/minimal creation, IsActive default, zero counts
+- `AdjustStockHandlerTests` (6): increase/decrease, BinContent not found, zero-out removal, lot tracking
+- `CreateInvoiceFromJobHandlerTests` (7): job→invoice, validation (not found, incomplete, no customer), due date, line description
