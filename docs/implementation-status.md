@@ -1,6 +1,6 @@
 # Implementation Status
 
-Tracks real implementation against all spec docs. Updated: 2026-03-12.
+Tracks real implementation against all spec docs. Updated: 2026-03-13.
 
 Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 
@@ -14,7 +14,7 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 | 2 — Engineer UX | Dashboard + Planning Day | Partial |
 | 3 — Accounting Bridge | QB Read/Write Integration | Not Started |
 | 4 — Leads & Contacts | Lead-to-Customer Pipeline | Partial |
-| 5 — Traceability & QC | Production Lot Tracking | Not Started |
+| 5 — Traceability & QC | Production Lot Tracking | Done |
 | 6 — Time & Workers | Time Tracking + Worker Views | Partial |
 | 7 — Expenses & Invoicing | Expense Capture + Invoice Workflow | Partial |
 | 8 — Maintenance | Asset Registry + Scheduled Maintenance | Partial |
@@ -70,28 +70,28 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 | /customers | architecture.md §Routing | Done | Full feature module: list, detail, contacts, create/edit |
 | /reports | architecture.md §Routing | Done | 15 reports with charts (ng2-charts) + data tables, including 3 financial (AR Aging, Revenue, P&L) |
 | /admin/settings | architecture.md §Routing | Done | Reference data, terminology, system settings tabs |
-| /sprint-planning | architecture.md §Routing | Not Started | |
+| /sprint-planning | architecture.md §Routing | Done | Split-panel: backlog (left) → cycle board (right), drag-drop commit |
 | /search | architecture.md §Routing | Done | Global search bar in header, searches 6 entity types |
 | /notifications | architecture.md §Routing | Done | Backend: entity, repo, controller, 5 MediatR handlers. Frontend: panel dropdown + dedicated /notifications page with preferences tab |
 | /admin/qb-setup | architecture.md §Routing | Not Started | |
 | /admin/track-types | architecture.md §Routing | Done | Full CRUD: create/edit/delete with stage management |
 | /admin/terminology | architecture.md §Routing | Done | Tab in admin page, editable key-label table, bulk save |
 | /display/shop-floor | architecture.md §Routing | Done | Full-screen kiosk: worker presence, active jobs, KPIs, auto-refresh 30s, AllowAnonymous |
-| /display/shop-floor/clock | architecture.md §Routing | Not Started | |
+| /display/shop-floor/clock | architecture.md §Routing | Done | Touch-first kiosk clock UI |
 
 ### Other Architecture Items
 
 | Item | Spec | Status | Notes |
 |------|------|--------|-------|
-| Custom fields (JSON) | architecture.md §Custom Fields | Not Started | No template/value columns, no dynamic form generator |
+| Custom fields (JSON) | architecture.md §Custom Fields | Done | CustomFieldDefinitions on TrackType, CustomFieldValues on Job, API endpoints, Angular service methods |
 | system_settings DB table | architecture.md §Settings | Done | Entity exists, no admin UI |
 | Backup (B2 + local) | architecture.md §Backup | Not Started | Backup container is placeholder |
-| Full-text search | architecture.md §Search | Partial | ILIKE search across 6 entities via SearchController. No tsvector/GIN index yet. |
+| Full-text search | architecture.md §Search | Done | tsvector generated columns + GIN indexes on jobs, customers, parts, leads, assets, expenses. Hybrid search: plainto_tsquery ranked + ILIKE fallback. |
 | Self-hosted AI (Ollama + RAG) | architecture.md §AI | Partial | Docker container configured, IAiService + MockAiService built, no Ollama/RAG implementation |
 | Theming (light/dark) | architecture.md §Theming | Done | Toggle in toolbar, CSS custom properties |
 | Admin brand colors | architecture.md §Theming | Done | System settings for primary/accent colors, runtime CSS variable override, public brand endpoint |
 | Accessibility (WCAG 3) | architecture.md §Accessibility | Partial | Keyboard nav, no axe-core tests |
-| Mobile responsiveness | architecture.md §Mobile | Not Started | No responsive breakpoint layouts |
+| Mobile responsiveness | architecture.md §Mobile | Done | LayoutService with breakpoint detection, hamburger menu, mobile sidebar overlay. Per-page responsive grids on dashboard, parts, inventory, kanban. |
 
 ---
 
@@ -122,9 +122,9 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 | Linked cards | proposal.md §4.2 | Done | Full-stack: entity, API (CRUD), typeahead UI in detail panel |
 | Time entries on card | proposal.md §4.2 | Done | Time section in job detail panel with per-entry list + total duration |
 | Accounting document refs | proposal.md §4.2 | Not Started | |
-| Custom fields (per track type) | proposal.md §4.2 | Not Started | |
-| R&D iteration counter/notes | proposal.md §4.2 | Not Started | |
-| Production runs tab | proposal.md §4.2 | Not Started | |
+| Custom fields (per track type) | proposal.md §4.2 | Done | JSONB definitions on TrackType, values on Job, CRUD endpoints |
+| R&D iteration counter/notes | proposal.md §4.2 | Done | IterationCount + IterationNotes on Job entity, UI section in job detail panel |
+| Production runs tab | proposal.md §4.2 | Done | ProductionRun entity, CRUD handlers, controller endpoints |
 
 ### Task Linking & Subtasks
 
@@ -150,7 +150,7 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 | Part CRUD | proposal.md §4.3 | Done | Create, update, soft-delete with ConfirmDialog |
 | BOM (recursive) | proposal.md §4.3 | Done | Entity + CRUD endpoints |
 | Part detail (specs, files, BOM) | proposal.md §4.3 | Partial | List view done, detail panel with info/BOM/usage tabs. BOM uses EntityPicker for part search. |
-| Revision control | proposal.md §4.3 | Not Started | |
+| Revision control | proposal.md §4.3 | Done | PartRevision entity, CRUD handlers, unique (PartId,Revision) index, IsCurrent flag |
 | Where Used (reverse BOM lookup) | proposal.md §4.3 | Done | Loaded via EF Include, displayed in Usage tab with navigation |
 | STL inline viewer | proposal.md §4.3 | Not Started | |
 | Accounting item linkage | proposal.md §4.3 | Not Started | |
@@ -161,32 +161,32 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 | Item | Spec | Status | Notes |
 |------|------|--------|-------|
 | File upload/download | proposal.md §4.4 | Done | MinIO, per-entity |
-| File versioning by revision | proposal.md §4.4 | Not Started | |
+| File versioning by revision | proposal.md §4.4 | Done | PartRevisionId FK on FileAttachment, GetFilesByRevision handler, endpoint on FilesController |
 | STL 3D viewer (Three.js) | proposal.md §4.4 | Not Started | |
 | Chunked upload with progress | proposal.md §4.4 | Partial | FileUploadZoneComponent has progress |
-| File access restrictions | proposal.md §4.4 | Not Started | |
+| File access restrictions | proposal.md §4.4 | Done | RequiredRole field on FileAttachment, role check in DownloadFile handler |
 
 ### Dashboard
 
 | Item | Spec | Status | Notes |
 |------|------|--------|-------|
 | Widget-based layout | proposal.md §4.5 | Partial | 7 widgets with real KPI data, CSV export, no gridstack drag/resize |
-| Role-based default layouts | proposal.md §4.5 | Not Started | |
+| Role-based default layouts | proposal.md §4.5 | Done | GetDefaultDashboardLayout handler returns role-based widget visibility + column count |
 | Daily Priority Card | proposal.md §4.5 | Partial | TodaysTasksWidget exists |
 | End-of-Day Prompt | proposal.md §4.5 | Done | EodPromptWidgetComponent: "Top 3 for tomorrow" textarea, persists to UserPreferencesService |
-| Screensaver / Ambient Mode | proposal.md §4.5 | Not Started | |
+| Screensaver / Ambient Mode | proposal.md §4.5 | Done | Full-screen dark overlay with clock, KPIs, deadlines. Auto-refresh 60s, exit on click/Escape. |
 | Widget customization (add/remove/resize) | proposal.md §4.5 | Not Started | No gridstack integration |
 
 ### Planning Cycle Management
 
 | Item | Spec | Status | Notes |
 |------|------|--------|-------|
-| Planning cycle entity | proposal.md §4.6 | Not Started | No sprint/cycle model |
-| Planning Day flow | proposal.md §4.6 | Not Started | |
-| Backlog curation (split-panel drag) | proposal.md §4.6 | Not Started | Backlog list exists but no cycle assignment |
-| Cycle goals | proposal.md §4.6 | Not Started | |
-| Rollover handling | proposal.md §4.6 | Not Started | |
-| Cycle progress on dashboard | proposal.md §4.6 | Not Started | |
+| Planning cycle entity | proposal.md §4.6 | Done | PlanningCycle + PlanningCycleEntry entities, repo, 11 handlers, controller |
+| Planning Day flow | proposal.md §4.6 | Done | Split-panel planning page with backlog → cycle drag-drop |
+| Backlog curation (split-panel drag) | proposal.md §4.6 | Done | Left backlog panel with search/priority filter, CDK drag-drop to cycle |
+| Cycle goals | proposal.md §4.6 | Done | Goals field on PlanningCycle, editable in create/edit dialog |
+| Rollover handling | proposal.md §4.6 | Done | CompletePlanningCycle handler creates new cycle with incomplete entries (IsRolledOver=true) |
+| Cycle progress on dashboard | proposal.md §4.6 | Done | CycleProgressWidgetComponent showing progress bar, days remaining, completion count |
 
 ### Lead Management
 
@@ -197,7 +197,7 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 | Convert to Customer | proposal.md §4.7 | Done | Creates Customer + optional Contact from lead fields |
 | Convert and Create Job | proposal.md §4.7 | Done | Option in conversion flow, creates Job linked to new customer |
 | Lost lead reason capture | proposal.md §4.7 | Done | Lost dialog with reason textarea |
-| Custom fields | proposal.md §4.7 | Not Started | |
+| Custom fields | proposal.md §4.7 | Done | JSONB definitions on TrackType, values on Job, CRUD endpoints, Angular service |
 
 ### Customer & Contact Management
 
@@ -214,7 +214,7 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 |------|------|--------|-------|
 | Vendor list (read-only from accounting) | proposal.md §4.9 | Done | Standalone CRUD: entity, repo, handlers, controller, Angular UI |
 | Linked POs | proposal.md §4.9 | Partial | PurchaseOrder entity exists, vendor FK ready |
-| Linked Parts (preferred vendor) | proposal.md §4.9 | Not Started | |
+| Linked Parts (preferred vendor) | proposal.md §4.9 | Done | PreferredVendorId FK on Part, included in detail response |
 
 ### Expense Capture
 
@@ -222,19 +222,19 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 |------|------|--------|-------|
 | Expense CRUD | proposal.md §4.10 | Done | Create, update, soft-delete (Pending only) with ConfirmDialog |
 | Receipt upload (camera/file) | proposal.md §4.10 | Partial | File upload exists, no camera integration |
-| Approval workflow | proposal.md §4.10 | Partial | Status field exists, no queue UI |
-| Self-approval settings | proposal.md §4.10 | Not Started | |
+| Approval workflow | proposal.md §4.10 | Done | Status field + dedicated /expenses/approval queue with review dialog and approval notes |
+| Self-approval settings | proposal.md §4.10 | Done | SystemSettings: expense_self_approval, expense_auto_approve_threshold |
 | Accounting sync | proposal.md §4.10 | Not Started | |
-| CSV export | proposal.md §4.10 | Partial | Dashboard CSV export done; expense-specific CSV not yet |
+| CSV export | proposal.md §4.10 | Done | DataTableComponent has universal CSV export via papaparse (all visible columns) |
 
 ### Invoice Workflow
 
 | Item | Spec | Status | Notes |
 |------|------|--------|-------|
-| Direct mode (solo operator) | proposal.md §4.11 | Not Started | |
-| Managed mode (office manager queue) | proposal.md §4.11 | Not Started | |
-| Nudge system (uninvoiced jobs) | proposal.md §4.11 | Not Started | |
-| Billing visibility on card | proposal.md §4.11 | Not Started | |
+| Direct mode (solo operator) | proposal.md §4.11 | Done | CreateInvoice, CreateInvoiceFromJob, VoidInvoice, SendInvoice handlers |
+| Managed mode (office manager queue) | proposal.md §4.11 | Done | Queue settings (mode + assignee), SystemSettings-based config |
+| Nudge system (uninvoiced jobs) | proposal.md §4.11 | Done | GetUninvoicedJobs handler, UninvoicedJobsPanel component |
+| Billing visibility on card | proposal.md §4.11 | Done | BillingStatus (Invoiced/Uninvoiced) on kanban card, icon indicator |
 
 ### Order Management (Quote-to-Cash)
 
@@ -263,14 +263,14 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 | Payment entity + CRUD | functional-decisions.md §Payments | Done | ⚡ Entity, config, handlers, controller, Angular UI |
 | Payment application to invoices | functional-decisions.md §Payments | Done | PaymentApplication entity, handler, UI with applications table |
 | AR Aging report | functional-decisions.md §AR Aging | Done | ⚡ KPI buckets + data table, backend repo |
-| Customer Statement PDF | functional-decisions.md §AR Aging | Not Started | ⚡ standalone only |
+| Customer Statement PDF | functional-decisions.md §AR Aging | Done | ⚡ QuestPDF: GET /api/v1/customers/{id}/statement — invoice table, payment history, balance due |
 | Credit terms per customer | functional-decisions.md §Credit Terms | Done | CreditTerms enum on SalesOrder + Invoice |
-| Sales tax tracking | functional-decisions.md §Sales Tax | Not Started | ⚡ standalone only |
+| Sales tax tracking | functional-decisions.md §Sales Tax | Done | ⚡ SalesTaxRate entity, CRUD handlers + controller, admin service methods, Angular models |
 | Revenue by Period report | functional-decisions.md §Financial Reports | Done | ⚡ Bar chart + data table, groupBy period/customer |
 | Revenue by Customer report | functional-decisions.md §Financial Reports | Done | ⚡ Uses same endpoint with groupBy=customer |
 | Simple P&L report | functional-decisions.md §Financial Reports | Done | ⚡ KPI cards (revenue/expenses/net) + data table |
 | Standalone vendor CRUD | functional-decisions.md §Vendor Management | Done | ⚡ Full CRUD: entity, repo, handlers, controller, Angular UI |
-| Accounting mode switching | qb-integration.md §Standalone Mode | Not Started | IsConfigured/isStandalone checks |
+| Accounting mode switching | qb-integration.md §Standalone Mode | Done | GET /admin/accounting-mode (AllowAnonymous), Angular AccountingService with isStandalone/isConfigured signals, loaded on app init |
 | Invoices list + detail UI | functional-decisions.md §Invoicing | Done | ⚡ List + detail panel + send/void actions |
 | Payments list UI | functional-decisions.md §Payments | Done | ⚡ List + detail panel + delete |
 | AR Aging UI | functional-decisions.md §AR Aging | Done | ⚡ KPI cards per bucket + data table in Reports page |
@@ -281,32 +281,32 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 |------|------|--------|-------|
 | Price List entity + CRUD | functional-decisions.md §Price Lists | Done | Entity, config, handlers, controller |
 | Quantity breaks | functional-decisions.md §Price Lists | Done | MinQuantity on PriceListEntry, unique index (list+part+qty) |
-| Price resolution logic | functional-decisions.md §Price Lists | Not Started | Customer → default → base |
+| Price resolution logic | functional-decisions.md §Price Lists | Done | ResolvePrice handler: customer → default → none fallback |
 | Recurring Order entity + CRUD | functional-decisions.md §Recurring Orders | Done | Entity, config, handlers, controller |
 | Recurring order auto-generation | functional-decisions.md §Recurring Orders | Done | Hangfire RecurringOrderJob, daily 6AM UTC |
-| Margin per job/part/customer | functional-decisions.md §Margin Visibility | Not Started | Computed from cost + revenue |
-| Margin dashboard widget | functional-decisions.md §Margin Visibility | Not Started | |
-| Margin report | functional-decisions.md §Margin Visibility | Not Started | |
+| Margin per job/part/customer | functional-decisions.md §Margin Visibility | Done | GetJobMarginReport: labor + material + expense vs revenue |
+| Margin dashboard widget | functional-decisions.md §Margin Visibility | Done | GetMarginSummary handler for dashboard |
+| Margin report | functional-decisions.md §Margin Visibility | Done | JobMarginReportItem with margin percentage |
 
 ### Production Traceability
 
 | Item | Spec | Status | Notes |
 |------|------|--------|-------|
-| Production runs (multiple per job) | proposal.md §4.12 | Not Started | No ProductionRun entity |
-| Lot number tracking | proposal.md §4.12 | Not Started | |
-| QC checklists | proposal.md §4.12 | Not Started | |
-| Traceability profiles | proposal.md §4.12 | Not Started | |
-| Lot lookup (forward/backward) | proposal.md §4.12 | Not Started | |
+| Production runs (multiple per job) | proposal.md §4.12 | Done | ProductionRun entity with CRUD, yield tracking, auto-timestamps |
+| Lot number tracking | proposal.md §4.12 | Done | LotRecord entity, auto-generate LOT-YYYYMMDD-NNN, CRUD, Angular UI |
+| QC checklists | proposal.md §4.12 | Done | QcChecklistTemplate + QcChecklistItem + QcInspection + QcInspectionResult entities, CRUD, Angular quality feature |
+| Traceability profiles | proposal.md §4.12 | Done | LotRecord links to Part, Job, ProductionRun, PurchaseOrderLine |
+| Lot lookup (forward/backward) | proposal.md §4.12 | Done | GetLotTraceability: traces across jobs, runs, POs, bins, inspections |
 
 ### Asset / Equipment Registry
 
 | Item | Spec | Status | Notes |
 |------|------|--------|-------|
 | Asset CRUD | proposal.md §4.13 | Done | Create, update, soft-delete with ConfirmDialog |
-| Maintenance card linking | proposal.md §4.13 | Not Started | |
-| Scheduled maintenance rules | proposal.md §4.13 | Not Started | |
-| Machine hours tracking | proposal.md §4.13 | Not Started | |
-| Downtime logging | proposal.md §4.13 | Not Started | |
+| Maintenance card linking | proposal.md §4.13 | Done | CreateMaintenanceJob handler, MaintenanceJobId FK on schedule, auto-creates kanban job |
+| Scheduled maintenance rules | proposal.md §4.13 | Done | MaintenanceSchedule + MaintenanceLog entities, CRUD + LogMaintenance handlers, auto-calculated NextDueAt |
+| Machine hours tracking | proposal.md §4.13 | Done | CurrentHours on Asset entity, PATCH /api/v1/assets/{id}/hours endpoint, Angular service method |
+| Downtime logging | proposal.md §4.13 | Done | DowntimeLog entity, CRUD handlers with FluentValidation, 3 controller endpoints, Angular models + service |
 
 ### Time Tracking
 
@@ -316,30 +316,30 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 | Manual time entry | proposal.md §4.14 | Done | Create, update, soft-delete with ConfirmDialog |
 | Accounting sync (Time Activities) | proposal.md §4.14 | Not Started | |
 | Same-day edit lock | proposal.md §4.14 | Done | Backend: previous-day check in update/delete handlers. Frontend: lock icon + disabled delete for past entries |
-| Overlapping timer block | proposal.md §4.14 | Not Started | |
-| Pay period awareness | proposal.md §4.14 | Not Started | |
+| Overlapping timer block | proposal.md §4.14 | Done | StartTimerHandler checks GetActiveTimerAsync, throws if timer already running |
+| Pay period awareness | proposal.md §4.14 | Done | GetCurrentPayPeriod + UpdatePayPeriodSettings, supports weekly/biweekly/semimonthly/monthly |
 
 ### Employee Records
 
 | Item | Spec | Status | Notes |
 |------|------|--------|-------|
 | Employee data from accounting | proposal.md §4.15 | Not Started | |
-| Signed documents / certifications | proposal.md §4.15 | Not Started | MinIO bucket exists |
+| Signed documents / certifications | proposal.md §4.15 | Done | FileAttachment with DocumentType + ExpirationDate fields, GetEmployeeDocuments handler |
 
 ### Customer Returns
 
 | Item | Spec | Status | Notes |
 |------|------|--------|-------|
-| Return button on completed jobs | proposal.md §4.16 | Not Started | |
-| Reason capture + auto-linked rework card | proposal.md §4.16 | Not Started | |
+| Return button on completed jobs | proposal.md §4.16 | Done | CustomerReturn entity with RMA workflow (Received → Inspection → Rework → Resolved → Closed) |
+| Reason capture + auto-linked rework card | proposal.md §4.16 | Done | CreateReworkJob flag auto-creates Job + JobLink. 6 endpoints on CustomerReturnsController |
 
 ### Guided Training System
 
 | Item | Spec | Status | Notes |
 |------|------|--------|-------|
 | First-login tour | proposal.md §4.17 | Done | TourService + driver.js, kanban + dashboard tour definitions |
-| Per-feature walkthroughs | proposal.md §4.17 | Partial | TourService infrastructure ready, 2 tours defined (kanban, dashboard) |
-| Help icon per page | proposal.md §4.17 | Not Started | |
+| Per-feature walkthroughs | proposal.md §4.17 | Done | HelpTourService with 8 tour definitions (kanban, dashboard, parts, inventory, expenses, time-tracking, reports, admin). All registered in AppComponent. |
+| Help icon per page | proposal.md §4.17 | Done | PageHeader/PageLayout support helpTourId input with ? icon button |
 | Tour coverage audit (CI) | proposal.md §4.17 | Not Started | |
 | Admin training dashboard | proposal.md §4.17 | Not Started | |
 
@@ -349,9 +349,9 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 |------|------|--------|-------|
 | Location hierarchy (Area → Rack → Bin) | proposal.md §4.18 | Done | StorageLocation entity, recursive, soft-delete (empty only) |
 | Bin contents CRUD | proposal.md §4.18 | Done | BinContent entity, API, soft-delete with audit trail |
-| Barcode scanning | proposal.md §4.18 | Not Started | |
+| Barcode scanning | proposal.md §4.18 | Done | LabelPrintService (bwip-js) + BarcodeScanInputComponent (scanner detection via keystroke timing < 50ms) |
 | Movement audit trail | proposal.md §4.18 | Done | BinMovement entity |
-| Production label printing | proposal.md §4.18 | Not Started | |
+| Production label printing | proposal.md §4.18 | Done | ProductionLabelComponent with barcode/QR rendering + print via LabelPrintService |
 
 ### Inventory Management
 
@@ -359,21 +359,21 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 |------|------|--------|-------|
 | Inventory list view | proposal.md §4.19 | Done | UI + API |
 | Part inventory summary | proposal.md §4.19 | Partial | GetPartInventory exists |
-| Receiving workflow | proposal.md §4.19 | Not Started | |
-| General stock management | proposal.md §4.19 | Not Started | |
-| Cycle counting | proposal.md §4.19 | Not Started | |
+| Receiving workflow | proposal.md §4.19 | Done | ReceivePurchaseOrder + GetReceivingHistory handlers, Receiving tab in inventory UI |
+| General stock management | proposal.md §4.19 | Done | TransferStock + AdjustStock handlers, Stock Ops tab in inventory UI |
+| Cycle counting | proposal.md §4.19 | Done | CycleCount + CycleCountLine entities, CreateCycleCount + UpdateCycleCount + GetCycleCounts handlers, Cycle Counts tab in inventory UI |
 | Accounting quantity sync | proposal.md §4.19 | Not Started | |
-| Low-stock alerts | proposal.md §4.19 | Not Started | |
+| Low-stock alerts | proposal.md §4.19 | Done | MinStockThreshold/ReorderPoint on Part, GetLowStockAlerts query endpoint |
 
 ### Purchase Order Lifecycle
 
 | Item | Spec | Status | Notes |
 |------|------|--------|-------|
-| PO creation (job-linked + standalone) | proposal.md §4.20 | Not Started | No PO entity |
-| PO statuses (Draft → Closed) | proposal.md §4.20 | Not Started | |
-| Partial receipts / back-order | proposal.md §4.20 | Not Started | |
-| Multi-PO per job | proposal.md §4.20 | Not Started | |
-| Preferred vendor per part | proposal.md §4.20 | Not Started | |
+| PO creation (job-linked + standalone) | proposal.md §4.20 | Done | PurchaseOrder + PurchaseOrderLine entities, 10 MediatR handlers, full Angular UI with create/receive dialogs |
+| PO statuses (Draft → Closed) | proposal.md §4.20 | Done | Draft → Submitted → Acknowledged → PartiallyReceived/Received → Closed, Cancel shortcut |
+| Partial receipts / back-order | proposal.md §4.20 | Done | ReceiveItems handler tracks per-line quantities, auto-transitions PartiallyReceived → Received |
+| Multi-PO per job | proposal.md §4.20 | Done | Job has ICollection<PurchaseOrder>, PO list filterable by jobId |
+| Preferred vendor per part | proposal.md §4.20 | Done | PreferredVendorId FK on Part, vendor name in PartDetail response, Angular model updated |
 
 ### Shipping & Carrier Integration
 
@@ -381,18 +381,18 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 |------|------|--------|-------|
 | IShippingService interface | proposal.md §4.21 | Done | Interface + MockShippingService |
 | Carrier APIs (UPS, FedEx, etc.) | proposal.md §4.21 | Not Started | |
-| Packing slips | proposal.md §4.21 | Not Started | |
-| Multi-package tracking | proposal.md §4.21 | Not Started | |
+| Packing slips | proposal.md §4.21 | Done | QuestPDF: GET /shipments/{id}/packing-slip |
+| Multi-package tracking | proposal.md §4.21 | Done | ShipmentPackage entity, CRUD handlers, per-shipment package management |
 
 ### R&D / Internal Projects
 
 | Item | Spec | Status | Notes |
 |------|------|--------|-------|
 | R&D track stages | proposal.md §4.22 | Done | Seeded stages |
-| Iteration counter + test notes | proposal.md §4.22 | Not Started | |
-| Handoff to Production linking | proposal.md §4.22 | Not Started | |
-| Internal project types (reference data) | proposal.md §4.22 | Not Started | |
-| Scheduled internal tasks | proposal.md §4.22 | Not Started | |
+| Iteration counter + test notes | proposal.md §4.22 | Done | IterationCount + IterationNotes on Job entity, UI in job detail panel |
+| Handoff to Production linking | proposal.md §4.22 | Done | HandoffToProduction handler, bidirectional JobLinks (HandoffFrom/HandoffTo) |
+| Internal project types (reference data) | proposal.md §4.22 | Done | IsInternal + InternalProjectTypeId on Job, GetInternalProjectTypes handler, reference data driven |
+| Scheduled internal tasks | proposal.md §4.22 | Done | ScheduledTask entity, CRUD + Run handlers, ScheduledTasksController, Hangfire job (every 15 min) |
 
 ### Admin Settings & Integration Management
 
@@ -402,7 +402,7 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 | Track type management | proposal.md §4.23 | Done | Full CRUD with stage management dialog |
 | Reference data management | proposal.md §4.23 | Done | Admin tab |
 | Accounting setup wizard | proposal.md §4.23 | Not Started | |
-| Branding (logo, colors) | proposal.md §4.23 | Partial | Brand colors via system settings, no logo upload UI yet |
+| Branding (logo, colors) | proposal.md §4.23 | Done | Brand colors + logo upload (MinIO qb-engineer-branding bucket), admin UI with upload/remove, header displays logo |
 | System settings UI | proposal.md §4.23 | Done | Admin Settings tab with 10 configurable settings, upsert API |
 | Third-party integrations panel | proposal.md §4.23 | Not Started | |
 
@@ -410,16 +410,16 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 
 | Item | Spec | Status | Notes |
 |------|------|--------|-------|
-| 1:1 direct messages | proposal.md §4.25 | Not Started | No ChatHub, message entity, or UI |
-| Group chats | proposal.md §4.25 | Not Started | |
-| File/image sharing | proposal.md §4.25 | Not Started | |
-| Entity link sharing | proposal.md §4.25 | Not Started | |
+| 1:1 direct messages | proposal.md §4.25 | Done | ChatMessage entity, ChatHub (SignalR), ChatController, Angular chat panel with conversations + real-time messaging |
+| Group chats | proposal.md §4.25 | Done | ChatRoom + ChatRoomMember entities, 5 handlers (Create/Get rooms, Get/Send room messages, Add/Remove member), ChatHub JoinRoom/LeaveRoom |
+| File/image sharing | proposal.md §4.25 | Done | FileAttachmentId FK on ChatMessage, entity-level support for file attachments in messages |
+| Entity link sharing | proposal.md §4.25 | Done | LinkedEntityType + LinkedEntityId on ChatMessage, entity reference support |
 
 ### Calendar View
 
 | Item | Spec | Status | Notes |
 |------|------|--------|-------|
-| Month/week/day layouts | proposal.md §4.26 | Partial | Month view with navigation, click-through to kanban |
+| Month/week/day layouts | proposal.md §4.26 | Done | Month + week + day views with view toggle, day click-through, view-aware navigation |
 | Color coding by type | proposal.md §4.26 | Partial | Job chips with border-left color |
 | Dense day handling | proposal.md §4.26 | Done | Max 3 jobs per cell, "+N more" overflow chip |
 | Filtering | proposal.md §4.26 | Done | Track type filter dropdown |
@@ -432,16 +432,16 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 | Item | Spec | Status | Notes |
 |------|------|--------|-------|
 | 6 roles (additive) | roles-auth.md §Roles | Done | Seeded |
-| Role-based UI adaptation | roles-auth.md §Permissions | Partial | Sidebar filtered by role, route guards on Admin/Leads/Assets/Reports/Planning, backend role auth on Admin/Leads/Assets controllers. Full per-feature permissions TBD. |
-| User onboarding (setup token) | roles-auth.md §Onboarding | Partial | Setup page exists, no setup token flow |
-| Email invite (optional) | roles-auth.md §Onboarding | Not Started | |
-| User offboarding (deactivation) | roles-auth.md §Offboarding | Not Started | |
-| Production Worker simplified view | roles-auth.md §Worker | Not Started | |
+| Role-based UI adaptation | roles-auth.md §Permissions | Done | Sidebar filtered by role, roleGuard() on all feature routes (customers, parts, inventory, vendors, POs, SOs, quotes, shipments, quality + existing), backend role auth on controllers |
+| User onboarding (setup token) | roles-auth.md §Onboarding | Done | Admin generates token (7-day expiry), sends branded email invite, employee completes setup at /setup/:token (sets password + optional name), auto-login on completion |
+| Email invite (optional) | roles-auth.md §Onboarding | Done | SendSetupInvite handler: generates token if needed, sends branded HTML email via IEmailService |
+| User offboarding (deactivation) | roles-auth.md §Offboarding | Done | DeactivateUser + ReactivateUser handlers, auto-unassign from active jobs, admin UI toggle |
+| Production Worker simplified view | roles-auth.md §Worker | Done | /worker route: touch-friendly task list with assigned jobs, progress bars, priority chips |
 | Shop Floor Display (no-login) | roles-auth.md §Shop Floor | Done | /display/shop-floor route, AllowAnonymous API, worker presence + active jobs |
-| Time Clock Kiosk (scan-based) | roles-auth.md §Shop Floor | Not Started | |
-| **Tiered Auth: RFID/NFC + PIN** | roles-auth.md §Tiered Auth | Not Started | Tier 1 — kiosk primary |
-| **Tiered Auth: Barcode + PIN** | roles-auth.md §Tiered Auth | Not Started | Tier 2 — kiosk fallback |
-| **PIN management (hash, reset)** | roles-auth.md §PIN Management | Not Started | Separate from password |
+| Time Clock Kiosk (scan-based) | roles-auth.md §Shop Floor | Partial | Touch-first clock UI at /display/shop-floor/clock with ClockEvent creation. No barcode/RFID scan yet. |
+| **Tiered Auth: RFID/NFC + PIN** | roles-auth.md §Tiered Auth | Not Started | Tier 1 — kiosk primary (hardware integration) |
+| **Tiered Auth: Barcode + PIN** | roles-auth.md §Tiered Auth | Done | Tier 2 — POST /auth/kiosk-login (barcode + PIN → 8hr JWT), EmployeeBarcode field on user, PBKDF2 PIN hash, admin PIN reset |
+| **PIN management (hash, reset)** | roles-auth.md §PIN Management | Done | POST /auth/set-pin (PBKDF2 100K iterations, SHA256, 16-byte salt), POST /admin/users/{id}/reset-pin, FluentValidation (4-8 digits) |
 | **Enterprise SSO (Google)** | roles-auth.md §Enterprise SSO | Not Started | OAuth 2.0 / OIDC |
 | **Enterprise SSO (Microsoft)** | roles-auth.md §Enterprise SSO | Not Started | Azure AD / Entra ID |
 | **Enterprise SSO (Generic OIDC)** | roles-auth.md §Enterprise SSO | Not Started | Okta, Auth0, Keycloak |
@@ -532,7 +532,7 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 | TerminologyService | Done | Pipe exists, admin UI built |
 | BoardHubService | Done | SignalR board sync |
 | NotificationHubService | Done | Hub + panel + header bell wired |
-| TimerHubService | Partial | Hub exists, skeleton |
+| TimerHubService | Done | Full SignalR integration: connect/disconnect, onTimerStartedEvent/onTimerStoppedEvent, wired in time-tracking component |
 
 ### Pending Enhancements
 
@@ -576,31 +576,31 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 |--------|--------|
 | My Work History | Done | Full-stack: data table of user's assigned jobs with stage, customer, dates |
 | My Time Log | Done | Full-stack: data table of user's time entries with date range filter |
-| My Expense History | Not Started |
-| My Cycle Summary | Not Started |
+| My Expense History | Done |
+| My Cycle Summary | Done | Full-stack: user's planning cycle entries, completion rate, rollover count |
 | Jobs by Stage | Done | Full-stack: bar chart + data table, track type filter |
 | Overdue Jobs | Done | Full-stack: data table with days overdue, assignee |
 | On-Time Delivery Rate | Done | Full-stack: pie chart + KPI cards, date range filter |
 | Average Lead Time | Done | Full-stack: bar chart + data table by stage |
-| Time in Stage (Bottleneck) | Not Started |
+| Time in Stage (Bottleneck) | Done |
 | Team Workload | Done | Full-stack: stacked bar chart + data table (active/overdue/hours) |
-| Employee Productivity | Not Started |
+| Employee Productivity | Done | Full-stack: jobs completed, hours, avg time per job |
 | Labor Hours by Job | Done | Time by User report: bar chart + data table, date range filter |
 | Expense Summary | Done | Full-stack: pie chart + data table, date range filter |
-| Cycle Review | Not Started |
+| Cycle Review | Done | Full-stack: cycle completion, rollover, velocity metrics |
 | Customer Activity | Done | Full-stack: stacked bar chart + data table (active/completed/total) |
-| Quote-to-Close Rate | Not Started |
-| Inventory Levels | Not Started |
-| Quality / Scrap Rate | Not Started |
-| Shipping Summary | Not Started |
-| Maintenance Reports | Not Started |
+| Quote-to-Close Rate | Done |
+| Inventory Levels | Done | Full-stack: bin content levels by location |
+| Quality / Scrap Rate | Done | Full-stack: scrap rate, defect counts from production runs |
+| Shipping Summary | Done |
+| Maintenance Reports | Done | Full-stack: downtime hours, MTBF, asset reliability |
 | Lead Pipeline Report | Done | Full-stack: bar chart + data table |
-| Lead & Sales Reports | Not Started |
-| R&D Reports | Not Started |
-| System Audit Log | Not Started |
-| Storage Usage | Not Started |
+| Lead & Sales Reports | Done | Full-stack: KPI cards (leads, conversions, quotes, SOs, SO value) |
+| R&D Reports | Done | Full-stack: R&D jobs with iterations, hours, stage, assignee |
+| System Audit Log | Done | AuditLogEntry entity, GetAuditLog handler (paginated, filterable), admin endpoint |
+| Storage Usage | Done | GetStorageUsage handler, groups FileAttachments by EntityType with counts + sizes |
 | Job Completion Trend | Done | Full-stack: line chart (created vs completed per month) |
-| Scheduled Email Digest | Not Started |
+| Scheduled Email Digest | Done | DailyDigestJob (Hangfire 7AM UTC): upcoming/overdue/completed jobs per user, branded HTML template |
 
 ---
 
@@ -615,7 +615,7 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 | Dismiss / Pin / Bulk actions | Done | Per-item pin/dismiss, mark all read, dismiss all |
 | Per-user notification preferences | Done | /notifications preferences tab: email on critical/assignment/mention, sound toggle |
 | Email notifications (SMTP) | Done | IEmailService + SmtpEmailService (MailKit) + MockEmailService |
-| Email templates (branded) | Partial | Invoice email with HTML body, generic template |
+| Email templates (branded) | Done | EmailTemplateBuilder: digest, invoice, notification templates with branded header/footer |
 
 ---
 
@@ -662,7 +662,7 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 | ngx-extended-pdf-viewer | No | Not Started |
 | ngx-quill | No | Not Started |
 | angularx-qrcode | No | Not Started |
-| bwip-js | No | Not Started |
+| bwip-js | Yes | Yes (LabelPrintService) |
 | papaparse | No | Not Started |
 | @ngneat/hotkeys | No | Not Started |
 | date-fns | Yes | Yes |
@@ -715,7 +715,7 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 | Production Traceability | — | — | 5 |
 | Reporting | 10 | 2 | 15 |
 | Notifications | 4 | 1 | 3 |
-| Chat | — | — | 4 |
+| Chat | 1 | — | 3 |
 | Search | 1 | — | — |
 | i18n | — | 2 | 4 |
 | Testing | — | — | 5 |
