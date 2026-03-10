@@ -637,10 +637,10 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 
 | Area | Status | Notes |
 |------|--------|-------|
-| Angular unit tests (Vitest) | Partial | 9 spec files (109 tests): AuthService, ThemeService, FormValidationService, LoadingService, TerminologyPipe, AppComponent, SnackbarService, NotificationService, CacheService |
-| .NET unit tests (xUnit) | Partial | 10 test classes (57 tests): CreateJob, UpdateJob, MoveJobStage, CreatePart, StartTimer, StopTimer, CreateExpense, CreateCustomer, AdjustStock, CreateInvoiceFromJob |
+| Angular unit tests (Vitest) | Partial | 11 spec files (131 tests): AuthService, ThemeService, FormValidationService, LoadingService, TerminologyPipe, AppComponent, SnackbarService, NotificationService, CacheService, BroadcastService, OfflineQueueService |
+| .NET unit tests (xUnit) | Partial | 13 test classes (75 tests): CreateJob, UpdateJob, MoveJobStage, CreatePart, StartTimer, StopTimer, CreateExpense, CreateCustomer, AdjustStock, CreateInvoiceFromJob, CreateLead, CreateVendor, CreateQuote |
 | Integration tests | Not Started | |
-| E2E tests (Cypress) | Not Started | |
+| E2E tests (Cypress) | Partial | Installed + configured, 3 spec files (login, dashboard, kanban), custom cy.login() command |
 | axe-core accessibility tests | Not Started | |
 
 ---
@@ -668,9 +668,9 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 | @ngneat/hotkeys | N/A | Done (custom KeyboardShortcutsService instead — no dependency needed) |
 | date-fns | Yes | Yes |
 | @ngx-gallery/lightbox | No | Not Started |
-| ngx-markdown | No | Not Started |
-| vitest | Yes | Yes (6 spec files) |
-| cypress | No | Not Started |
+| ngx-markdown | Yes | Yes (MarkdownViewComponent wrapper) |
+| vitest | Yes | Yes (11 spec files) |
+| cypress | Yes | Yes (3 E2E specs) |
 
 ### Backend
 
@@ -683,7 +683,7 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 | MediatR | Yes | Yes |
 | Serilog | Yes | Yes |
 | Mapperly | Yes | Yes (6 entity mappers) |
-| MS Http Resilience | No | Not Started |
+| MS Http Resilience | Yes | Yes (retry + circuit-breaker on resilient HttpClient) |
 | Minio SDK | Yes | Yes |
 | OpenAPI + Scalar | Yes | Yes |
 | Hangfire | Yes | Yes (2 recurring jobs) |
@@ -1005,3 +1005,33 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 - `CreateCustomerHandlerTests` (5): full/minimal creation, IsActive default, zero counts
 - `AdjustStockHandlerTests` (6): increase/decrease, BinContent not found, zero-out removal, lot tracking
 - `CreateInvoiceFromJobHandlerTests` (7): job→invoice, validation (not found, incomplete, no customer), due date, line description
+
+---
+
+## Batch 17 Changelog — Cypress E2E, HTTP Resilience, Markdown & Tests (2026-03-14)
+
+### Cypress E2E Setup
+- Installed Cypress, configured `cypress.config.ts` (baseUrl, viewport, timeouts)
+- Custom `cy.login()` command with API-based session auth
+- 3 spec files: login (form display, invalid credentials, successful login), dashboard (widgets, sidebar), kanban (columns, create button)
+- npm scripts: `cy:open`, `cy:run`
+
+### MS Http Resilience (.NET)
+- Installed `Microsoft.Extensions.Http.Resilience`
+- `HttpResilienceExtensions.AddResilientHttpClients()` — named "resilient" HttpClient with retry (3 attempts, 500ms delay), circuit breaker (30s sampling), timeouts (10s/30s)
+- Registered in Program.cs after integration services
+
+### ngx-markdown Integration
+- Installed `ngx-markdown` + `marked`
+- Shared `MarkdownViewComponent` wrapper at `shared/components/markdown-view/`
+- `provideMarkdown()` registered in app.config.ts
+- Styled with design system variables (code blocks, lists, links)
+
+### Expanded Angular Tests (2 new spec files, 22 tests)
+- `BroadcastService` (10): channel creation, logout/theme-change broadcast + handling, cleanup
+- `OfflineQueueService` (12): enqueue, getQueueSize, clearQueue, drain (FIFO, failure handling, concurrent guard)
+
+### Expanded .NET Tests (3 new test classes, 18 tests)
+- `CreateLeadHandlerTests` (5): lead creation, field trimming, CreatedBy from claims
+- `CreateVendorHandlerTests` (6): full/minimal creation, IsActive default, address fields
+- `CreateQuoteHandlerTests` (7): quote with lines, customer validation, sequential line numbers, total calculation
