@@ -639,9 +639,9 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 |------|--------|-------|
 | Angular unit tests (Vitest) | Partial | 11 spec files (131 tests): AuthService, ThemeService, FormValidationService, LoadingService, TerminologyPipe, AppComponent, SnackbarService, NotificationService, CacheService, BroadcastService, OfflineQueueService |
 | .NET unit tests (xUnit) | Partial | 13 test classes (75 tests): CreateJob, UpdateJob, MoveJobStage, CreatePart, StartTimer, StopTimer, CreateExpense, CreateCustomer, AdjustStock, CreateInvoiceFromJob, CreateLead, CreateVendor, CreateQuote |
-| Integration tests | Not Started | |
-| E2E tests (Cypress) | Partial | Installed + configured, 3 spec files (login, dashboard, kanban), custom cy.login() command |
-| axe-core accessibility tests | Not Started | |
+| Integration tests | Partial | 24 tests via WebApplicationFactory: health, auth, protected endpoints (InMemory DB + Hangfire MemoryStorage) |
+| E2E tests (Cypress) | Partial | 4 spec files (login, dashboard, kanban, accessibility), custom cy.login() command |
+| axe-core accessibility tests | Partial | 5 page tests (dashboard, kanban, login, parts, inventory) — critical + serious violations |
 
 ---
 
@@ -661,7 +661,7 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 | @ngx-translate/core | No | Not Started |
 | @ngx-dropzone | No | Not Started (custom FileUploadZone built) |
 | ngx-extended-pdf-viewer | No | Not Started |
-| ngx-quill | No | Not Started |
+| ngx-quill | Yes | Yes (RichTextEditorComponent CVA wrapper) |
 | angularx-qrcode | Yes | Yes (QrCodeComponent wrapper) |
 | bwip-js | Yes | Yes (LabelPrintService) |
 | papaparse | Yes | Yes (DataTable CSV export) |
@@ -670,7 +670,7 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 | @ngx-gallery/lightbox | No | Not Started |
 | ngx-markdown | Yes | Yes (MarkdownViewComponent wrapper) |
 | vitest | Yes | Yes (11 spec files) |
-| cypress | Yes | Yes (3 E2E specs) |
+| cypress | Yes | Yes (4 E2E specs + axe-core a11y) |
 
 ### Backend
 
@@ -688,7 +688,7 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 | OpenAPI + Scalar | Yes | Yes |
 | Hangfire | Yes | Yes (2 recurring jobs) |
 | MailKit | Yes | Yes (SmtpEmailService) |
-| CsvHelper | No | Not Started |
+| CsvHelper | Yes | Yes (CsvExportService) |
 | QuestPDF | Yes | Yes (Invoice PDF, Packing Slip PDF) |
 | ImageSharp | No | Not Started |
 | Xabaril Health Checks | Done | PostgreSQL + Hangfire + MinIO + SignalR, detailed JSON response |
@@ -1035,3 +1035,31 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 - `CreateLeadHandlerTests` (5): lead creation, field trimming, CreatedBy from claims
 - `CreateVendorHandlerTests` (6): full/minimal creation, IsActive default, address fields
 - `CreateQuoteHandlerTests` (7): quote with lines, customer validation, sequential line numbers, total calculation
+
+---
+
+## Batch 18 Changelog — Integration Tests, Rich Text, CSV Export & Accessibility (2026-03-14)
+
+### .NET Integration Tests (24 tests)
+- `TestWebApplicationFactory`: InMemory EF Core, Hangfire MemoryStorage, MockIntegrations=true, shared collection fixture
+- `HealthEndpointTests` (2): health endpoint returns 200 + JSON
+- `AuthEndpointTests` (4): login rejects invalid creds, /auth/me requires auth, public endpoints accessible
+- `ApiEndpointTests` (18): 14 data endpoints + 4 admin endpoints return 401 without auth
+- Added `InternalsVisibleTo` on API project, `public partial class Program` for WebApplicationFactory
+
+### ngx-quill Rich Text Editor
+- Installed `ngx-quill` + `quill`, added snow theme CSS to angular.json
+- `RichTextEditorComponent` CVA wrapper at `shared/components/rich-text-editor/`
+- Toolbar: bold, italic, underline, ordered/bullet lists, link, clean
+- Themed with design system variables (border, font, colors)
+
+### CsvHelper Server-Side Export
+- Installed `CsvHelper` 33.1.0
+- `ICsvExportService` interface in Core, `CsvExportService` implementation in API
+- Methods: `Export<T>()` (byte[]) and `ExportToStream<T>()` (Stream)
+- Registered as singleton in Program.cs
+
+### axe-core Accessibility Tests
+- Installed `cypress-axe` + `axe-core`
+- 5 accessibility tests: dashboard, kanban, login, parts, inventory
+- Filters to critical + serious impact violations only
