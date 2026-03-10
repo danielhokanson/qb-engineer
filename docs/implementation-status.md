@@ -776,3 +776,9 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 - **SCSS Variable Remediation:** 22 component SCSS files remediated — 80+ hardcoded values replaced with design system variables. New variables added to `_variables.scss`: `$sp-xxs`, `$sp-2xl`–`$sp-4xl`, `$icon-size-xs`–`$icon-size-hero`, `$font-size-md`/`lg`/`xl`/`heading`, `$avatar-size-*`, `$dot-size-*`, `$badge-size-*`, `$progress-bar-height`, `$sidebar-nav-height`, `$sidebar-icon-size`, `$btn-icon-size`, `$input-height`, `$chip-padding-sm`, `$chart-height`, `$detail-panel-width`, `$notification-panel-width`, `$shadow-panel`, `$shadow-dropdown`, `$backdrop-color`.
 - **console.log Removal:** Removed 13 console.log/warn/error statements from `board-hub.service.ts` and `signalr.service.ts`.
 - **Constructor Injection Audit:** All 12 audited components confirmed compliant — all use `inject()` pattern.
+
+### Create Dialogs Wired (5 features)
+- Sales Orders, Quotes, Shipments, Invoices, Payments — all 5 create dialog components wired into parent list components
+- Each follows PO dialog pattern: `<app-dialog>` shell, two FormGroups (header + line items), signal-based line management, validation popover
+- "New" buttons in page headers now functional (previously disabled or placeholder)
+- All dialogs compile clean (Angular build verified)
