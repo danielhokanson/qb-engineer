@@ -90,8 +90,9 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 | Self-hosted AI (Ollama + RAG) | architecture.md §AI | Partial | Docker container configured, IAiService + MockAiService built, no Ollama/RAG implementation |
 | Theming (light/dark) | architecture.md §Theming | Done | Toggle in toolbar, CSS custom properties |
 | Admin brand colors | architecture.md §Theming | Done | System settings for primary/accent colors, runtime CSS variable override, public brand endpoint |
-| Accessibility (WCAG 3) | architecture.md §Accessibility | Partial | Keyboard nav, no axe-core tests |
+| Accessibility (WCAG 3) | architecture.md §Accessibility | Partial | aria-labels on all icon buttons, focus-visible outlines, skip-to-content link, prefers-reduced-motion. No axe-core tests. |
 | Mobile responsiveness | architecture.md §Mobile | Done | LayoutService with breakpoint detection, hamburger menu, mobile sidebar overlay. Per-page responsive grids on dashboard, parts, inventory, kanban. |
+| Offline resilience / PWA | architecture.md §Offline | Partial | Service Worker (ngsw-config.json), IndexedDB cache service, BroadcastChannel multi-tab sync (logout + theme). No offline action queue yet. |
 
 ---
 
@@ -170,7 +171,7 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 
 | Item | Spec | Status | Notes |
 |------|------|--------|-------|
-| Widget-based layout | proposal.md §4.5 | Partial | 7 widgets with real KPI data, CSV export, no gridstack drag/resize |
+| Widget-based layout | proposal.md §4.5 | Done | 9 widgets with real KPI data, CSV export, gridstack drag/resize/add/remove |
 | Role-based default layouts | proposal.md §4.5 | Done | GetDefaultDashboardLayout handler returns role-based widget visibility + column count |
 | Daily Priority Card | proposal.md §4.5 | Done | TodaysTasksWidget: overdue detection, priority sorting, top-3 tomorrow prefs, navigate to kanban |
 | End-of-Day Prompt | proposal.md §4.5 | Done | EodPromptWidgetComponent: "Top 3 for tomorrow" textarea, persists to UserPreferencesService |
@@ -636,8 +637,8 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 
 | Area | Status | Notes |
 |------|--------|-------|
-| Angular unit tests (Vitest) | Not Started | No .spec.ts files |
-| .NET unit tests (xUnit) | Not Started | Test project empty |
+| Angular unit tests (Vitest) | Partial | 6 spec files: AuthService, ThemeService, FormValidationService, LoadingService, TerminologyPipe, AppComponent |
+| .NET unit tests (xUnit) | Partial | 6 test classes: CreateJob, UpdateJob, MoveJobStage, CreatePart, StartTimer, StopTimer handlers |
 | Integration tests | Not Started | |
 | E2E tests (Cypress) | Not Started | |
 | axe-core accessibility tests | Not Started | |
@@ -718,7 +719,7 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 | Chat | 1 | — | 3 |
 | Search | 1 | — | — |
 | i18n | — | 2 | 4 |
-| Testing | — | — | 5 |
+| Testing | — | 2 | 3 |
 | Background Jobs | 1 | — | — |
 | Backup | — | — | 1 |
 | AI Module | — | — | 1 |
@@ -953,3 +954,28 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 ### Bundle Size Fix
 - SSO callback component lazy-loaded (was eagerly imported, contributing to bundle bloat)
 - Initial bundle error budget raised to 1.1MB (app has grown with 20+ feature modules)
+
+---
+
+## Batch 15 Changelog — Testing, Accessibility & Offline Resilience (2026-03-14)
+
+### Angular Unit Tests (Vitest)
+- 6 spec files: AuthService, ThemeService, FormValidationService, LoadingService, TerminologyPipe, AppComponent
+- Tests cover login/logout, token management, theme toggle/persistence, form validation extraction, loading state management
+
+### .NET Unit Tests (xUnit + Bogus + Moq)
+- 6 test classes in qb-engineer.tests project: CreateJobHandler, UpdateJobHandler, MoveJobStageHandler, CreatePartHandler, StartTimerHandler, StopTimerHandler
+- Repository/context mocking with Moq, test data via Bogus
+
+### Accessibility (WCAG)
+- aria-labels on all icon-only buttons (header hamburger, chat, notifications, theme toggle, sidebar collapse, dialog close, data table filter/settings, page header help, job detail panel actions)
+- Skip-to-content link in app shell
+- `focus-visible` outline globally in `_shared.scss`
+- `prefers-reduced-motion` media query disables transitions/animations
+
+### Offline Resilience & PWA Infrastructure
+- `ngsw-config.json`: Service Worker config with app-shell prefetch, lazy assets, freshness strategies for API
+- `CacheService`: IndexedDB wrapper (`qb-engineer-cache` database) with `get<T>()`, `set()`, `clear()`, `clearAll()` and `lastSynced` timestamps
+- `BroadcastService`: BroadcastChannel `qb-engineer-sync` for multi-tab logout propagation and theme sync
+- AuthService + ThemeService integrated with BroadcastService
+- `provideServiceWorker()` registered in app.config.ts (production only)
