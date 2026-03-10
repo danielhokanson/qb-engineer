@@ -49,7 +49,7 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 | JWT bearer auth | architecture.md §Auth | Done | Access + refresh tokens |
 | Refresh token rotation | architecture.md §Auth | Done | |
 | Additive roles | architecture.md §Auth | Done | 6 roles seeded |
-| OAuth token encryption | architecture.md §Auth | Not Started | Data Protection API not wired for accounting tokens |
+| OAuth token encryption | architecture.md §Auth | Done | Data Protection API with EF Core key storage, TokenEncryptionService |
 | Rate limiting | architecture.md §Auth | Done | Fixed window (100/min per user), built-in .NET middleware |
 | CSP / security headers | CLAUDE.md §Security | Done | SecurityHeadersMiddleware: CSP, X-Frame-Options, X-Content-Type-Options, Referrer-Policy, Permissions-Policy |
 
@@ -341,7 +341,7 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 | First-login tour | proposal.md §4.17 | Done | TourService + driver.js, kanban + dashboard tour definitions |
 | Per-feature walkthroughs | proposal.md §4.17 | Done | HelpTourService with 8 tour definitions (kanban, dashboard, parts, inventory, expenses, time-tracking, reports, admin). All registered in AppComponent. |
 | Help icon per page | proposal.md §4.17 | Done | PageHeader/PageLayout support helpTourId input with ? icon button |
-| Tour coverage audit (CI) | proposal.md §4.17 | Not Started | |
+| Tour coverage audit (CI) | proposal.md §4.17 | Done | `npm run audit:tours` script scans features for TourService/HelpTourService references |
 | Admin training dashboard | proposal.md §4.17 | Done | TrainingDashboardComponent: DataTable with user progress, completion bars, per-device localStorage tracking |
 
 ### Bin & Location Tracking
@@ -405,7 +405,7 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 | Accounting setup wizard | proposal.md §4.23 | Not Started | |
 | Branding (logo, colors) | proposal.md §4.23 | Done | Brand colors + logo upload (MinIO qb-engineer-branding bucket), admin UI with upload/remove, header displays logo |
 | System settings UI | proposal.md §4.23 | Done | Admin Settings tab with 10 configurable settings, upsert API |
-| Third-party integrations panel | proposal.md §4.23 | Not Started | |
+| Third-party integrations panel | proposal.md §4.23 | Done | IntegrationsPanelComponent scaffold with 5 integrations (QB, MinIO, SMTP, Shipping, Ollama), status indicators, grid layout |
 
 ### Chat System
 
@@ -692,8 +692,8 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 | QuestPDF | Yes | Yes (Invoice PDF, Packing Slip PDF) |
 | ImageSharp | Yes | Yes (ImageService: thumbnails, dimensions, JPEG conversion) |
 | Xabaril Health Checks | Done | PostgreSQL + Hangfire + MinIO + SignalR, detailed JSON response |
-| Data Protection API (EF) | No | Not Started |
-| EFCore.BulkExtensions.MIT | No | Not Started |
+| Data Protection API (EF) | Yes | Yes (TokenEncryptionService, keys persisted to Postgres) |
+| EFCore.BulkExtensions.MIT | Yes | Yes (BulkSoftDeleteAsync extension method) |
 | Bogus | Yes | Yes (test data generation) |
 
 ---
@@ -1091,3 +1091,29 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 - `expenses.cy.ts` (3 tests): page display, table/empty state, create button
 - `admin.cy.ts` (3 tests): page display, tabs, user management table
 - `inventory.cy.ts` (3 tests): page display, tabs, data table
+
+---
+
+## Batch 20 Changelog — Data Protection, Bulk Extensions, Tour Audit & Integrations Panel (2026-03-14)
+
+### ASP.NET Data Protection API
+- Installed `Microsoft.AspNetCore.DataProtection.EntityFrameworkCore`
+- `AppDbContext` implements `IDataProtectionKeyContext` — keys persisted to PostgreSQL
+- `ITokenEncryptionService` interface + `TokenEncryptionService` implementation using `IDataProtector`
+- Purpose string `QbEngineer.OAuthTokens` for OAuth token encryption
+- Configured in Program.cs with `PersistKeysToDbContext` + `SetApplicationName`
+
+### EFCore.BulkExtensions
+- Installed `EFCore.BulkExtensions.MIT` on data project
+- `BulkOperationExtensions.BulkSoftDeleteAsync<T>()` — sets DeletedAt/DeletedBy on all entities and calls BulkUpdateAsync
+
+### Tour Coverage Audit
+- `scripts/audit-tours.ts` — scans features for TourService/HelpTourService references
+- `npm run audit:tours` script via tsx
+- Reports features with/without tours and coverage percentage
+
+### Third-Party Integrations Panel
+- `IntegrationsPanelComponent` scaffold at `admin/components/integrations-panel/`
+- 5 pre-configured integrations: QuickBooks, MinIO, SMTP, Shipping, Ollama
+- Status indicators (connected/disconnected/not_configured) with icons
+- Grid layout with BEM naming and design system variables
