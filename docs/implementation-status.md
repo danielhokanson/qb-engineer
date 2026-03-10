@@ -69,14 +69,14 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 | /admin/users | architecture.md §Routing | Done | User management |
 | /customers | architecture.md §Routing | Done | Full feature module: list, detail, contacts, create/edit |
 | /reports | architecture.md §Routing | Done | 6 reports with charts (ng2-charts) + data tables |
-| /admin/settings | architecture.md §Routing | Partial | Reference data management, no system settings UI |
+| /admin/settings | architecture.md §Routing | Done | Reference data, terminology, system settings tabs |
 | /sprint-planning | architecture.md §Routing | Not Started | |
 | /search | architecture.md §Routing | Done | Global search bar in header, searches 6 entity types |
 | /notifications | architecture.md §Routing | Partial | Backend: entity, repo, controller, 5 MediatR handlers. Frontend: panel dropdown from header bell icon. No dedicated /notifications page. |
 | /admin/qb-setup | architecture.md §Routing | Not Started | |
 | /admin/track-types | architecture.md §Routing | Done | Full CRUD: create/edit/delete with stage management |
 | /admin/terminology | architecture.md §Routing | Done | Tab in admin page, editable key-label table, bulk save |
-| /display/shop-floor | architecture.md §Routing | Not Started | |
+| /display/shop-floor | architecture.md §Routing | Done | Full-screen kiosk: worker presence, active jobs, KPIs, auto-refresh 30s, AllowAnonymous |
 | /display/shop-floor/clock | architecture.md §Routing | Not Started | |
 
 ### Other Architecture Items
@@ -89,7 +89,7 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 | Full-text search | architecture.md §Search | Partial | ILIKE search across 6 entities via SearchController. No tsvector/GIN index yet. |
 | Self-hosted AI (Ollama + RAG) | architecture.md §AI | Partial | Docker container configured, IAiService + MockAiService built, no Ollama/RAG implementation |
 | Theming (light/dark) | architecture.md §Theming | Done | Toggle in toolbar, CSS custom properties |
-| Admin brand colors | architecture.md §Theming | Not Started | No color picker UI |
+| Admin brand colors | architecture.md §Theming | Done | System settings for primary/accent colors, runtime CSS variable override, public brand endpoint |
 | Accessibility (WCAG 3) | architecture.md §Accessibility | Partial | Keyboard nav, no axe-core tests |
 | Mobile responsiveness | architecture.md §Mobile | Not Started | No responsive breakpoint layouts |
 
@@ -120,7 +120,7 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 | Activity log | proposal.md §4.2 | Done | Entity + API + UI timeline + inline comments |
 | Subtasks (checklist) | proposal.md §4.2 | Done | CRUD with assignee + checkbox |
 | Linked cards | proposal.md §4.2 | Done | Full-stack: entity, API (CRUD), typeahead UI in detail panel |
-| Time entries on card | proposal.md §4.2 | Not Started | |
+| Time entries on card | proposal.md §4.2 | Done | Time section in job detail panel with per-entry list + total duration |
 | Accounting document refs | proposal.md §4.2 | Not Started | |
 | Custom fields (per track type) | proposal.md §4.2 | Not Started | |
 | R&D iteration counter/notes | proposal.md §4.2 | Not Started | |
@@ -138,9 +138,9 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 | Item | Spec | Status | Notes |
 |------|------|--------|-------|
 | Per-entity timeline | functional-decisions.md §Activity Log | Done | JobActivityLog + polymorphic ActivityLog entity, full UI with ActivityTimelineComponent |
-| Inline comments with @mentions | functional-decisions.md §Activity Log | Partial | Inline comments done, @mentions not yet wired |
-| Filter by action type/user | functional-decisions.md §Activity Log | Not Started | |
-| Batch field change collapsing | functional-decisions.md §Activity Log | Not Started | |
+| Inline comments with @mentions | functional-decisions.md §Activity Log | Done | @mention regex parsing in CreateJobCommentHandler, notifications via MediatR, MentionHighlightPipe for UI |
+| Filter by action type/user | functional-decisions.md §Activity Log | Done | ActivityTimelineComponent filterable input with action/user dropdowns |
+| Batch field change collapsing | functional-decisions.md §Activity Log | Done | Groups FieldChanged entries within 5s by same user into expandable batch |
 | Reuse on parts, assets, leads, customers, expenses | functional-decisions.md §Activity Log | Done | Polymorphic ActivityLog entity (EntityType/EntityId), GetEntityActivity handler, activity endpoints on 5 controllers |
 
 ### Part / Product / Assembly Catalog
@@ -151,10 +151,10 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 | BOM (recursive) | proposal.md §4.3 | Done | Entity + CRUD endpoints |
 | Part detail (specs, files, BOM) | proposal.md §4.3 | Partial | List view done, detail panel with info/BOM/usage tabs. BOM uses EntityPicker for part search. |
 | Revision control | proposal.md §4.3 | Not Started | |
-| Where Used (reverse BOM lookup) | proposal.md §4.3 | Not Started | |
+| Where Used (reverse BOM lookup) | proposal.md §4.3 | Done | Loaded via EF Include, displayed in Usage tab with navigation |
 | STL inline viewer | proposal.md §4.3 | Not Started | |
 | Accounting item linkage | proposal.md §4.3 | Not Started | |
-| Part-to-job reference | proposal.md §4.3 | Not Started | |
+| Part-to-job reference | proposal.md §4.3 | Done | JobPart entity, CRUD endpoints, search + add in job detail panel |
 
 ### CAD / STL / CAM File Management
 
@@ -236,6 +236,58 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 | Nudge system (uninvoiced jobs) | proposal.md §4.11 | Not Started | |
 | Billing visibility on card | proposal.md §4.11 | Not Started | |
 
+### Order Management (Quote-to-Cash)
+
+| Item | Spec | Status | Notes |
+|------|------|--------|-------|
+| Sales Order entity + CRUD | functional-decisions.md §Order Management | Done | SalesOrder, SalesOrderLine, repo, handlers, controller |
+| Quote entity + CRUD | functional-decisions.md §Quotes | Done | Quote, QuoteLine, repo, handlers, controller |
+| Quote → Sales Order conversion | functional-decisions.md §Quotes | Done | ConvertQuoteToOrder handler |
+| Shipment entity + CRUD | functional-decisions.md §Shipments | Done | Shipment, ShipmentLine, auto SO status update |
+| Partial delivery tracking | functional-decisions.md §Shipments | Done | ShippedQuantity on SO lines, RemainingQuantity computed |
+| Customer multi-address | functional-decisions.md §Customer Addresses | Done | CustomerAddress entity, nested controller |
+| Sales Orders list + detail UI | functional-decisions.md §Order Views | Done | List + detail panel + status actions |
+| Quotes list + detail UI | functional-decisions.md §Order Views | Done | List + detail panel + status actions + convert to SO |
+| Shipments list UI | functional-decisions.md §Order Views | Done | List + detail panel + ship/deliver actions |
+| SO ↔ Job linking | functional-decisions.md §Order Management | Done | SalesOrderLineId FK on Job entity |
+| Packing slip generation | functional-decisions.md §Shipments | Not Started | QuestPDF |
+| Open orders dashboard widget | functional-decisions.md §Order Views | Not Started | |
+
+### Standalone Financial Mode ⚡
+
+| Item | Spec | Status | Notes |
+|------|------|--------|-------|
+| Invoice entity + CRUD | functional-decisions.md §Invoicing | Done | ⚡ Entity, config, handlers, controller, Angular UI |
+| Invoice PDF generation | functional-decisions.md §Invoicing | Not Started | QuestPDF |
+| Invoice email (SMTP) | functional-decisions.md §Invoicing | Not Started | |
+| Payment entity + CRUD | functional-decisions.md §Payments | Done | ⚡ Entity, config, handlers, controller, Angular UI |
+| Payment application to invoices | functional-decisions.md §Payments | Done | PaymentApplication entity, handler, UI with applications table |
+| AR Aging report | functional-decisions.md §AR Aging | Not Started | ⚡ standalone only |
+| Customer Statement PDF | functional-decisions.md §AR Aging | Not Started | ⚡ standalone only |
+| Credit terms per customer | functional-decisions.md §Credit Terms | Done | CreditTerms enum on SalesOrder + Invoice |
+| Sales tax tracking | functional-decisions.md §Sales Tax | Not Started | ⚡ standalone only |
+| Revenue by Period report | functional-decisions.md §Financial Reports | Not Started | ⚡ standalone only |
+| Revenue by Customer report | functional-decisions.md §Financial Reports | Not Started | ⚡ standalone only |
+| Simple P&L report | functional-decisions.md §Financial Reports | Not Started | ⚡ standalone only |
+| Standalone vendor CRUD | functional-decisions.md §Vendor Management | Not Started | ⚡ standalone only |
+| Accounting mode switching | qb-integration.md §Standalone Mode | Not Started | IsConfigured/isStandalone checks |
+| Invoices list + detail UI | functional-decisions.md §Invoicing | Done | ⚡ List + detail panel + send/void actions |
+| Payments list UI | functional-decisions.md §Payments | Done | ⚡ List + detail panel + delete |
+| AR Aging UI | functional-decisions.md §AR Aging | Not Started | ⚡ standalone only |
+
+### Pricing & Quoting
+
+| Item | Spec | Status | Notes |
+|------|------|--------|-------|
+| Price List entity + CRUD | functional-decisions.md §Price Lists | Done | Entity, config, handlers, controller |
+| Quantity breaks | functional-decisions.md §Price Lists | Done | MinQuantity on PriceListEntry, unique index (list+part+qty) |
+| Price resolution logic | functional-decisions.md §Price Lists | Not Started | Customer → default → base |
+| Recurring Order entity + CRUD | functional-decisions.md §Recurring Orders | Done | Entity, config, handlers, controller |
+| Recurring order auto-generation | functional-decisions.md §Recurring Orders | Not Started | Hangfire job |
+| Margin per job/part/customer | functional-decisions.md §Margin Visibility | Not Started | Computed from cost + revenue |
+| Margin dashboard widget | functional-decisions.md §Margin Visibility | Not Started | |
+| Margin report | functional-decisions.md §Margin Visibility | Not Started | |
+
 ### Production Traceability
 
 | Item | Spec | Status | Notes |
@@ -263,7 +315,7 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 | Start/stop timer | proposal.md §4.14 | Done | TimerHub + ClockEvent |
 | Manual time entry | proposal.md §4.14 | Done | Create, update, soft-delete with ConfirmDialog |
 | Accounting sync (Time Activities) | proposal.md §4.14 | Not Started | |
-| Same-day edit lock | proposal.md §4.14 | Not Started | |
+| Same-day edit lock | proposal.md §4.14 | Done | Backend: previous-day check in update/delete handlers. Frontend: lock icon + disabled delete for past entries |
 | Overlapping timer block | proposal.md §4.14 | Not Started | |
 | Pay period awareness | proposal.md §4.14 | Not Started | |
 
@@ -350,8 +402,8 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 | Track type management | proposal.md §4.23 | Done | Full CRUD with stage management dialog |
 | Reference data management | proposal.md §4.23 | Done | Admin tab |
 | Accounting setup wizard | proposal.md §4.23 | Not Started | |
-| Branding (logo, colors) | proposal.md §4.23 | Not Started | |
-| System settings UI | proposal.md §4.23 | Not Started | |
+| Branding (logo, colors) | proposal.md §4.23 | Partial | Brand colors via system settings, no logo upload UI yet |
+| System settings UI | proposal.md §4.23 | Done | Admin Settings tab with 10 configurable settings, upsert API |
 | Third-party integrations panel | proposal.md §4.23 | Not Started | |
 
 ### Chat System
@@ -380,13 +432,20 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 | Item | Spec | Status | Notes |
 |------|------|--------|-------|
 | 6 roles (additive) | roles-auth.md §Roles | Done | Seeded |
-| Role-based UI adaptation | roles-auth.md §Permissions | Not Started | All users see everything |
-| User onboarding (setup code) | roles-auth.md §Onboarding | Partial | Setup page exists, no setup code flow |
+| Role-based UI adaptation | roles-auth.md §Permissions | Partial | Sidebar filtered by role, route guards on Admin/Leads/Assets/Reports/Planning, backend role auth on Admin/Leads/Assets controllers. Full per-feature permissions TBD. |
+| User onboarding (setup token) | roles-auth.md §Onboarding | Partial | Setup page exists, no setup token flow |
 | Email invite (optional) | roles-auth.md §Onboarding | Not Started | |
 | User offboarding (deactivation) | roles-auth.md §Offboarding | Not Started | |
 | Production Worker simplified view | roles-auth.md §Worker | Not Started | |
-| Shop Floor Display (no-login) | roles-auth.md §Shop Floor | Not Started | |
+| Shop Floor Display (no-login) | roles-auth.md §Shop Floor | Done | /display/shop-floor route, AllowAnonymous API, worker presence + active jobs |
 | Time Clock Kiosk (scan-based) | roles-auth.md §Shop Floor | Not Started | |
+| **Tiered Auth: RFID/NFC + PIN** | roles-auth.md §Tiered Auth | Not Started | Tier 1 — kiosk primary |
+| **Tiered Auth: Barcode + PIN** | roles-auth.md §Tiered Auth | Not Started | Tier 2 — kiosk fallback |
+| **PIN management (hash, reset)** | roles-auth.md §PIN Management | Not Started | Separate from password |
+| **Enterprise SSO (Google)** | roles-auth.md §Enterprise SSO | Not Started | OAuth 2.0 / OIDC |
+| **Enterprise SSO (Microsoft)** | roles-auth.md §Enterprise SSO | Not Started | Azure AD / Entra ID |
+| **Enterprise SSO (Generic OIDC)** | roles-auth.md §Enterprise SSO | Not Started | Okta, Auth0, Keycloak |
+| **SSO identity linking** | roles-auth.md §Enterprise SSO | Not Started | Link to existing accounts |
 
 ---
 
@@ -515,21 +574,21 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 
 | Report | Status |
 |--------|--------|
-| My Work History | Not Started |
-| My Time Log | Not Started |
+| My Work History | Done | Full-stack: data table of user's assigned jobs with stage, customer, dates |
+| My Time Log | Done | Full-stack: data table of user's time entries with date range filter |
 | My Expense History | Not Started |
 | My Cycle Summary | Not Started |
 | Jobs by Stage | Done | Full-stack: bar chart + data table, track type filter |
 | Overdue Jobs | Done | Full-stack: data table with days overdue, assignee |
-| On-Time Delivery Rate | Not Started |
-| Average Lead Time | Not Started |
+| On-Time Delivery Rate | Done | Full-stack: pie chart + KPI cards, date range filter |
+| Average Lead Time | Done | Full-stack: bar chart + data table by stage |
 | Time in Stage (Bottleneck) | Not Started |
-| Team Workload | Partial (dashboard widget) |
+| Team Workload | Done | Full-stack: stacked bar chart + data table (active/overdue/hours) |
 | Employee Productivity | Not Started |
 | Labor Hours by Job | Done | Time by User report: bar chart + data table, date range filter |
 | Expense Summary | Done | Full-stack: pie chart + data table, date range filter |
 | Cycle Review | Not Started |
-| Customer Activity | Not Started |
+| Customer Activity | Done | Full-stack: stacked bar chart + data table (active/completed/total) |
 | Quote-to-Close Rate | Not Started |
 | Inventory Levels | Not Started |
 | Quality / Scrap Rate | Not Started |
@@ -643,11 +702,14 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 | Category | Done | Partial | Not Started |
 |----------|------|---------|-------------|
 | Core Entities & Schema | 24/24 | — | — |
-| API Controllers | 19/19 | — | — |
-| MediatR Handlers | 82 | — | — |
+| API Controllers | 27/27 | — | — |
+| MediatR Handlers | 106 | — | — |
 | Shared UI Components | 31/31 | — | — |
-| Feature UIs | 15/15 | — | — |
-| Auth & Security | — | 1 | 2 |
+| Feature UIs | 20/20 | — | — |
+| Auth & Security | — | 1 | 9 |
+| **Order Management** | 9 | — | 3 |
+| **Standalone Financial ⚡** | 5 | — | 12 |
+| **Pricing & Quoting** | 3 | — | 5 |
 | Accounting Integration | — | — | 9 |
 | Planning Cycles | — | — | 6 |
 | Production Traceability | — | — | 5 |

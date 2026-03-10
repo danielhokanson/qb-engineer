@@ -29,6 +29,13 @@ See `docs/libraries.md` for the complete library reference.
 - JWT bearer auth for Angular SPA
 - Refresh token rotation
 - Roles are additive (user can have multiple)
+- **Tiered authentication** (see `roles-auth.md §Tiered Auth`):
+  - Tier 1: RFID/NFC scan + PIN (kiosk primary)
+  - Tier 2: Barcode scan + PIN (kiosk fallback)
+  - Tier 3: Username + password (desktop/mobile standard)
+  - Tier 4: Enterprise SSO — Google, Microsoft, generic OIDC (optional, cloud deployment)
+- Admin creates user accounts with basic info → generates setup token → employee completes own setup (password, PIN, profile)
+- Admin can reset credentials (generates new setup token) but never views or sets passwords/PINs directly
 - Accounting provider OAuth tokens stored on shared AccountingConnection (single company-level connection)
 - Token encryption via ASP.NET Data Protection API (keys in Postgres)
 
@@ -40,6 +47,28 @@ See `docs/libraries.md` for the complete library reference.
 - Each provider owns: auth flow, API client, DTO mapping to/from common models
 - Sync queue, caching, and orphan detection are provider-agnostic — work identically for any provider
 - App works in standalone mode (no provider) — financial features degrade gracefully
+
+## Standalone vs Integrated Mode
+The app operates in two financial modes based on `system_settings.accountingProvider`:
+
+**Integrated Mode** (accounting provider connected):
+- Invoices, payments, AR, financial reports, vendor management, and tax calculations are handled by the accounting system
+- The app reads financial data from the accounting system's API (cached locally)
+- Financial UI screens become read-only views of accounting system data
+- Sales Orders and Quotes still live in the app — they sync to accounting documents (Estimates, Sales Orders) via `IAccountingService`
+- Shipments trigger Invoice creation in the accounting system
+
+**Standalone Mode** (no accounting provider):
+- The app manages invoices, payments, AR aging, customer statements, basic P&L, and sales tax internally
+- All financial data lives in local Postgres tables (`invoices`, `invoice_lines`, `payments`, `payment_applications`)
+- Full CRUD on financial entities through the app UI
+- When a provider is later connected, existing local data can be synced to the accounting system via a migration wizard
+
+**Mode switching:**
+- Admin connects/disconnects accounting provider in settings
+- On connect: local financial data is offered for sync (merge or archive)
+- On disconnect: last-synced accounting data becomes the local baseline
+- The `⚡ ACCOUNTING BOUNDARY` marker in specs identifies all features that behave differently between modes
 
 ## RESTful Routing
 
@@ -74,6 +103,18 @@ All major UI states are URL-addressable and render in that state on direct navig
 /admin/terminology
 /search?q=query
 /notifications
+/orders                      ← sales orders list
+/orders/:id                  ← sales order detail (lines, shipments, invoices)
+/orders/new                  ← create sales order (from quote conversion or manual)
+/quotes                      ← quotes/estimates list
+/quotes/:id                  ← quote detail
+/quotes/new                  ← create quote
+/shipments                   ← shipment list
+/shipments/:id               ← shipment detail
+/invoices                    ← invoices list (standalone mode only)
+/invoices/:id                ← invoice detail (standalone mode: editable; integrated: read-only)
+/payments                    ← payment list (standalone mode only)
+/ar-aging                    ← accounts receivable aging (standalone mode only)
 /display/shop-floor
 /display/shop-floor/clock    ← time clock kiosk (scan in/out, quick actions)
 ```
@@ -95,6 +136,25 @@ RESTful resource naming with versioning:
 /api/v1/parts/:id/bom
 /api/v1/notifications
 /api/v1/search?q=query
+/api/v1/orders
+/api/v1/orders/:id
+/api/v1/orders/:id/lines
+/api/v1/quotes
+/api/v1/quotes/:id
+/api/v1/quotes/:id/convert     ← POST: convert quote to sales order
+/api/v1/shipments
+/api/v1/shipments/:id
+/api/v1/invoices                ← standalone mode: full CRUD; integrated: read-only from cache
+/api/v1/invoices/:id
+/api/v1/invoices/:id/pdf
+/api/v1/payments                ← standalone mode only
+/api/v1/payments/:id
+/api/v1/customers/:id/addresses
+/api/v1/customers/:id/statement/pdf
+/api/v1/ar-aging                ← standalone mode only
+/api/v1/price-lists
+/api/v1/price-lists/:id
+/api/v1/recurring-orders
 /api/v1/admin/settings
 ```
 

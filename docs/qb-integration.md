@@ -21,25 +21,23 @@ The accounting integration is **pluggable**. All accounting operations go throug
 5. Register the provider in the DI container with a provider key
 6. Add provider-specific setup steps to the admin wizard UI
 
-## What Lives in QB (read/write via API)
-- Customers
-- Vendors
-- Items (products/services)
-- Estimates
-- Sales Orders
-- Purchase Orders
-- Invoices
-- Payments
-- Employee records
-- Time Activities (drives payroll)
+## ⚡ Accounting Boundary — What Lives Where
 
-## What Lives in Our App Only
+The `⚡ ACCOUNTING BOUNDARY` marker is used throughout all spec documents to identify features that behave differently depending on whether an accounting provider is connected. This is the authoritative boundary definition.
+
+### Always in Our App (regardless of mode)
 - Kanban board state (stage, position, track type)
 - Job card operational fields (assignee, priority, due date, machine)
+- **Sales Orders** (app-owned, synced to accounting as Sales Orders/Estimates)
+- **Quotes/Estimates** (app-owned, synced to accounting as Estimates)
+- **Shipments** (app-owned, triggers Invoice creation in accounting system)
+- **Price Lists & Quantity Breaks** (app-owned, no accounting equivalent)
+- **Recurring Order Templates** (app-owned, generates SOs)
+- **Customer Addresses** (app-owned, multi-address model)
 - File attachments and revision history
 - Activity log / status change history
 - R&D iterations and test notes
-- Leads (pre-customer, not in QB until conversion)
+- Leads (pre-customer, not in accounting until conversion)
 - Assets/equipment registry
 - Maintenance cards
 - Planning cycle/backlog management
@@ -47,6 +45,42 @@ The accounting integration is **pluggable**. All accounting operations go throug
 - User accounts and roles
 - Production traceability (lot tracking, QC records)
 - Custom track types and custom fields
+- **Margin calculations** (estimated from app-owned cost/revenue data)
+
+### In Accounting System When Connected — In Our App When Standalone
+These features are **⚡ accounting-bounded**. They exist locally in standalone mode and defer to the accounting system when connected:
+
+| Feature | Standalone Mode | Integrated Mode |
+|---------|----------------|-----------------|
+| **Invoices** | Local CRUD, PDF generation, email | Created in accounting system from shipments; read-only cache locally |
+| **Payments** | Local recording, application to invoices | Recorded in accounting system; read-only cache locally |
+| **AR Aging** | Computed from local invoices/payments | Read from accounting system reports |
+| **Customer Statements** | Generated from local data | Generated from accounting system data |
+| **Sales Tax** | Simple per-customer rate, local tracking | Accounting system handles tax calculation |
+| **Financial Reports** (P&L, revenue, payment history) | Computed from local invoices/expenses | Disabled — use accounting system reports |
+| **Vendors** | Full local CRUD | Read-only from accounting system sync |
+| **Credit Terms** | Stored locally on customer | Synced from accounting system |
+
+### Always in Accounting System (read/write via API when connected)
+- General ledger / chart of accounts
+- Bank reconciliation
+- Payroll and payroll taxes
+- Full income statements / balance sheets
+- Accounts payable (beyond PO tracking)
+- Multi-jurisdiction tax automation
+- Employee payroll records
+- Time Activities (drives payroll — app writes, accounting system owns)
+- Check writing
+- 1099 / tax form generation
+
+### Never in Our App (regardless of mode)
+- General ledger / bookkeeping
+- Payroll tax calculations (FWT, SWT, SS, Medicare)
+- Bank account reconciliation
+- Depreciation schedules
+- Full accrual-basis accounting
+- Check printing
+- Multi-entity consolidation
 
 ## Accounting Identifier Storage
 Every entity with an accounting system counterpart stores:
@@ -96,7 +130,16 @@ Every entity with an accounting system counterpart stores:
 - Voiding confirmation shows: document type, ref number, customer, dollar amount
 - In standalone mode (no accounting provider): all card movements are free, no document creation
 
-## Billing Visibility (read-only)
+## Billing Visibility
 - Job card shows collapsed "Billing Status" section
-- Deposits received, progress billed, remaining balance, payment status
-- All read from QB cache, no edit capability
+- **Integrated mode:** Deposits received, progress billed, remaining balance, payment status — all read from accounting system cache, no edit capability
+- **Standalone mode:** Invoice status, amount invoiced, amount paid, balance due — read from local invoice/payment tables, editable via invoice/payment screens
+
+## Standalone Mode Activation
+- Default: standalone (no accounting provider configured out of the box)
+- Admin connects an accounting provider in Settings → Integrations → Accounting
+- On first connect: migration wizard offers to sync existing local invoices/payments/vendors to the accounting system
+- On disconnect: local tables retain last-synced data as the working baseline
+- `system_settings.accountingProvider` = `null` means standalone mode
+- Feature flags in Angular check `AccountingService.isStandalone` signal to show/hide financial UI sections
+- .NET controllers check `IAccountingService.IsConfigured` to enable/disable financial endpoints

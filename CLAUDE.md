@@ -9,6 +9,8 @@
 
 Also update `docs/coding-standards.md` or the relevant doc file if the change is significant enough to be spec-level.
 
+**Implementation tracking:** Check `docs/implementation-status.md` at the start of every session. When completing a feature or sub-feature, update its status (Not Started → Partial → Done) in that file before ending the session. This is the master progress tracker.
+
 ---
 
 ## Project Structure
@@ -84,7 +86,7 @@ qb-engineer-wrapper/
 - **Frontend:** Angular 21, Angular Material 21, SCSS, standalone components, zoneless (signals)
 - **Backend:** .NET 9, MediatR (CQRS), FluentValidation, EF Core + Npgsql
 - **Database:** PostgreSQL with `timestamptz` columns (all DateTimes must be UTC)
-- **Storage:** MinIO (S3-compatible), **Auth:** ASP.NET Identity + JWT
+- **Storage:** MinIO (S3-compatible), **Auth:** ASP.NET Identity + JWT + tiered kiosk auth (RFID/NFC/barcode + PIN) + optional SSO (Google/Microsoft/OIDC)
 - **Real-time:** SignalR, **Background:** Hangfire, **Mapping:** Mapperly (source-generated), **Logging:** Serilog
 - **Date lib:** date-fns (tree-shakeable, official Material adapter)
 - **Charts:** ng2-charts (Chart.js), **Dashboard grid:** gridstack, **Tours:** driver.js
@@ -404,10 +406,65 @@ Dark theme auto-swaps via `[data-theme='dark']` on `<html>`.
 - `ToastService`: `.show({ severity, title, message, details?, autoDismissMs? })`
 - Creation navigation: snackbar includes "View Job" action button when creating entities
 
-### Loading States
-- **Global overlay** via `LoadingService` — blocks all interaction, spinner + message stack, `inert` on main content. Fade in/out 300ms, min 400ms display.
-- **Component-level** via `LoadingBlockDirective` — local spinner on specific sections
-- **Empty states** on all list views: icon + message + optional CTA via `EmptyStateComponent`
+### Loading States — ALWAYS Evaluate
+**When writing any code that involves data fetching, route transitions, or long-running operations, you MUST evaluate whether to use the loading system.** Do not skip this step.
+
+#### Global Overlay (`LoadingService` + `LoadingOverlayComponent`)
+Full-screen blocking overlay with SVG spinner + stacked message queue. Applies `inert` on main content. Use for operations where the user cannot meaningfully interact with any part of the page.
+
+**When to use:**
+- **Route transitions** — automatic via `RouteLoadingService` (initialized in `AppComponent.ngOnInit()`)
+- **Auth flows** — login, setup, logout (entire app state changing)
+- **Initial page loads with aggregate data** — dashboard (multi-widget), kanban board (full board), backlog (forkJoin of jobs + track types + users)
+- **Bulk operations** — bulk move, bulk assign, bulk archive (page reorg on completion)
+- **Long-running generation** — PDF export, report generation, data sync
+- **Full-page saves** — operations that navigate away or fundamentally change page state on completion
+
+**API:**
+```typescript
+private readonly loading = inject(LoadingService);
+
+// Track an Observable — auto start/stop
+this.loading.track('Loading board...', this.kanbanService.getBoard(id)).subscribe(...)
+
+// Track a Promise
+await this.loading.trackPromise('Generating report...', this.reportService.generate());
+
+// Manual control (for complex flows)
+this.loading.start('save-job', 'Saving job...');
+this.loading.stop('save-job');
+```
+
+#### Component-Level Block (`LoadingBlockDirective`)
+Local spinner overlay on a specific element. Keeps rest of page interactive. Use for section-scoped loading.
+
+**When to use:**
+- **List/table loads** — filtered data refresh (parts, expenses, leads, assets, etc.)
+- **Tab-scoped loads** — switching tabs within a page (admin tabs, inventory tabs)
+- **Detail panel loads** — side panel or detail section content
+- **Per-widget/per-section** — dashboard widget content, chart data, individual card content
+
+**API:** `[appLoadingBlock]="loading()"` on the container element
+
+#### Empty States
+All list views must show `<app-empty-state>` when data is empty — icon + message + optional CTA.
+
+#### Decision Matrix
+
+| Scenario | Use | Reason |
+|----------|-----|--------|
+| Route navigation | Global (automatic) | `RouteLoadingService` handles it |
+| Login / Setup submit | Global | Entire app state changing |
+| Dashboard initial load | Global | Multi-widget aggregate, nothing useful to show partially |
+| Kanban board load / switch track | Global | Full board reorganization |
+| Backlog forkJoin load | Global | Multi-resource, page unusable until complete |
+| Bulk move/assign/archive | Global | Page reorgs on completion |
+| PDF/report generation | Global | Long-running, user must wait |
+| List page data refresh | Component-level | Table area only, filters/header remain interactive |
+| Tab switch within page | Component-level | Only the tab panel content changes |
+| Detail panel / side panel | Component-level | Main list remains visible and interactive |
+| Form dialog save | Button disabled (`saving()` signal) | Dialog stays open, button shows disabled state |
+| Quick inline action | Snackbar on completion | Too fast for spinner, feedback via toast |
 
 ---
 
@@ -433,6 +490,7 @@ Dark theme auto-swaps via `[data-theme='dark']` on `<html>`.
 | `ColumnFilterPopoverComponent` | `shared/components/data-table/column-filter-popover/` | Per-column filter overlay (text/number/date/enum) |
 | `ColumnManagerPanelComponent` | `shared/components/data-table/column-manager-panel/` | Column visibility, reorder, reset overlay |
 | `ColumnCellDirective` | `shared/directives/column-cell.directive.ts` | Tags `ng-template` by field for custom cell rendering |
+| `RowExpandDirective` | `shared/directives/row-expand.directive.ts` | Tags `ng-template` for expandable row content |
 | `ConfirmDialogComponent` | `shared/components/confirm-dialog/` | MatDialog-based confirmation for destructive actions |
 | `DetailSidePanelComponent` | `shared/components/detail-side-panel/` | Slide-out right panel (400px, Escape/backdrop close) |
 | `PageLayoutComponent` | `shared/components/page-layout/` | Standard page shell (toolbar + content + actions) |
@@ -454,7 +512,9 @@ Dark theme auto-swaps via `[data-theme='dark']` on `<html>`.
 | `ToastService` | `shared/services/` | Upper-right toast management |
 | `AuthService` | `shared/services/` | Login, logout, token management |
 | `ThemeService` | `shared/services/` | Light/dark theme switching |
+| `LoadingOverlayComponent` | `shared/components/loading-overlay/` | Full-screen blocking overlay (consumes LoadingService) |
 | `LoadingService` | `shared/services/` | Global loading overlay with cause queue |
+| `RouteLoadingService` | `shared/services/` | Auto-shows global overlay during route transitions |
 | `NotificationService` | `shared/services/` | Notification state, filtering, panel, API sync |
 | `TerminologyService` | `shared/services/` | Admin-configurable label resolution |
 | `TerminologyPipe` | `shared/pipes/` | `{{ 'key' \| terminology }}` label transform |
@@ -471,7 +531,7 @@ Dark theme auto-swaps via `[data-theme='dark']` on `<html>`.
 
 Reusable data table replacing all hand-rolled `<table>` markup. Features: client-side sorting (click header, Shift+click for multi-sort), per-column filtering (text/number/date/enum), pagination (25/50/100), column visibility/reorder/resize via gear icon, preference persistence via `tableId`, right-click context menu on column headers (sort asc/desc, clear sort, filter, clear filter, clear all filters, hide column, reset width).
 
-**Converted features:** Admin, Assets, Leads, Expenses, Time Tracking, Parts, Backlog (7/8 — Inventory deferred, needs expandable row support).
+**Converted features:** Admin, Assets, Leads, Expenses, Time Tracking, Parts, Backlog, Inventory (8/8).
 
 **Backend:** `UserPreferencesController` (GET/PATCH/DELETE), `UserPreference` entity, MediatR handlers built. Frontend still uses localStorage (API switch pending).
 
@@ -527,7 +587,45 @@ protected readonly partRowStyle = (row: unknown): Record<string, string> => {
 
 **ColumnDef interface:** `field`, `header`, `sortable?`, `filterable?`, `type?` ('text'|'number'|'date'|'enum'), `filterOptions?` (SelectOption[]), `width?`, `visible?`, `align?` ('left'|'center'|'right')
 
+**Additional inputs:** `loading` (boolean, shows `LoadingBlockDirective` overlay on scroll area), `stickyFirstColumn` (boolean, keeps first data column visible during horizontal scroll), `expandable` (boolean, adds expand/collapse chevron column)
+
+```html
+<!-- Expandable rows (e.g., Inventory bin details) -->
+<app-data-table
+  tableId="inventory"
+  [columns]="columns"
+  [data]="locations()"
+  [expandable]="true"
+  [loading]="isLoading()"
+  [stickyFirstColumn]="true">
+
+  <ng-template appRowExpand let-location>
+    <div class="bin-details">
+      @for (bin of location.bins; track bin.id) {
+        <div class="bin-row">{{ bin.name }}: {{ bin.quantity }}</div>
+      }
+    </div>
+  </ng-template>
+</app-data-table>
+```
+
 **Key models:** `ColumnDef` in `shared/models/column-def.model.ts`, `TablePreferences`/`SortState` in `shared/models/table-preferences.model.ts`
+
+**Expandable rows:** Set `[expandable]="true"` and provide `<ng-template appRowExpand let-row>` for expand content. Import `RowExpandDirective` from `shared/directives/row-expand.directive.ts`. Rows toggle expand on chevron click. Example (Inventory stock → bin detail):
+
+```html
+<app-data-table tableId="inventory-stock" [columns]="stockColumns" [data]="parts()" [expandable]="true" trackByField="partId">
+  <ng-template appRowExpand let-row>
+    <table class="bin-detail-table">
+      @for (bin of $any(row).binLocations; track bin.locationId) {
+        <tr><td>{{ bin.locationPath }}</td><td>{{ bin.quantity }}</td></tr>
+      }
+    </table>
+  </ng-template>
+</app-data-table>
+```
+
+**All 8 features now converted** to DataTable (Admin, Assets, Leads, Expenses, Time Tracking, Parts, Backlog, Inventory).
 
 ### ConfirmDialogComponent — Usage Guide
 
@@ -957,12 +1055,7 @@ await boardHub.Clients.Group($"board:{trackTypeId}")
 
 ### Pending Enhancements
 
-| Enhancement | Component | Details |
-|-------------|-----------|---------|
-| Expandable rows | `DataTableComponent` | Optional `rowExpand` template slot for nested content (needed for Inventory stock tab — bin detail rows) |
-| Switch to API | `UserPreferencesService` | Frontend currently uses localStorage. Backend API is built. Switch to `GET` on init + debounced `PATCH` on change. |
-| Loading state | `DataTableComponent` | Integrate `LoadingBlockDirective` during data fetch |
-| Sticky first column | `DataTableComponent` | For wide tables with horizontal scroll |
+_(No pending enhancements — all planned DataTable and UserPreferences work is complete)_
 
 ---
 
@@ -983,6 +1076,23 @@ await boardHub.Clients.Group($"board:{trackTypeId}")
 | Admin | `admin/` | `AdminController` | ApplicationUser, ReferenceData |
 | Auth | `auth/` (login, setup) | `AuthController` | ApplicationUser |
 | File Storage | `FileUploadZoneComponent` | `FilesController` | FileAttachment |
+| Planning Cycles | `planning/` | `PlanningCyclesController` | PlanningCycle, PlanningCycleEntry |
+| Vendors | `vendors/` | `VendorsController` | Vendor |
+| Purchase Orders | `purchase-orders/` | `PurchaseOrdersController` | PurchaseOrder, PurchaseOrderLine, ReceivingRecord |
+| Sales Orders | `sales-orders/` | `SalesOrdersController` | SalesOrder, SalesOrderLine |
+| Quotes | `quotes/` | `QuotesController` | Quote, QuoteLine |
+| Shipments | `shipments/` | `ShipmentsController` | Shipment, ShipmentLine |
+| Customer Addresses | — (customer detail) | `CustomerAddressesController` | CustomerAddress |
+| Invoicing ⚡ | `invoices/` | `InvoicesController` | Invoice, InvoiceLine |
+| Payments ⚡ | `payments/` | `PaymentsController` | Payment, PaymentApplication |
+| Price Lists | — (backend only) | `PriceListsController` | PriceList, PriceListEntry |
+| Recurring Orders | — (backend only) | `RecurringOrdersController` | RecurringOrder, RecurringOrderLine |
+
+### Planned Features (Not yet implemented)
+
+| Feature | UI Route | API Controller | Key Entities | Notes |
+|---------|----------|---------------|--------------|-------|
+| AR Aging ⚡ | `ar-aging/` | `ArAgingController` | (computed) | Standalone mode only |
 
 ---
 
@@ -998,11 +1108,20 @@ BaseEntity (Id, CreatedAt, UpdatedAt, DeletedAt, DeletedBy)
 ├── Lead, Expense, Asset
 ├── TimeEntry, ClockEvent
 ├── FileAttachment
+├── PlanningCycle, PlanningCycleEntry (BaseEntity)
+├── Vendor, PurchaseOrder, PurchaseOrderLine (BaseEntity), ReceivingRecord
+├── SalesOrder, SalesOrderLine, Quote, QuoteLine
+├── Shipment, ShipmentLine
+├── CustomerAddress
+├── Invoice, InvoiceLine               ← ⚡ standalone mode
+├── Payment, PaymentApplication        ← ⚡ standalone mode
+├── PriceList, PriceListEntry
+├── RecurringOrder, RecurringOrderLine
 ├── ReferenceData, SystemSetting, SyncQueueEntry
 ```
 
 ### Enums (in `qb-engineer.core/Enums/`)
-`JobPriority`, `JobLinkType`, `ActivityAction`, `PartType`, `PartStatus`, `BOMSourceType`, `LocationType`, `BinContentStatus`, `BinMovementReason`, `LeadStatus`, `ExpenseStatus`, `AssetType`, `AssetStatus`, `ClockEventType`, `SyncStatus`, `AccountingDocumentType`
+`JobPriority`, `JobLinkType`, `ActivityAction`, `PartType`, `PartStatus`, `BOMSourceType`, `LocationType`, `BinContentStatus`, `BinMovementReason`, `LeadStatus`, `ExpenseStatus`, `AssetType`, `AssetStatus`, `ClockEventType`, `SyncStatus`, `AccountingDocumentType`, `PlanningCycleStatus`, `PurchaseOrderStatus`, `SalesOrderStatus`, `QuoteStatus`, `ShipmentStatus`, `InvoiceStatus`, `PaymentMethod`, `CreditTerms`, `AddressType`
 
 ---
 
@@ -1265,3 +1384,78 @@ Quote Requested → Quoted (Estimate) → Order Confirmed (Sales Order) → Mate
 - Never put HTTP calls in components — always in services
 - Never use `*` or `ng-deep` to override child component styles
 - Never suppress lint/analysis warnings without a comment explaining why
+- Never write data-fetching code without evaluating loading state — use `LoadingService` (global) or `LoadingBlockDirective` (section-level)
+- Never duplicate `@keyframes spin` — it's defined globally in `_shared.scss`
+- Never build financial features (invoices, payments, AR, P&L, vendor CRUD) without checking the accounting boundary — see below
+
+---
+
+## ⚡ Accounting Boundary (Critical)
+
+Some features duplicate functionality that an accounting system (QuickBooks, Xero, etc.) handles natively. These features must be **cordoned off** so they only activate in standalone mode (no accounting provider connected). See `docs/qb-integration.md` for the authoritative boundary definition.
+
+### Rules for Accounting-Bounded Code
+
+1. **Every accounting-bounded feature must check `IAccountingService.IsConfigured` (.NET) or `AccountingService.isStandalone` (Angular).** When a provider is connected, the feature becomes read-only or hidden.
+
+2. **Mark all accounting-bounded specs with `⚡ ACCOUNTING BOUNDARY`** in functional-decisions.md and other docs so they are easily searchable.
+
+3. **Accounting-bounded features** (standalone mode only):
+   - Invoices (local CRUD, PDF generation)
+   - Payments (local recording, application to invoices)
+   - AR Aging (computed from local invoices/payments)
+   - Customer Statements (generated from local data)
+   - Sales Tax tracking (simple per-customer rate)
+   - Financial Reports (P&L, revenue, payment history)
+   - Vendor management (full local CRUD — read-only when integrated)
+   - Credit terms management
+
+4. **Never-in-app features** (regardless of mode):
+   - General ledger / bookkeeping
+   - Payroll tax calculations
+   - Bank reconciliation
+   - Check writing
+   - Depreciation schedules
+   - Full accrual-basis accounting
+
+5. **Always-in-app features** (regardless of mode):
+   - Sales Orders, Quotes, Shipments
+   - Price Lists, Quantity Breaks, Recurring Orders
+   - Customer Addresses (multi-address model)
+   - Margin calculations (estimated from app-owned data)
+
+### Implementation Pattern
+```csharp
+// .NET — Controller or handler checks mode
+if (_accountingService.IsConfigured)
+    return StatusCode(409, "Feature disabled — managed by accounting provider");
+
+// Angular — Component hides/shows based on mode
+readonly isStandalone = this.accountingService.isStandalone;
+// Template: @if (isStandalone()) { <invoice-crud /> }
+```
+
+---
+
+## Order Management Entities
+
+### New Core Entities (in `qb-engineer.core/Entities/`)
+```
+SalesOrder, SalesOrderLine
+Quote, QuoteLine
+Shipment, ShipmentLine
+CustomerAddress
+Invoice, InvoiceLine          ← ⚡ standalone mode
+Payment, PaymentApplication   ← ⚡ standalone mode
+PriceList, PriceListEntry
+RecurringOrder, RecurringOrderLine
+```
+
+### New Enums
+`SalesOrderStatus`, `QuoteStatus`, `ShipmentStatus`, `InvoiceStatus`, `PaymentMethod`, `CreditTerms`, `AddressType`
+
+---
+
+## Implementation Tracking
+
+**Check `docs/implementation-status.md` at the start of every session.** When completing a feature, update its status in that file before ending the session. This is the master progress tracker for the entire project.

@@ -78,6 +78,287 @@ Every entity with a detail view (job, part, asset, lead, customer, expense) show
 - Escalating nudge system: 0-2 days informational, 3-5 yellow, 5+ red
 - Deposits/progress billing: read-only display from QB, handled by financial person in QB
 
+## Order Management (Quote-to-Cash)
+The kanban board is a **workflow visualization** tool — it shows where work is and helps organize tasks. The order management system is the **business transaction** layer — it tracks what the customer ordered, what was shipped, and what they owe. Both views exist in parallel and stay in sync.
+
+### Sales Orders
+A Sales Order is the business commitment between the company and a customer. It captures what was ordered, pricing, quantities, and delivery expectations.
+
+**Sales Order fields:**
+- Order number (auto-generated, sequential: `SO-0001`)
+- Customer (FK → customers)
+- Customer PO reference (text — the customer's purchase order number, externally provided)
+- Order date
+- Required delivery date (overall)
+- Status: Draft → Confirmed → In Production → Partially Shipped → Shipped → Closed
+- Notes / special instructions
+- Shipping address (defaults from customer, overridable per order)
+- Credit terms (defaults from customer, overridable per order)
+- Tax exempt (from customer record)
+
+**Sales Order Lines:**
+- Part (FK → parts catalog)
+- Description (auto-filled from part, editable)
+- Quantity ordered
+- Unit price (from price list or manual entry)
+- Line total (computed)
+- Quantity shipped (computed from shipments)
+- Quantity remaining (computed: ordered - shipped)
+- Per-line required delivery date (optional, overrides header)
+- Status: Open → Partially Shipped → Shipped → Closed
+
+**Relationship to Jobs:**
+- Creating a Sales Order can auto-generate Job cards (one per line item, or one per order — configurable)
+- Jobs link back to their Sales Order line via `sales_order_line_id`
+- Moving a Job to "Shipped" stage updates the corresponding SO line's shipped quantity
+- A Sales Order can have multiple Jobs (multi-line order) and a Job can exist without a Sales Order (internal work, R&D)
+- The kanban board shows job progress; the Sales Order view shows fulfillment progress
+
+**Multi-line orders:**
+- One order, multiple products/quantities — each line can be fulfilled independently
+- Partial shipments supported per line (ship 200 of 500 ordered)
+- Order status auto-advances based on line statuses (all lines shipped → order "Shipped")
+
+### Quotes / Estimates
+Pre-order proposals sent to customers before commitment. Quotes can convert to Sales Orders.
+
+**Quote fields:**
+- Quote number (auto-generated: `QT-0001`)
+- Customer (FK)
+- Quote date, valid until date (expiration)
+- Status: Draft → Sent → Accepted → Declined → Expired
+- Quote lines: same structure as SO lines (part, qty, unit price, description)
+- Notes / terms
+
+**Quote → Sales Order conversion:**
+- "Convert to Sales Order" action copies all lines to a new SO
+- Quote status set to "Accepted", linked to the created SO
+- If accounting provider is connected, creates an Estimate document in the accounting system
+- If no accounting provider, quote exists only in the app — fully functional standalone
+
+### Shipments & Partial Delivery
+A Shipment records what was physically sent to the customer. Multiple shipments can fulfill a single Sales Order.
+
+**Shipment fields:**
+- Shipment number (auto-generated: `SH-0001`)
+- Sales Order (FK — which order this fulfills)
+- Ship date
+- Carrier, service level, tracking number(s)
+- Ship-to address (from SO, but overridable)
+- Status: Pending → Shipped → Delivered
+- Packing slip (auto-generated, printable)
+- Shipping cost (optional, for cost tracking)
+
+**Shipment Lines:**
+- Sales Order Line (FK — which line item this fulfills)
+- Quantity shipped (partial quantities allowed)
+- Bin locations picked from (for audit trail)
+- Lot numbers (if traceability enabled)
+
+**Workflow:**
+1. Job reaches "Shipped" stage OR user clicks "Create Shipment" from the Sales Order
+2. System pre-fills shipment lines from remaining SO quantities
+3. User adjusts quantities (partial ship), selects carrier, confirms
+4. Shipment created → SO line shipped quantities updated → inventory decremented
+5. If carrier API configured, shipping label generated (existing shipping integration)
+6. Packing slip printed — lists items, quantities, customer PO reference, ship-to address
+7. **⚡ ACCOUNTING BOUNDARY:** If accounting provider connected, creates an Invoice in the accounting system for shipped quantities. If standalone mode, creates a local Invoice (see Standalone Financial Mode below).
+
+**Partial delivery tracking:**
+- Ship 200 of 500 ordered → SO line shows "200 shipped, 300 remaining"
+- Multiple shipments per SO line are tracked independently with dates and quantities
+- Each shipment can generate its own invoice (per-shipment invoicing) or invoices can be batched
+
+### Customer Addresses
+Customers support multiple addresses for flexible shipping and billing.
+
+**Address model:**
+- Customer has one primary billing address (on the Customer entity)
+- Customer has zero or more shipping addresses (separate `CustomerAddress` entity)
+- Each address: label (e.g., "Main Warehouse", "Plant 2"), street, city, state, zip, country, contact name, contact phone
+- One shipping address marked as default
+- Sales Orders default to the customer's default shipping address, overridable per order
+- Addresses are soft-deleted (historical orders preserve their shipping address)
+
+### Order Views (UI)
+- **Sales Orders list** — data table with filters: status, customer, date range, overdue. Shows order number, customer, PO ref, total, status, ship progress (e.g., "3 of 5 lines shipped")
+- **Sales Order detail** — header info + line items table + linked shipments + linked jobs + linked invoices (if standalone mode) + activity log
+- **Quotes list** — similar to SO list with quote-specific statuses and expiration date
+- **Quote detail** — header + lines + "Convert to SO" action
+- **Shipments list** — all shipments with tracking, carrier, status, SO reference
+- **Open orders dashboard widget** — summary of unshipped order lines, overdue orders
+
+## Standalone Financial Mode
+
+> **⚡ ACCOUNTING BOUNDARY:** Everything in this section duplicates functionality that an accounting system (QuickBooks, Xero, etc.) handles natively. When an accounting provider is connected, these features are **disabled or read-only** — the accounting system is the source of truth. When no accounting provider is configured (standalone mode), the app provides these features internally so the business can operate without external accounting software.
+
+The standalone financial mode is controlled by `system_settings.accountingProvider`:
+- **Provider configured and connected:** Financial features sync to the provider. Local invoices, payments, and financial reports are disabled — data comes from the accounting system's API.
+- **No provider configured (standalone):** The app manages invoices, payments, AR, and basic financial reporting internally. All data lives in local Postgres tables.
+- **Provider configured but disconnected:** Sync queue holds pending operations. Local cache serves stale-but-usable data. Reconnection drains the queue.
+
+### Invoicing (Standalone Mode)
+
+> ⚡ When accounting provider is connected, invoices are created in the accounting system and read back via cache. The local invoice UI becomes read-only.
+
+**Invoice fields:**
+- Invoice number (auto-generated, sequential: `INV-0001`)
+- Customer (FK)
+- Sales Order (FK, optional — invoices can exist without an SO for ad-hoc billing)
+- Shipment (FK, optional — links to the shipment that triggered this invoice)
+- Invoice date, due date (computed from customer credit terms)
+- Status: Draft → Sent → Partially Paid → Paid → Overdue → Void
+- Line items: description, quantity, unit price, line total, tax
+- Subtotal, tax amount, total
+- Amount paid (computed from payments)
+- Balance due (computed: total - paid)
+- Notes / terms
+- PDF generated via QuestPDF (printable, emailable)
+
+**Invoice creation:**
+- Auto-created from Shipment (one invoice per shipment, or batch shipments into one invoice — configurable)
+- Manual creation from Sales Order (invoice for ordered quantities, not just shipped)
+- Ad-hoc invoice (no SO or shipment — for services, miscellaneous charges)
+
+**Invoice workflow:**
+- Draft → review → mark as Sent (manual or email via SMTP)
+- System tracks overdue invoices (past due date, unpaid)
+- Overdue invoices surface on dashboard and generate notifications
+- Escalating nudge system: 0-2 days past due = informational, 3-5 = yellow warning, 5+ = red alert
+- Void an invoice: marks as void with reason, adjusts AR
+
+### Payments (Standalone Mode)
+
+> ⚡ When accounting provider is connected, payments are recorded in the accounting system. Local payment recording is disabled.
+
+**Payment fields:**
+- Payment number (auto-generated)
+- Customer (FK)
+- Payment date
+- Amount
+- Payment method (reference data: Check, ACH, Wire, Credit Card, Cash, Other)
+- Reference number (check number, transaction ID, etc.)
+- Notes
+- Applied to: one or more invoices with amount per invoice
+
+**Payment application:**
+- A single payment can be split across multiple invoices
+- Partial payments supported (pay $500 of a $1,200 invoice)
+- Overpayments tracked as customer credit balance
+- Unapplied payments held as credit until applied
+
+### Accounts Receivable & Aging (Standalone Mode)
+
+> ⚡ When accounting provider is connected, AR reports come from the accounting system. Local AR is disabled.
+
+**AR Aging buckets:** Current, 1-30 days, 31-60 days, 61-90 days, 90+ days
+
+**AR views:**
+- **AR Aging Summary** — one row per customer: current, 30, 60, 90, 90+ balances, total outstanding
+- **AR Aging Detail** — expanded view showing individual invoices per customer with aging
+- **Customer Statement** — printable/PDF summary of all outstanding invoices for a customer, with payment history. Emailable via SMTP.
+- **Dashboard widget** — total outstanding, total overdue, top 5 overdue customers
+
+### Credit Terms
+- Configurable per customer: Net 15, Net 30, Net 45, Net 60, COD, Prepaid, Custom (days)
+- Default credit terms set in system settings (applies to new customers)
+- Credit terms drive invoice due date calculation and AR aging
+- Visible on Sales Order and Invoice
+
+### Sales Tax (Standalone Mode)
+
+> ⚡ When accounting provider is connected, tax calculations defer to the accounting system.
+
+- Tax rate configurable per customer (some customers are tax-exempt)
+- Tax exemption certificate stored as FileAttachment on Customer
+- Default tax rate in system settings
+- Tax applied at the invoice line level
+- Basic tax report: total tax collected by period (monthly, quarterly, annual)
+- No multi-jurisdiction tax automation — single rate per customer. For complex tax needs, use an accounting provider.
+
+### Basic Financial Reports (Standalone Mode)
+
+> ⚡ All reports in this section are disabled when an accounting provider is connected. Financial reporting belongs in the accounting system.
+
+- **Revenue by Period** — invoiced revenue by month/quarter/year, with trend chart
+- **Revenue by Customer** — total invoiced per customer, sortable, with percentage of total
+- **Outstanding Receivables** — AR aging summary (same as AR view, also available as report with CSV export)
+- **Payment History** — all payments received by period, by customer, by method
+- **Simple P&L** — revenue (invoiced) minus expenses (from Expense module) by period. NOT a full income statement — just the data the app owns. For accrual-basis accounting, use an accounting provider.
+- **Sales Tax Summary** — tax collected by period for filing
+- **Customer Statement** — per-customer invoice + payment history (printable PDF)
+
+### Vendor Management (Standalone Mode)
+
+> ⚡ When accounting provider is connected, vendors are read-only from the accounting system (existing behavior). In standalone mode, vendors are managed locally.
+
+- In standalone mode, "Add Vendor" creates a local vendor record (instead of redirecting to accounting system)
+- Local vendor fields: company name, contact name, email, phone, address, payment terms, notes, status (active/inactive)
+- Vendor records sync to accounting system when a provider is later connected
+
+## Pricing & Quoting
+
+### Price Lists
+Per-customer or default pricing for parts. Supports quantity breaks for volume discounts.
+
+**Price List fields:**
+- Name (e.g., "Standard", "Preferred Customer", "Distributor")
+- Effective date, expiration date (optional)
+- Status: Active, Inactive
+- Customer (FK, nullable — null = default price list)
+- Price entries: Part (FK), unit price, minimum quantity (for breaks)
+
+**Quantity breaks:**
+- Multiple price entries per part with different minimum quantities
+- Example: Part X — 1-99 units @ $5.00, 100-499 @ $4.50, 500+ @ $4.00
+- Quote and SO line items auto-select the correct price based on quantity
+- Manual override always available (user can type any price)
+
+**Price resolution order:**
+1. Customer-specific price list (if exists and has the part)
+2. Default price list (if exists and has the part)
+3. Part's base price (on the Part entity)
+4. Manual entry (no configured price)
+
+### Recurring Orders
+Customers who order the same parts regularly can have order templates that auto-generate Sales Orders on a schedule.
+
+**Recurring Order fields:**
+- Customer (FK)
+- Template name (e.g., "Monthly Holster Restock")
+- Recurrence: weekly, biweekly, monthly, quarterly, custom interval (days)
+- Next occurrence date
+- Auto-create or draft (draft = creates a Draft SO for review; auto-create = creates Confirmed SO)
+- Status: Active, Paused, Cancelled
+- Template lines: Part (FK), quantity, unit price (from price list at time of creation)
+
+**Workflow:**
+- Hangfire background job checks recurring orders daily
+- On due date: creates a new SO (draft or confirmed based on setting)
+- Notification sent to order creator / manager
+- Prices re-evaluated from current price list at creation time (not locked to template price)
+- Admin can pause/cancel recurring orders at any time
+
+### Margin Visibility
+Cost-vs-revenue analysis per job, part, and customer. Uses data the app already owns.
+
+**Cost components (from app data):**
+- Material cost: BOM entries × part cost (from last PO price or part base cost)
+- Labor cost: time entries × labor rate (configurable per role/user in system settings)
+- Shipping cost: from shipment records
+- Other costs: from expenses linked to a job
+
+**Revenue:** from Sales Order line prices (or invoice totals in standalone mode)
+
+**Margin views:**
+- **Job margin** — total cost vs total revenue per job, shown on job detail
+- **Part margin** — average margin across all jobs for a given part
+- **Customer margin** — aggregate margin across all jobs for a customer
+- **Margin report** — filterable list with margin %, sortable, CSV export
+- Dashboard widget: top/bottom 5 jobs by margin
+
+**Note:** Margin calculations are estimates based on app-owned data. For authoritative cost accounting, use the accounting system.
+
 ## Time Tracking
 - Two input methods: start/stop timer or manual entry
 - Part-time production workers are primary users
@@ -242,13 +523,14 @@ Broader views across team and operations.
 - Configurable: which sections shown, rotation interval, which track types
 
 ### Time Clock (integrated into shop floor display)
-- **Passive scan listener** — the kiosk screen idles on the shop floor overview and waits for a scan event. No UI buttons needed to initiate clock-in/out. The worker simply scans their badge/barcode/NFC card and the system responds.
+- **Tiered authentication** — the kiosk uses the tiered auth system (see `roles-auth.md §Tiered Auth`). Scan methods (RFID/NFC or barcode) are the primary input; all scans require a **PIN confirmation** before any action is executed.
+- **Passive scan listener** — the kiosk screen idles on the shop floor overview and waits for a scan event. No UI buttons needed to initiate clock-in/out. The worker simply scans their badge/barcode/NFC card, enters their PIN, and the system responds.
 - **Admin configures scan method** in admin settings:
   - Barcode scanner (keyboard wedge — reads as keyboard input)
   - NFC reader
-  - Badge/card reader
-  - If no scan hardware is configured, workers fall back to logging into the app normally to clock in/out and update production status
-- **On scan (not clocked in):** system identifies the worker, clocks them in, shows a brief confirmation overlay (name, time, "Clocked In"), then returns to the shop floor overview
+  - RFID reader
+  - If no scan hardware is configured, workers fall back to the "Manual Login" link (Tier 3: username + password) to clock in/out and update production status
+- **On scan + PIN (not clocked in):** system identifies the worker, clocks them in, shows a brief confirmation overlay (name, time, "Clocked In"), then returns to the shop floor overview
 - **On scan (already clocked in, has assigned tasks):** system identifies the worker and shows a three-choice prompt: **"Update Task"**, **"Clock Out"**, or **"Break / Lunch"**
   - **Update Task** → shows the production quick action panel (see below)
   - **Clock Out** → if the worker has any active production runs or in-progress tasks, prompts them to update each one before clocking out (update qty, mark complete, or leave as-is). After all items are addressed, clocks them out.
