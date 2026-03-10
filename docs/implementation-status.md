@@ -1,6 +1,6 @@
 # Implementation Status
 
-Tracks real implementation against all spec docs. Updated: 2026-03-11.
+Tracks real implementation against all spec docs. Updated: 2026-03-12.
 
 Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 
@@ -31,12 +31,12 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 | Item | Spec | Status | Notes |
 |------|------|--------|-------|
 | Angular 21 + Material 21 | architecture.md §Stack | Done | Standalone, OnPush, signals, zoneless |
-| .NET 9 Web API | architecture.md §Stack | Done | MediatR CQRS, FluentValidation (15 validators), exception middleware (404/400/409) |
+| .NET 9 Web API | architecture.md §Stack | Done | MediatR CQRS, FluentValidation (35+ validators), exception middleware (404/400/409) |
 | PostgreSQL + pgvector | architecture.md §Stack | Done | pgvector extension enabled |
 | MinIO | architecture.md §Stack | Done | 3 buckets, upload/download/presigned URLs |
 | Three.js (STL viewer) | architecture.md §Stack | Not Started | No Three.js integration |
 | SignalR | architecture.md §Stack | Partial | 3 hubs (Board, Notification, Timer) — Board + Notification functional, Timer skeleton |
-| Hangfire | architecture.md §Stack | Not Started | No background job processing |
+| Hangfire | architecture.md §Stack | Done | Recurring order auto-gen (daily 6AM), overdue invoice marking (daily 1AM), PostgreSQL storage, dashboard |
 | Mapperly | architecture.md §Stack | Not Started | No source-generated mapping |
 | OpenAPI + Scalar | architecture.md §Stack | Done | API docs available |
 | Docker Compose | architecture.md §Docker | Done | 6 containers running (AI optional via profile) |
@@ -68,11 +68,11 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 | /time-tracking | architecture.md §Routing | Done | Timer + manual entry |
 | /admin/users | architecture.md §Routing | Done | User management |
 | /customers | architecture.md §Routing | Done | Full feature module: list, detail, contacts, create/edit |
-| /reports | architecture.md §Routing | Done | 6 reports with charts (ng2-charts) + data tables |
+| /reports | architecture.md §Routing | Done | 15 reports with charts (ng2-charts) + data tables, including 3 financial (AR Aging, Revenue, P&L) |
 | /admin/settings | architecture.md §Routing | Done | Reference data, terminology, system settings tabs |
 | /sprint-planning | architecture.md §Routing | Not Started | |
 | /search | architecture.md §Routing | Done | Global search bar in header, searches 6 entity types |
-| /notifications | architecture.md §Routing | Partial | Backend: entity, repo, controller, 5 MediatR handlers. Frontend: panel dropdown from header bell icon. No dedicated /notifications page. |
+| /notifications | architecture.md §Routing | Done | Backend: entity, repo, controller, 5 MediatR handlers. Frontend: panel dropdown + dedicated /notifications page with preferences tab |
 | /admin/qb-setup | architecture.md §Routing | Not Started | |
 | /admin/track-types | architecture.md §Routing | Done | Full CRUD: create/edit/delete with stage management |
 | /admin/terminology | architecture.md §Routing | Done | Tab in admin page, editable key-label table, bulk save |
@@ -170,10 +170,10 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 
 | Item | Spec | Status | Notes |
 |------|------|--------|-------|
-| Widget-based layout | proposal.md §4.5 | Partial | 5 widgets with real KPI data, CSV export, no gridstack drag/resize |
+| Widget-based layout | proposal.md §4.5 | Partial | 7 widgets with real KPI data, CSV export, no gridstack drag/resize |
 | Role-based default layouts | proposal.md §4.5 | Not Started | |
 | Daily Priority Card | proposal.md §4.5 | Partial | TodaysTasksWidget exists |
-| End-of-Day Prompt | proposal.md §4.5 | Not Started | |
+| End-of-Day Prompt | proposal.md §4.5 | Done | EodPromptWidgetComponent: "Top 3 for tomorrow" textarea, persists to UserPreferencesService |
 | Screensaver / Ambient Mode | proposal.md §4.5 | Not Started | |
 | Widget customization (add/remove/resize) | proposal.md §4.5 | Not Started | No gridstack integration |
 
@@ -212,8 +212,8 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 
 | Item | Spec | Status | Notes |
 |------|------|--------|-------|
-| Vendor list (read-only from accounting) | proposal.md §4.9 | Not Started | No Vendor entity or API |
-| Linked POs | proposal.md §4.9 | Not Started | |
+| Vendor list (read-only from accounting) | proposal.md §4.9 | Done | Standalone CRUD: entity, repo, handlers, controller, Angular UI |
+| Linked POs | proposal.md §4.9 | Partial | PurchaseOrder entity exists, vendor FK ready |
 | Linked Parts (preferred vendor) | proposal.md §4.9 | Not Started | |
 
 ### Expense Capture
@@ -250,30 +250,30 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 | Quotes list + detail UI | functional-decisions.md §Order Views | Done | List + detail panel + status actions + convert to SO |
 | Shipments list UI | functional-decisions.md §Order Views | Done | List + detail panel + ship/deliver actions |
 | SO ↔ Job linking | functional-decisions.md §Order Management | Done | SalesOrderLineId FK on Job entity |
-| Packing slip generation | functional-decisions.md §Shipments | Not Started | QuestPDF |
-| Open orders dashboard widget | functional-decisions.md §Order Views | Not Started | |
+| Packing slip generation | functional-decisions.md §Shipments | Done | QuestPDF: GET /api/v1/shipments/{id}/packing-slip |
+| Open orders dashboard widget | functional-decisions.md §Order Views | Done | OpenOrdersWidgetComponent + backend summary endpoint |
 
 ### Standalone Financial Mode ⚡
 
 | Item | Spec | Status | Notes |
 |------|------|--------|-------|
 | Invoice entity + CRUD | functional-decisions.md §Invoicing | Done | ⚡ Entity, config, handlers, controller, Angular UI |
-| Invoice PDF generation | functional-decisions.md §Invoicing | Not Started | QuestPDF |
-| Invoice email (SMTP) | functional-decisions.md §Invoicing | Not Started | |
+| Invoice PDF generation | functional-decisions.md §Invoicing | Done | QuestPDF: GET /api/v1/invoices/{id}/pdf |
+| Invoice email (SMTP) | functional-decisions.md §Invoicing | Done | MailKit: POST /api/v1/invoices/{id}/email, PDF attachment |
 | Payment entity + CRUD | functional-decisions.md §Payments | Done | ⚡ Entity, config, handlers, controller, Angular UI |
 | Payment application to invoices | functional-decisions.md §Payments | Done | PaymentApplication entity, handler, UI with applications table |
-| AR Aging report | functional-decisions.md §AR Aging | Not Started | ⚡ standalone only |
+| AR Aging report | functional-decisions.md §AR Aging | Done | ⚡ KPI buckets + data table, backend repo |
 | Customer Statement PDF | functional-decisions.md §AR Aging | Not Started | ⚡ standalone only |
 | Credit terms per customer | functional-decisions.md §Credit Terms | Done | CreditTerms enum on SalesOrder + Invoice |
 | Sales tax tracking | functional-decisions.md §Sales Tax | Not Started | ⚡ standalone only |
-| Revenue by Period report | functional-decisions.md §Financial Reports | Not Started | ⚡ standalone only |
-| Revenue by Customer report | functional-decisions.md §Financial Reports | Not Started | ⚡ standalone only |
-| Simple P&L report | functional-decisions.md §Financial Reports | Not Started | ⚡ standalone only |
-| Standalone vendor CRUD | functional-decisions.md §Vendor Management | Not Started | ⚡ standalone only |
+| Revenue by Period report | functional-decisions.md §Financial Reports | Done | ⚡ Bar chart + data table, groupBy period/customer |
+| Revenue by Customer report | functional-decisions.md §Financial Reports | Done | ⚡ Uses same endpoint with groupBy=customer |
+| Simple P&L report | functional-decisions.md §Financial Reports | Done | ⚡ KPI cards (revenue/expenses/net) + data table |
+| Standalone vendor CRUD | functional-decisions.md §Vendor Management | Done | ⚡ Full CRUD: entity, repo, handlers, controller, Angular UI |
 | Accounting mode switching | qb-integration.md §Standalone Mode | Not Started | IsConfigured/isStandalone checks |
 | Invoices list + detail UI | functional-decisions.md §Invoicing | Done | ⚡ List + detail panel + send/void actions |
 | Payments list UI | functional-decisions.md §Payments | Done | ⚡ List + detail panel + delete |
-| AR Aging UI | functional-decisions.md §AR Aging | Not Started | ⚡ standalone only |
+| AR Aging UI | functional-decisions.md §AR Aging | Done | ⚡ KPI cards per bucket + data table in Reports page |
 
 ### Pricing & Quoting
 
@@ -283,7 +283,7 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 | Quantity breaks | functional-decisions.md §Price Lists | Done | MinQuantity on PriceListEntry, unique index (list+part+qty) |
 | Price resolution logic | functional-decisions.md §Price Lists | Not Started | Customer → default → base |
 | Recurring Order entity + CRUD | functional-decisions.md §Recurring Orders | Done | Entity, config, handlers, controller |
-| Recurring order auto-generation | functional-decisions.md §Recurring Orders | Not Started | Hangfire job |
+| Recurring order auto-generation | functional-decisions.md §Recurring Orders | Done | Hangfire RecurringOrderJob, daily 6AM UTC |
 | Margin per job/part/customer | functional-decisions.md §Margin Visibility | Not Started | Computed from cost + revenue |
 | Margin dashboard widget | functional-decisions.md §Margin Visibility | Not Started | |
 | Margin report | functional-decisions.md §Margin Visibility | Not Started | |
@@ -337,8 +337,8 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 
 | Item | Spec | Status | Notes |
 |------|------|--------|-------|
-| First-login tour | proposal.md §4.17 | Not Started | |
-| Per-feature walkthroughs | proposal.md §4.17 | Not Started | |
+| First-login tour | proposal.md §4.17 | Done | TourService + driver.js, kanban + dashboard tour definitions |
+| Per-feature walkthroughs | proposal.md §4.17 | Partial | TourService infrastructure ready, 2 tours defined (kanban, dashboard) |
 | Help icon per page | proposal.md §4.17 | Not Started | |
 | Tour coverage audit (CI) | proposal.md §4.17 | Not Started | |
 | Admin training dashboard | proposal.md §4.17 | Not Started | |
@@ -423,7 +423,7 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 | Color coding by type | proposal.md §4.26 | Partial | Job chips with border-left color |
 | Dense day handling | proposal.md §4.26 | Done | Max 3 jobs per cell, "+N more" overflow chip |
 | Filtering | proposal.md §4.26 | Done | Track type filter dropdown |
-| .ics export | proposal.md §4.26 | Not Started | |
+| .ics export | proposal.md §4.26 | Done | GET /api/v1/jobs/calendar.ics with assignee/trackType filters |
 
 ---
 
@@ -528,7 +528,7 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 | ToastService | Done | Upper-right stackable |
 | FormValidationService | Done | Derives violations from FormGroup |
 | LoadingService | Done | Global overlay |
-| UserPreferencesService | Done | localStorage (API switch pending) |
+| UserPreferencesService | Done | API-backed with localStorage cache + debounced PATCH |
 | TerminologyService | Done | Pipe exists, admin UI built |
 | BoardHubService | Done | SignalR board sync |
 | NotificationHubService | Done | Hub + panel + header bell wired |
@@ -538,10 +538,10 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 
 | Enhancement | Component | Status |
 |-------------|-----------|--------|
-| Expandable rows | DataTableComponent | Not Started |
-| API-backed preferences | UserPreferencesService | Not Started (backend built) |
-| Loading state | DataTableComponent | Not Started |
-| Sticky first column | DataTableComponent | Not Started |
+| Expandable rows | DataTableComponent | Done |
+| API-backed preferences | UserPreferencesService | Done |
+| Loading state | DataTableComponent | Done |
+| Sticky first column | DataTableComponent | Done |
 
 ---
 
@@ -613,9 +613,9 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 | System-generated notifications | Done | CreateNotification via MediatR, SignalR broadcast |
 | Filter tabs (All/Messages/Alerts) | Done | Tab filtering in notification panel |
 | Dismiss / Pin / Bulk actions | Done | Per-item pin/dismiss, mark all read, dismiss all |
-| Per-user notification preferences | Not Started | |
-| Email notifications (SMTP) | Not Started | |
-| Email templates (branded) | Not Started | |
+| Per-user notification preferences | Done | /notifications preferences tab: email on critical/assignment/mention, sound toggle |
+| Email notifications (SMTP) | Done | IEmailService + SmtpEmailService (MailKit) + MockEmailService |
+| Email templates (branded) | Partial | Invoice email with HTML body, generic template |
 
 ---
 
@@ -656,7 +656,7 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 | gridstack | No | Not Started |
 | three + @types/three | No | Not Started |
 | ng2-charts + chart.js | Yes | Yes (reports) |
-| driver.js | No | Not Started |
+| driver.js | Yes | Yes (TourService + 2 tour definitions) |
 | @ngx-translate/core | No | Not Started |
 | @ngx-dropzone | No | Not Started (custom FileUploadZone built) |
 | ngx-extended-pdf-viewer | No | Not Started |
@@ -685,10 +685,10 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 | MS Http Resilience | No | Not Started |
 | Minio SDK | Yes | Yes |
 | OpenAPI + Scalar | Yes | Yes |
-| Hangfire | No | Not Started |
-| MailKit | No | Not Started |
+| Hangfire | Yes | Yes (2 recurring jobs) |
+| MailKit | Yes | Yes (SmtpEmailService) |
 | CsvHelper | No | Not Started |
-| QuestPDF | No | Not Started |
+| QuestPDF | Yes | Yes (Invoice PDF, Packing Slip PDF) |
 | ImageSharp | No | Not Started |
 | Xabaril Health Checks | Partial | PostgreSQL only |
 | Data Protection API (EF) | No | Not Started |
@@ -707,19 +707,19 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 | Shared UI Components | 31/31 | — | — |
 | Feature UIs | 20/20 | — | — |
 | Auth & Security | — | 1 | 9 |
-| **Order Management** | 9 | — | 3 |
-| **Standalone Financial ⚡** | 5 | — | 12 |
-| **Pricing & Quoting** | 3 | — | 5 |
+| **Order Management** | 11 | — | 1 |
+| **Standalone Financial ⚡** | 13 | 1 | 4 |
+| **Pricing & Quoting** | 4 | — | 4 |
 | Accounting Integration | — | — | 9 |
 | Planning Cycles | — | — | 6 |
 | Production Traceability | — | — | 5 |
-| Reporting | 7 | 2 | 18 |
-| Notifications | — | — | 8 |
+| Reporting | 10 | 2 | 15 |
+| Notifications | 4 | 1 | 3 |
 | Chat | — | — | 4 |
 | Search | 1 | — | — |
 | i18n | — | 2 | 4 |
 | Testing | — | — | 5 |
-| Background Jobs | — | — | 1 |
+| Background Jobs | 1 | — | — |
 | Backup | — | — | 1 |
 | AI Module | — | — | 1 |
 
@@ -782,3 +782,57 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 - Each follows PO dialog pattern: `<app-dialog>` shell, two FormGroups (header + line items), signal-based line management, validation popover
 - "New" buttons in page headers now functional (previously disabled or placeholder)
 - All dialogs compile clean (Angular build verified)
+
+---
+
+## Batch 4 Changelog — XL Feature Batch (2026-03-12)
+
+### FluentValidation Validators (20 new, 35+ total)
+- CreateAdminUser, UpdateAdminUser, CreateReferenceData, UpdateReferenceData, CreateJobComment, CreateJobLink, UpdateSubtask, UpdateJobPosition, UpdateJobPart, UpdateSalesOrder, UpdatePurchaseOrder, UpdateQuote, UpdateBOMEntry, CreateNotification, UpdateNotification, CreateClockEvent, UpdateCustomerAddress, UpdateTrackType, UpdateExpenseStatus, UpdateTerminology, UpdateEntryOrder
+
+### Financial Reports (3 new)
+- AR Aging: Invoice aging buckets (Current, 1-30, 31-60, 61-90, 90+ days), KPI cards + data table
+- Revenue: By period or customer, bar chart + data table, date range filter
+- Simple P&L: Revenue vs expenses, 3 KPI cards + data table
+- Backend: 3 MediatR handlers, 3 repository methods, 3 controller endpoints
+
+### QuestPDF PDF Generation (2 documents)
+- Invoice PDF: Full layout with header, line items table, totals, payment info, notes. GET /api/v1/invoices/{id}/pdf
+- Packing Slip PDF: Ship-to address, line items from SO, signature line. GET /api/v1/shipments/{id}/packing-slip
+- Company name from SystemSetting (fallback: "QB Engineer")
+
+### SMTP Email (MailKit)
+- IEmailService interface + SmtpEmailService (real) + MockEmailService
+- SmtpOptions config in appsettings.json
+- SendInvoiceEmail handler: generates PDF, attaches to email, HTML body
+- POST /api/v1/invoices/{id}/email endpoint
+
+### Hangfire Background Jobs
+- PostgreSQL-backed job storage with dashboard at /hangfire
+- RecurringOrderJob: daily 6AM UTC, generates SalesOrders from due RecurringOrders
+- OverdueInvoiceJob: daily 1AM UTC, marks Sent invoices past DueDate as Overdue
+
+### Guided Tours (driver.js)
+- TourService: lazy-loads driver.js, tracks completion via UserPreferencesService
+- 2 tour definitions: kanban-board, dashboard
+- Themed popover via global SCSS overrides
+- resetTour/resetAllTours methods for admin/testing
+
+### Calendar .ics Export
+- GET /api/v1/jobs/calendar.ics with optional assigneeId and trackTypeId filters
+- Standard iCalendar format with all-day events on job due dates
+
+### Notification Preferences + /notifications Page
+- Full-page NotificationsComponent with "All Notifications" + "Preferences" tabs
+- All Notifications tab: DataTable with search, severity/source filters, mark all read, dismiss all
+- Preferences tab: toggle switches for email on critical/assignment/mention, sound on/off
+- Preferences persisted via UserPreferencesService
+
+### Dashboard Enhancements (2 new widgets)
+- OpenOrdersWidgetComponent: shows open order count by status + total value, links to /sales-orders
+- EodPromptWidgetComponent: "Top 3 for tomorrow" textarea, saves to UserPreferencesService, shows check when saved
+- Backend: GetOpenOrdersSummary handler + GET /api/v1/dashboard/open-orders endpoint
+
+### DataTable + UserPreferencesService (already complete)
+- Expandable rows, loading state, sticky first column — all already implemented
+- UserPreferencesService already switched to API-backed with localStorage cache
