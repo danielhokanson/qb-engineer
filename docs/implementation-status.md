@@ -668,10 +668,10 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 
 | Area | Status | Notes |
 |------|--------|-------|
-| Angular unit tests (Vitest) | Partial | 11 spec files (131 tests): AuthService, ThemeService, FormValidationService, LoadingService, TerminologyPipe, AppComponent, SnackbarService, NotificationService, CacheService, BroadcastService, OfflineQueueService |
-| .NET unit tests (xUnit) | Partial | 13 test classes (75 tests): CreateJob, UpdateJob, MoveJobStage, CreatePart, StartTimer, StopTimer, CreateExpense, CreateCustomer, AdjustStock, CreateInvoiceFromJob, CreateLead, CreateVendor, CreateQuote |
+| Angular unit tests (Vitest) | Partial | 15 spec files (195 tests): AuthService, ThemeService, FormValidationService, LoadingService, TerminologyPipe, AppComponent, SnackbarService, NotificationService, CacheService, BroadcastService, OfflineQueueService, StatusTrackingService, InventoryService, AiService, ShipmentService |
+| .NET unit tests (xUnit) | Partial | 19 test classes (142 tests): CreateJob, UpdateJob, MoveJobStage, CreatePart, StartTimer, StopTimer, CreateExpense, CreateCustomer, AdjustStock, CreateInvoiceFromJob, CreateLead, CreateVendor, CreateQuote, DisposeJob, CreateReservation, ReleaseReservation, ExplodeJobBom, SetWorkflowStatus, UploadFileChunk |
 | Integration tests | Partial | 24 tests via WebApplicationFactory: health, auth, protected endpoints (InMemory DB + Hangfire MemoryStorage) |
-| E2E tests (Cypress) | Partial | 8 spec files (login, dashboard, kanban, accessibility, parts, expenses, admin, inventory), custom cy.login() command |
+| E2E tests (Cypress) | Partial | 12 spec files (login, dashboard, kanban, accessibility, parts, expenses, admin, inventory, shipments, quality, reports-expanded, calendar), custom cy.login() command |
 | axe-core accessibility tests | Partial | 5 page tests (dashboard, kanban, login, parts, inventory) — critical + serious violations |
 
 ---
