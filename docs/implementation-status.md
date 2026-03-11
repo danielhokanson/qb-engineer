@@ -109,6 +109,7 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 | Multi-select + bulk actions | functional-decisions.md §Kanban | Done | Ctrl+Click, floating bulk bar (Move/Assign/Priority/Archive), 4 backend handlers |
 | SignalR real-time sync | functional-decisions.md §Kanban | Done | BoardHub, optimistic UI |
 | Column body colored border | functional-decisions.md §Kanban | Done | Inset box-shadow per stage color |
+| Hold indicators on cards | functional-decisions.md §Status Lifecycle | Done | Pause icon badge when active holds exist, matTooltip lists hold names, warning color |
 
 ### Job Card Detail
 
@@ -172,7 +173,7 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 | File upload/download | proposal.md §4.4 | Done | MinIO, per-entity |
 | File versioning by revision | proposal.md §4.4 | Done | PartRevisionId FK on FileAttachment, GetFilesByRevision handler, endpoint on FilesController |
 | STL 3D viewer (Three.js) | proposal.md §4.4 | Done | OrbitControls, auto-center, ambient+directional lighting, responsive resize |
-| Chunked upload with progress | proposal.md §4.4 | Partial | FileUploadZoneComponent has progress |
+| Chunked upload with progress | proposal.md §4.4 | Done | FileUploadZoneComponent: auto-chunked for files > 5MB, sequential chunk upload, server-side reassembly, temp file cleanup |
 | File access restrictions | proposal.md §4.4 | Done | RequiredRole field on FileAttachment, role check in DownloadFile handler |
 
 ### Dashboard
@@ -389,6 +390,7 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 | Cycle counting | proposal.md §4.19 | Done | CycleCount + CycleCountLine entities, CreateCycleCount + UpdateCycleCount + GetCycleCounts handlers, Cycle Counts tab in inventory UI |
 | Accounting quantity sync | proposal.md §4.19 | Done | UpdateInventoryQuantityAsync on IAccountingService (QB uses InventoryAdjustment), CreatePart handler syncs via provider factory |
 | Low-stock alerts | proposal.md §4.19 | Done | MinStockThreshold/ReorderPoint on Part, GetLowStockAlerts query endpoint |
+| Inventory reservation | proposal.md §4.19 | Done | Reservation entity, soft reservation (ReservedQuantity on BinContent), auto-reserve on BOM explosion, manual release, on-hand vs available in views |
 
 ### Purchase Order Lifecycle
 
@@ -1209,3 +1211,31 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 - Updated JobMapper, PartMapper, AssetMapper for new positional record parameters
 - Fixed pgvector type mapping: `float[]` → `Pgvector.Vector` across entity, repository, and handlers
 - Added Pgvector NuGet to core project
+
+---
+
+## Batch 22 Changelog — Hold Indicators, Inventory Reservation, Chunked Upload (2026-03-15)
+
+### Hold Indicators on Kanban Cards
+- `ActiveHolds` (List<string>) added to `JobListResponseModel`
+- JobRepository queries StatusEntry table for active holds (EntityType=Job, Category=hold, EndedAt=null)
+- Kanban card: `pause_circle` icon in header when holds active, `matTooltip` lists hold names
+- BEM class `.job-card__hold-indicator` with `--warning` color
+
+### Inventory Reservation System
+- `Reservation` entity (BaseAuditableEntity): PartId, BinContentId, JobId?, SalesOrderLineId?, Quantity, Notes
+- `ReservationConfiguration`: Fluent API with FK indexes
+- `ReservedQuantity` field on BinContent entity
+- 3 handlers: CreateReservation (validates available qty), ReleaseReservation (soft-delete + decrement), GetReservations (filterable)
+- ExplodeJobBom: auto-reserves Stock items from available bin inventory, reports shortfalls
+- InventoryController: 3 new reservation endpoints
+- Angular: Reservations tab in inventory UI with DataTable, reserve dialog, release buttons
+- Stock expand rows show On Hand / Reserved / Available columns, warning color when reserved > 0
+- `BinStockResponseModel` extended with ReservedQuantity + AvailableQuantity
+
+### Chunked File Upload
+- `UploadFileChunk` handler: writes chunks to temp dir (`/tmp/qb-engineer-uploads/{uploadId}/`), concatenates on final chunk, uploads to MinIO, cleans up
+- `ChunkedUploadResponseModel`: UploadId, ChunkIndex, IsComplete, FileAttachment?
+- FilesController: `POST {entityType}/{entityId}/files/chunked` endpoint
+- FileUploadZoneComponent: auto-detects large files (> chunkSizeMb input, default 5MB), slices with File.slice(), sequential chunk upload, progress as completedChunks/totalChunks
+- Existing single-upload path unchanged for small files
