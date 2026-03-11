@@ -20,7 +20,7 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 | 8 — Maintenance | Asset Registry + Scheduled Maintenance | Partial |
 | 9 — Reporting | Operational Dashboards | Partial |
 | 10 — Backup & Polish | Production Hardening | Partial |
-| 11 — AI Assistant | Self-Hosted AI Module | Not Started |
+| 11 — AI Assistant | Self-Hosted AI Module | Done |
 
 ---
 
@@ -87,7 +87,7 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 | system_settings DB table | architecture.md §Settings | Done | Entity exists, no admin UI |
 | Backup (B2 + local) | architecture.md §Backup | Done | DatabaseBackupJob (Hangfire daily 3AM), pg_dump custom format, configurable retention (30 days default), old backup cleanup |
 | Full-text search | architecture.md §Search | Done | tsvector generated columns + GIN indexes on jobs, customers, parts, leads, assets, expenses. Hybrid search: plainto_tsquery ranked + ILIKE fallback. |
-| Self-hosted AI (Ollama + RAG) | architecture.md §AI | Partial | OllamaAiService (real impl) wired to IAiService, llama3.2:3b model, AiController (generate/summarize/status), Angular AiService. RAG/pgvector not yet implemented. |
+| Self-hosted AI (Ollama + RAG) | architecture.md §AI | Done | OllamaAiService, llama3.2:3b model, AiController (generate/summarize/status/search/index), Angular AiService + AiHelpPanel. RAG pipeline: DocumentEmbedding entity (pgvector vector(384)), IEmbeddingRepository, RagSearch/IndexDocument/BulkIndexDocuments handlers, DocumentIndexJob (Hangfire 30min), header search column with RAG results |
 | Theming (light/dark) | architecture.md §Theming | Done | Toggle in toolbar, CSS custom properties |
 | Admin brand colors | architecture.md §Theming | Done | System settings for primary/accent colors, runtime CSS variable override, public brand endpoint |
 | Accessibility (WCAG 3) | architecture.md §Accessibility | Partial | aria-labels on all icon buttons, focus-visible outlines, skip-to-content link, prefers-reduced-motion. No axe-core tests. |
@@ -405,7 +405,7 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 | Item | Spec | Status | Notes |
 |------|------|--------|-------|
 | IShippingService interface | proposal.md §4.21 | Done | Interface + MockShippingService |
-| Carrier APIs (UPS, FedEx, etc.) | proposal.md §4.21 | Not Started | |
+| Carrier APIs (EasyPost) | proposal.md §4.21 | Done | EasyPostShippingService (IShippingService impl), GetShippingRates, CreateShippingLabel, GetShipmentTracking, ValidateShippingAddress handlers, Angular ShippingRatesDialog + TrackingTimeline components |
 | Packing slips | proposal.md §4.21 | Done | QuestPDF: GET /shipments/{id}/packing-slip |
 | Multi-package tracking | proposal.md §4.21 | Done | ShipmentPackage entity, CRUD handlers, per-shipment package management |
 
@@ -1146,3 +1146,66 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 - 5 pre-configured integrations: QuickBooks, MinIO, SMTP, Shipping, Ollama
 - Status indicators (connected/disconnected/not_configured) with icons
 - Grid layout with BEM naming and design system variables
+
+---
+
+## Batch 21 Changelog — Manufacturing Core: Disposition, Tooling, BOM, Status Tracking, AI RAG, Carrier APIs (2026-03-15)
+
+### Job Disposition (MES Standard)
+- `JobDisposition` enum: ShipToCustomer, AddToInventory, CapitalizeAsAsset, Scrap, HoldForReview
+- `DisposeJob` MediatR handler: validates job not already disposed, auto-creates Tooling asset on CapitalizeAsAsset
+- Job entity extended: `Disposition`, `DispositionNotes`, `DispositionAt` fields
+- Angular: `DisposeJobDialogComponent` with disposition type selection + notes, icon indicator on kanban cards
+- Job detail panel: disposition section with status display + Dispose action button
+
+### Tool-Specific Asset Fields (Tool Registry)
+- Asset entity extended: `IsCustomerOwned`, `CavityCount`, `ToolLifeExpectancy`, `CurrentShotCount`, `SourceJobId`, `SourcePartId`
+- Part entity extended: `ToolingAssetId` FK for linked tooling asset
+- Angular: conditional tooling section in asset detail/edit, entity picker for tooling asset on parts
+- Response models updated with tooling fields + source names
+
+### Part Status Prototype (NPI Gate)
+- `PartStatus` enum: added `Prototype` value (Draft → Prototype → Active → Obsolete)
+- Angular: Prototype status in filter options with info-colored chip
+
+### BOM-Driven Work Breakdown
+- `ProcessStep` entity: StepNumber, Title, Instructions, WorkCenterId, EstimatedMinutes, IsQcCheckpoint, QcCriteria
+- `BOMSourceType`: added `Stock` value alongside Make/Buy
+- `BOMEntry`: added `LeadTimeDays` field
+- Job entity: added `PartId`, `ParentJobId` (self-referencing FK), `ChildJobs` navigation
+- 4 ProcessStep CRUD handlers on PartsController
+- `ExplodeJobBom` handler: walks BOM, creates child jobs for Make entries with bidirectional JobLinks
+- `GetChildJobs` handler: returns child job tree
+- Angular: `ProcessPlanComponent` (ordered step cards with QC indicators), `ProcessStepDialogComponent`
+
+### Status Lifecycle Tracking (Polymorphic)
+- `StatusEntry` entity: EntityType/EntityId polymorphism, StatusCode (reference_data driven), Category (workflow/hold)
+- Workflow statuses: one active at a time with automatic EndedAt on transition
+- Hold statuses: multiple parallel, manually released
+- `StatusTrackingController`: 5 endpoints (history, active, set-workflow, add-hold, release-hold)
+- 28 seeded reference_data entries for status codes across Jobs, Parts, Assets, POs, SOs, Quotes, Shipments
+- Angular: `StatusTimelineComponent`, `SetStatusDialogComponent`, `AddHoldDialogComponent`, `StatusTrackingService`
+- Integrated into job detail panel
+
+### AI RAG Pipeline (pgvector)
+- `DocumentEmbedding` entity with `Pgvector.Vector` type for vector(384) column
+- `IEmbeddingRepository` + `EmbeddingRepository` with cosine distance search
+- `RagSearch` handler: embed query → search similar → optionally generate answer via Ollama
+- `IndexDocument` handler: extract text fields → chunk → embed → upsert
+- `BulkIndexDocuments` handler: batch indexing for multiple entities
+- `DocumentIndexJob`: Hangfire recurring every 30 min, indexes recent entities
+- `AiHelpChat` handler enhanced with RAG context injection
+- AiController: added search, index, bulk-index endpoints
+- Angular: RAG results column in header AI search, AiHelpPanel with RAG-backed chat
+
+### Carrier Shipping (EasyPost)
+- `EasyPostShippingService`: full `IShippingService` implementation via EasyPost SDK
+- `EasyPostOptions` config model in appsettings.json
+- 4 new handlers: GetShippingRates, CreateShippingLabel, GetShipmentTracking, ValidateShippingAddress
+- ShipmentsController: 4 new endpoints
+- Angular: `ShippingRatesDialogComponent` (rate comparison table), `TrackingTimelineComponent` (shipment event timeline)
+
+### Mapper & Build Fixes
+- Updated JobMapper, PartMapper, AssetMapper for new positional record parameters
+- Fixed pgvector type mapping: `float[]` → `Pgvector.Vector` across entity, repository, and handlers
+- Added Pgvector NuGet to core project
