@@ -36,10 +36,11 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 | MinIO | architecture.md §Stack | Done | 3 buckets, upload/download/presigned URLs |
 | Three.js (STL viewer) | architecture.md §Stack | Done | Lazy-loaded StlViewerComponent, wired into part detail "3D View" tab |
 | SignalR | architecture.md §Stack | Done | 4 hubs (Board, Notification, Timer, Chat) — all functional with typed events, group management, reconnect handling |
-| Hangfire | architecture.md §Stack | Done | Recurring order auto-gen (daily 6AM), overdue invoice marking (daily 1AM), PostgreSQL storage, dashboard |
+| Hangfire | architecture.md §Stack | Done | 14 recurring jobs, PostgreSQL storage, dashboard |
 | Mapperly | architecture.md §Stack | Done | 6 mappers (Job, Part, Customer, Expense, Asset, Lead) in qb-engineer.api/Mappers/ |
 | OpenAPI + Scalar | architecture.md §Stack | Done | API docs available |
-| Docker Compose | architecture.md §Docker | Done | 6 containers running (AI optional via profile) |
+| Docker Compose | architecture.md §Docker | Done | 6 containers running (AI optional via profile), Alpine images, non-root user, health checks, resource limits |
+| CI/CD Pipeline | architecture.md §CI/CD | Done | GitHub Actions: parallel build+test (Angular + .NET), Docker image build on main push |
 
 ### Auth & Security
 
@@ -333,6 +334,7 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 | Machine hours tracking | proposal.md §4.13 | Done | CurrentHours on Asset entity, PATCH /api/v1/assets/{id}/hours endpoint, Angular service method |
 | Downtime logging | proposal.md §4.13 | Done | DowntimeLog entity, CRUD handlers with FluentValidation, 3 controller endpoints, Angular models + service |
 | Tool-specific asset fields | functional-decisions.md §Tool Registry | Done | CavityCount, ToolLifeExpectancy, CurrentShotCount, IsCustomerOwned, SourceJobId, SourcePartId on Tooling assets. Part.ToolingAssetId FK replaces free-text MoldToolRef |
+| Overdue maintenance notifications | proposal.md §4.13 | Done | OverdueMaintenanceJob (Hangfire daily 2AM UTC): queries overdue schedules, notifies Admin/Manager users via SignalR, deduplicates per overdue period |
 
 ### Time Tracking
 
@@ -364,7 +366,7 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 | Item | Spec | Status | Notes |
 |------|------|--------|-------|
 | First-login tour | proposal.md §4.17 | Done | TourService + driver.js, kanban + dashboard tour definitions |
-| Per-feature walkthroughs | proposal.md §4.17 | Done | HelpTourService with 8 tour definitions (kanban, dashboard, parts, inventory, expenses, time-tracking, reports, admin). All registered in AppComponent. |
+| Per-feature walkthroughs | proposal.md §4.17 | Done | HelpTourService with 9 tour definitions (kanban, dashboard, parts, inventory, expenses, time-tracking, reports, admin, planning). All registered in AppComponent. |
 | Help icon per page | proposal.md §4.17 | Done | PageHeader/PageLayout support helpTourId input with ? icon button |
 | Tour coverage audit (CI) | proposal.md §4.17 | Done | `npm run audit:tours` script scans features for TourService/HelpTourService references |
 | Admin training dashboard | proposal.md §4.17 | Done | TrainingDashboardComponent: DataTable with user progress, completion bars, per-device localStorage tracking |
@@ -466,7 +468,7 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 | User onboarding (setup token) | roles-auth.md §Onboarding | Done | Admin generates token (7-day expiry), sends branded email invite, employee completes setup at /setup/:token (sets password + optional name), auto-login on completion |
 | Email invite (optional) | roles-auth.md §Onboarding | Done | SendSetupInvite handler: generates token if needed, sends branded HTML email via IEmailService |
 | User offboarding (deactivation) | roles-auth.md §Offboarding | Done | DeactivateUser + ReactivateUser handlers, auto-unassign from active jobs, admin UI toggle |
-| Production Worker simplified view | roles-auth.md §Worker | Done | /worker route: touch-friendly task list with assigned jobs, progress bars, priority chips |
+| Production Worker simplified view | roles-auth.md §Worker | Done | /worker route: touch-friendly task list with overdue highlighting, sorted (overdue → due date → priority), progress bars, priority chips |
 | Shop Floor Display (no-login) | roles-auth.md §Shop Floor | Done | /display/shop-floor route, AllowAnonymous API, worker presence + active jobs |
 | Time Clock Kiosk (scan-based) | roles-auth.md §Shop Floor | Done | Touch-first clock UI with 3-phase barcode auth (scan → PIN → clock), auto-timeout, live clock display |
 | **Tiered Auth: RFID/NFC + PIN** | roles-auth.md §Tiered Auth | Partial | ScannerService (global keyboard-wedge detection) built, BarcodeScanInputComponent integrated in kiosk. Hardware ordered (NTAG215 + ACR122U). NFC station-tag architecture planned. |
@@ -1239,3 +1241,35 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 - FilesController: `POST {entityType}/{entityId}/files/chunked` endpoint
 - FileUploadZoneComponent: auto-detects large files (> chunkSizeMb input, default 5MB), slices with File.slice(), sequential chunk upload, progress as completedChunks/totalChunks
 - Existing single-upload path unchanged for small files
+
+---
+
+## Batch 23 Changelog — Phase Polish (2026-03-15)
+
+### Planning Day Tour
+- New `PLANNING_TOUR` definition (5 steps: welcome, backlog panel, commit button, cycle board, lifecycle actions)
+- Registered in AppComponent alongside 8 existing tours (9 total)
+- Planning page header gains `helpTourId="planning"` for help icon
+
+### Overdue Maintenance Notifications
+- `OverdueMaintenanceJob` (Hangfire daily 2AM UTC): queries overdue MaintenanceSchedules, notifies Admin/Manager users via CreateNotificationCommand + SignalR
+- Deduplication: skips schedules that already have a `maintenance-overdue` notification created after the schedule's NextDueAt
+- Per-user try/catch prevents one failure from blocking others
+
+### Worker View Polish
+- Overdue task highlighting: red border + warning icon + "OVERDUE" label on overdue tasks
+- Smart sorting: overdue first, then by due date ascending, then by priority (Critical → Low)
+- `sortedTasks` computed signal replaces raw `tasks()` in template
+
+### CI/CD Pipeline (GitHub Actions)
+- `.github/workflows/ci.yml`: 5-job pipeline
+- Parallel build (Angular + .NET) → Parallel test (Vitest + xUnit) → Docker image build (main push only)
+- Node 22, .NET 9, actions v4
+
+### Docker Production Optimization
+- Alpine base images for API (`sdk:9.0-alpine`, `aspnet:9.0-alpine`) and UI (already Alpine)
+- Non-root user in API container (`appuser`)
+- Health checks on API (`/health`) and UI (`/`) in both Dockerfiles and docker-compose
+- Resource limits: API 512M, UI 256M, DB 1G
+- `UseAppHost=false` for smaller publish output
+- `npm ci --ignore-scripts` for UI build security
