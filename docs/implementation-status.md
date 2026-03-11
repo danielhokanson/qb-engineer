@@ -91,7 +91,7 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 | Self-hosted AI (Ollama + RAG) | architecture.md §AI | Done | OllamaAiService, llama3.2:3b model, AiController (generate/summarize/status/search/index), Angular AiService + AiHelpPanel. RAG pipeline: DocumentEmbedding entity (pgvector vector(384)), IEmbeddingRepository, RagSearch/IndexDocument/BulkIndexDocuments handlers, DocumentIndexJob (Hangfire 30min), header search column with RAG results |
 | Theming (light/dark) | architecture.md §Theming | Done | Toggle in toolbar, CSS custom properties |
 | Admin brand colors | architecture.md §Theming | Done | System settings for primary/accent colors, runtime CSS variable override, public brand endpoint |
-| Accessibility (WCAG 3) | architecture.md §Accessibility | Partial | aria-labels on all icon buttons, focus-visible outlines, skip-to-content link, prefers-reduced-motion. No axe-core tests. |
+| Accessibility (WCAG 3) | architecture.md §Accessibility | Done | aria-labels on all icon buttons, focus-visible outlines, skip-to-content link, prefers-reduced-motion. axe-core tests on 10 pages (Cypress). |
 | Mobile responsiveness | architecture.md §Mobile | Done | LayoutService with breakpoint detection, hamburger menu, mobile sidebar overlay. Per-page responsive grids on dashboard, parts, inventory, kanban. |
 | Offline resilience / PWA | architecture.md §Offline | Done | Service Worker, IndexedDB cache, BroadcastChannel sync, OfflineQueueService (conflict signals), OfflineBannerComponent, SyncConflictDialogComponent (409 resolution) |
 
@@ -471,7 +471,7 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 | Production Worker simplified view | roles-auth.md §Worker | Done | /worker route: touch-friendly task list with overdue highlighting, sorted (overdue → due date → priority), progress bars, priority chips |
 | Shop Floor Display (no-login) | roles-auth.md §Shop Floor | Done | /display/shop-floor route, AllowAnonymous API, worker presence + active jobs |
 | Time Clock Kiosk (scan-based) | roles-auth.md §Shop Floor | Done | Touch-first clock UI with 3-phase barcode auth (scan → PIN → clock), auto-timeout, live clock display |
-| **Tiered Auth: RFID/NFC + PIN** | roles-auth.md §Tiered Auth | Partial | ScannerService (global keyboard-wedge detection) built, BarcodeScanInputComponent integrated in kiosk. Hardware ordered (NTAG215 + ACR122U). NFC station-tag architecture planned. |
+| **Tiered Auth: RFID/NFC + PIN** | roles-auth.md §Tiered Auth | Done | UserScanIdentifier entity (nfc/rfid/barcode types), NFC kiosk-login endpoint (POST /auth/nfc-login), admin CRUD for scan identifiers. ScannerService + BarcodeScanInputComponent for hardware input. |
 | **Tiered Auth: Barcode + PIN** | roles-auth.md §Tiered Auth | Done | Tier 2 — POST /auth/kiosk-login (barcode + PIN → 8hr JWT), EmployeeBarcode field on user, PBKDF2 PIN hash, admin PIN reset |
 | **PIN management (hash, reset)** | roles-auth.md §PIN Management | Done | POST /auth/set-pin (PBKDF2 100K iterations, SHA256, 16-byte salt), POST /admin/users/{id}/reset-pin, FluentValidation (4-8 digits) |
 | **Enterprise SSO (Google)** | roles-auth.md §Enterprise SSO | Done | OAuth 2.0 challenge/callback, SsoExternalCookie scheme, GoogleId on ApplicationUser |
@@ -674,7 +674,7 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 | .NET unit tests (xUnit) | Partial | 19 test classes (142 tests): CreateJob, UpdateJob, MoveJobStage, CreatePart, StartTimer, StopTimer, CreateExpense, CreateCustomer, AdjustStock, CreateInvoiceFromJob, CreateLead, CreateVendor, CreateQuote, DisposeJob, CreateReservation, ReleaseReservation, ExplodeJobBom, SetWorkflowStatus, UploadFileChunk |
 | Integration tests | Partial | 24 tests via WebApplicationFactory: health, auth, protected endpoints (InMemory DB + Hangfire MemoryStorage) |
 | E2E tests (Cypress) | Partial | 12 spec files (login, dashboard, kanban, accessibility, parts, expenses, admin, inventory, shipments, quality, reports-expanded, calendar), custom cy.login() command |
-| axe-core accessibility tests | Partial | 5 page tests (dashboard, kanban, login, parts, inventory) — critical + serious violations |
+| axe-core accessibility tests | Done | 10 page tests (dashboard, kanban, login, parts, inventory, admin, reports, expenses, leads, time-tracking) — critical + serious violations |
 
 ---
 
@@ -1273,3 +1273,19 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 - Resource limits: API 512M, UI 256M, DB 1G
 - `UseAppHost=false` for smaller publish output
 - `npm ci --ignore-scripts` for UI build security
+
+---
+
+## Batch 24 Changelog — Accessibility + Auth Completion (2026-03-15)
+
+### RFID/NFC Tier 1 Auth (Software Layer)
+- `UserScanIdentifier` entity: maps scan hardware IDs (nfc/rfid/barcode) to users, unique composite index, soft-delete
+- `NfcKioskLogin` handler: `POST /auth/nfc-login` — looks up scan identifier, verifies PIN, returns 8-hour JWT with `authTier: "nfc"` claim
+- Admin scan identifier management: GET/POST/DELETE `/admin/users/{userId}/scan-identifiers`
+- `AddScanIdentifierRequestModel` + `ScanIdentifierResponseModel` in Core/Models
+- AppDbContext: `DbSet<UserScanIdentifier>`
+
+### Accessibility (axe-core)
+- Expanded axe-core Cypress tests from 5 to 10 pages (added admin, reports, expenses, leads, time-tracking)
+- Added `npm run test:a11y` script for targeted accessibility testing
+- CI pipeline notes E2E + a11y tests run against Docker Compose stack
