@@ -724,11 +724,40 @@ The application ships with manufacturing-friendly default labels. Admin can rela
 - Recursive BOM structure — parts and assemblies nested to any depth
 - Part record: part number, description, revision, status, type (part/assembly), material, mold/tool ref, QB Item linkage, traceability profile, custom fields (JSON)
 - CAD/STL/CAM files attach at the part level, versioned by revision
-- BOM entries: child part, quantity, reference designator, sort order, source type (make/buy), notes
+- BOM entries: child part, quantity, reference designator, sort order, source type (Make/Buy/Stock), lead time (days), notes
 - Revision control: full history, jobs reference specific revisions, obsolete revisions blocked
 - Jobs reference a part → pre-populate specs, material, mold, files, traceability
 - Where Used reverse lookup, part searchable via global search
 - Parts link to QB Items by ListID for pricing (read-only from QB)
+
+## BOM-Driven Work Breakdown
+
+### BOM Source Types
+- **Make** — component fabricated in-house, generates a sub-job during BOM explosion
+- **Buy** — component purchased externally, flagged for PO creation (not auto-created)
+- **Stock** — pulled from existing inventory (reservation deferred to future feature)
+
+### Process Plan / Routing
+- Parts (especially Assemblies) can have ordered manufacturing steps via `ProcessStep` entity
+- Each step: sequence number, title, instructions, work center, estimated time
+- QC checkpoints with pass/fail criteria
+- Steps define HOW to build; BOM defines WHAT it's built from
+- CRUD endpoints on PartsController (`/api/v1/parts/{id}/process-steps`)
+
+### BOM Explosion
+- When a Job references an Assembly part with BOM entries, user can "Explode BOM"
+- One-level explosion only — prevents accidentally generating hundreds of jobs from deep BOMs
+- Make entries → child Jobs with `ParentJobId` set, bidirectional `JobLinks`
+- Buy entries → listed for manual PO creation
+- Stock entries → listed for inventory picking (reservation deferred)
+- Sub-assemblies can be individually exploded from their child jobs
+- Handler: `ExplodeJobBom` in Features/Jobs/
+
+### Job Hierarchy
+- `ParentJobId` FK on Job enables tree structure
+- Job detail shows parent link and child jobs list (`GetChildJobs` endpoint)
+- Kanban card shows sub-job count indicator
+- `LeadTimeDays` on BOMEntry supports scheduling visibility
 
 ## In-App Guided Training
 - Tour definitions stored as JSON
@@ -1077,6 +1106,54 @@ Purpose-built Kanban workflow for engineering development work:
 - Estimated production cost (manual entry)
 - Success criteria (freeform or checklist)
 
+### Job Disposition
+When a job is completed, the user selects a disposition — a standard manufacturing MES concept required at job close:
+- **Ship to Customer** — normal order fulfillment, proceeds through shipping pipeline
+- **Add to Inventory** — finished goods placed into stock (bin location selected)
+- **Capitalize as Asset** — auto-creates a Tooling asset linked back to the fabrication job
+- **Scrap** — job output discarded, scrap reason + notes recorded
+- **Hold for Review** — output held pending QC, engineering review, or customer decision
+
+Disposition is recorded with notes and timestamp. Shown on job detail view and as an indicator on the kanban card.
+
+### R&D / Tooling Outcomes (4 Paths)
+R&D/Tooling jobs can conclude in four ways:
+1. **Internal Asset** — tool built in-house, kept on shop floor. Promoted to a Tooling asset via the "Capitalize as Asset" disposition. Linked back to the fabrication job and design part.
+2. **Customer Deliverable** — tool/part built for a customer. Invoiced and shipped via the normal Sales Order → Shipment → Invoice pipeline.
+3. **Customer-Funded Retained** — customer pays for tooling, but the tool stays at the facility for their production runs. Tracked as a Tooling asset with `IsCustomerOwned = true`.
+4. **Dead End** — proof of concept or prototype that doesn't proceed. Job completes or is archived with no further action. No asset or inventory created.
+
+### Tool Registry
+Tooling assets are a subset of the Asset system (`AssetType = Tooling`) with additional fields:
+- **CavityCount** — number of cavities (mold tooling)
+- **ToolLifeExpectancy** — expected total shots/cycles before replacement
+- **CurrentShotCount** — running count of shots/cycles consumed
+- **IsCustomerOwned** — whether the customer funded and owns the tooling
+- **SourceJobId** — FK to the fabrication job that built the tool
+- **SourcePartId** — FK to the design spec / part record
+
+Production parts reference their tooling asset via `Part.ToolingAssetId` (replaces the old free-text MoldToolRef field).
+
+### NPI Gate (Part Status Lifecycle)
+Part status lifecycle supports new product introduction (NPI):
+- **Draft** — initial creation, under specification
+- **Prototype** — R&D part under active development/testing. Cannot be used on production jobs.
+- **Active** — released to production. "Release to Production" action flips status from Prototype to Active.
+- **Obsolete** — no longer in use, retained for history
+
+### Auto Part Numbering
+Internal part numbers are auto-generated with categorical prefixes:
+- **PRT-** — Part (generic manufactured part)
+- **ASM-** — Assembly (multi-component assembly)
+- **RAW-** — Raw Material
+- **CON-** — Consumable
+- **TLG-** — Tooling
+- **FST-** — Fastener
+- **ELC-** — Electronic
+- **PKG-** — Packaging
+
+Format: `PREFIX` + 5-digit zero-padded sequence (e.g., `PRT-00001`, `TLG-00042`). Sequence is per-prefix. An optional **external part number** field captures vendor-supplied or customer-supplied part numbers alongside the internal number.
+
 ### Internal Projects
 Non-customer, non-R&D work that needs to be tracked and assigned. These are operational tasks that keep the shop running.
 
@@ -1231,6 +1308,37 @@ Centralized shared Angular components eliminate per-feature HTML duplication and
 - Key-pattern storage: `table:{tableId}`, `theme:mode`, `sidebar:collapsed`, etc.
 - `UserPreferencesService` loads on app init, caches in memory, debounced server sync on changes
 - Restored on login from any device — consistent experience across workstations
+
+## Status Lifecycle Tracking
+
+Polymorphic status tracking system for any entity (same pattern as FileAttachment, ActivityLog).
+
+- **Polymorphic StatusEntry table** — `EntityType` + `EntityId` columns allow status tracking on any entity (Job, Quote, SalesOrder, PurchaseOrder, Asset, etc.)
+- **Two categories:**
+  - `workflow` — linear progression, only one active at a time. SetWorkflowStatus closes the previous workflow entry (sets `EndedAt`) before creating the new one.
+  - `hold` — parallel overlays, multiple can be active simultaneously. AddHold prevents duplicate active holds of the same code. ReleaseHold sets `EndedAt` on a specific hold.
+- **Status codes from reference_data** — admin-configurable via groups: `{entity}_workflow_status` and `{entity}_hold_type`. Allows shops to define their own workflow stages and hold reasons.
+- **StatusLabel denormalized** at creation time for historical accuracy — even if admin renames a status code later, existing history entries retain their original label.
+- **Full audit trail** — all transitions logged with `StartedAt`, `EndedAt`, `Notes`, `SetBy` (user FK). Duration between statuses is computable from timestamps.
+- **StatusTrackingController** — 5 endpoints:
+  - `GET /{entityType}/{entityId}/statuses` — full history
+  - `GET /{entityType}/{entityId}/statuses/active` — current workflow status + active holds
+  - `POST /{entityType}/{entityId}/statuses/workflow` — set workflow status
+  - `POST /{entityType}/{entityId}/statuses/hold` — add hold
+  - `DELETE /{entityType}/{entityId}/statuses/hold/{statusEntryId}` — release hold
+
+### Default Status Code Groups (seeded)
+- **Job workflow:** Created, In Progress, On Hold, Completed, Archived
+- **Job holds:** Material Hold, Quality Hold, Customer Hold, Engineering Hold
+- **Quote workflow:** Draft, Sent, Accepted, Rejected, Expired
+- **Sales Order workflow:** Draft, Confirmed, In Progress, Fulfilled, Closed
+- **Purchase Order workflow:** Draft, Submitted, Partially Received, Received, Closed
+- **Asset holds:** Maintenance Due, Calibration Expired, Under Repair
+
+### UI Components
+- **StatusTimelineComponent** (shared) — reusable component showing active workflow status, active holds with release button, and full status history timeline. Integrated into job detail panel.
+- **SetStatusDialogComponent** — dialog for transitioning workflow status with optional notes
+- **AddHoldDialogComponent** — dialog for adding a hold with type selection and notes
 
 ## Open Source (GNU License)
 - Nothing company-specific committed

@@ -11,6 +11,16 @@ Also update `docs/coding-standards.md` or the relevant doc file if the change is
 
 **Implementation tracking:** Check `docs/implementation-status.md` at the start of every session. When completing a feature or sub-feature, update its status (Not Started → Partial → Done) in that file before ending the session. This is the master progress tracker.
 
+## Auto-Restart API
+
+**When any .NET backend change is made that requires a restart (controller changes, entity changes, Program.cs, appsettings, etc.), automatically rebuild and restart the API container:**
+
+```bash
+docker compose up -d --build qb-engineer-api
+```
+
+Do not ask the user — just do it after verifying the build passes.
+
 ---
 
 ## Project Structure
@@ -198,6 +208,43 @@ readonly filterSignal = toSignal(this.searchControl.valueChanges, { initialValue
 <app-input label="Search" [formControl]="searchControl" />
 <app-select label="Status" [formControl]="statusControl" [options]="statusOptions" />
 ```
+
+### URL as Source of Truth (Non-Negotiable)
+**All significant UI state must be reflected in the URL.** The user must be able to copy-paste a URL and land on the exact same view. This includes:
+- **Active tab** → route segment (e.g., `/admin/integrations`, `/inventory/receiving`)
+- **Selected entity / detail panel** → route param or query param (e.g., `/parts/42`, `/board?job=123`)
+- **Active filters** → query params (e.g., `/backlog?status=open&priority=high`)
+- **Pagination** → query params (e.g., `/parts?page=2&pageSize=50`)
+
+This ensures:
+- Direct links and bookmarks work
+- Browser back/forward navigates correctly
+- External redirects (OAuth callbacks, email links, shared links) target the right view
+- Refresh preserves state
+
+**Never store navigational state in signals/services alone.** Signals derive from the URL, not the other way around.
+
+**Tab pattern:** Use a `:tab` route parameter with a redirect from the bare path:
+```typescript
+// feature.routes.ts
+export const FEATURE_ROUTES: Routes = [
+  { path: '', redirectTo: 'first-tab', pathMatch: 'full' },
+  { path: ':tab', component: FeatureComponent },
+];
+
+// feature.component.ts
+private readonly route = inject(ActivatedRoute);
+protected readonly activeTab = toSignal(
+  this.route.paramMap.pipe(map(p => p.get('tab') ?? 'first-tab')),
+  { initialValue: 'first-tab' },
+);
+
+protected switchTab(tab: string): void {
+  this.router.navigate(['..', tab], { relativeTo: this.route });
+}
+```
+
+Tab clicks call `switchTab()` which navigates; the `activeTab` signal reacts to the route change. Data loading per tab uses `effect()` on `activeTab`.
 
 ### Service Conventions
 - `providedIn: 'root'` (tree-shakeable singletons)
@@ -525,6 +572,18 @@ All list views must show `<app-empty-state>` when data is empty — icon + messa
 | `NotificationHubService` | `shared/services/` | Notification hub: pushes to NotificationService |
 | `TimerHubService` | `shared/services/` | Timer hub: start/stop event callbacks |
 | `ConnectionBannerComponent` | `shared/components/connection-banner/` | Reconnecting/disconnected warning banner |
+| `ScannerService` | `shared/services/` | Global barcode/NFC keyboard-wedge scan detection |
+| `BarcodeScanInputComponent` | `shared/components/barcode-scan-input/` | Focused scan input field (kiosk use) |
+| `QrCodeComponent` | `shared/components/qr-code/` | QR code display (angularx-qrcode wrapper) |
+| `LabelPrintService` | `shared/services/` | Barcode/QR generation + label printing (bwip-js) |
+| `LightboxGalleryComponent` | `shared/components/lightbox-gallery/` | Fullscreen image viewer with thumbnails, keyboard/touch nav |
+| `CameraCaptureComponent` | `shared/components/camera-capture/` | Device camera capture for receipts/documents |
+| `OfflineBannerComponent` | `shared/components/offline-banner/` | Bottom-center offline/syncing/synced status banner |
+| `SyncConflictDialogComponent` | `shared/components/sync-conflict-dialog/` | 409 conflict resolution (Keep Mine/Keep Server/Cancel) |
+| `StatusTimelineComponent` | `shared/components/status-timeline/` | Active status + holds + history timeline |
+| `SetStatusDialogComponent` | `shared/components/set-status-dialog/` | Dialog for setting workflow status with notes |
+| `AddHoldDialogComponent` | `shared/components/add-hold-dialog/` | Dialog for adding holds with type + notes |
+| `StatusTrackingService` | `shared/services/` | Status lifecycle CRUD (workflow + holds) |
 | `toIsoDate()` | `shared/utils/date.utils.ts` | Date → `YYYY-MM-DDT00:00:00Z` |
 
 ### AppDataTableComponent — Usage Guide
@@ -852,6 +911,47 @@ Dashboard calendar widget using `mat-calendar`. Highlights dates with events.
   (dateSelected)="onDateSelected($event)" />
 ```
 
+### ScannerService — Usage Guide
+
+Global singleton that detects USB barcode scanner / NFC reader input (keyboard wedge mode). Listens for rapid keystroke patterns on `document` and emits `ScanEvent` signals. Context-aware: each feature page sets its context so scans route to the right handler.
+
+**Architecture:**
+- Starts globally in `AppComponent.ngOnInit()` (after auth)
+- Stops on logout
+- Skips focused `<input>`/`<textarea>` unless keystroke timing matches scanner speed (< 50ms between keys)
+- Skips elements inside `app-barcode-scan-input` (which handles its own scanning)
+- Auto-completes scan after 80ms pause (fallback if scanner doesn't send Enter)
+
+```typescript
+// Feature component — set context + react to scans
+private readonly scanner = inject(ScannerService);
+
+constructor() {
+  this.scanner.setContext('parts'); // Set scan context for this page
+
+  effect(() => {
+    const scan = this.scanner.lastScan();
+    if (!scan || scan.context !== 'parts') return;
+    this.scanner.clearLastScan();
+    // Handle the scan — e.g., search for the scanned part number
+    this.searchControl.setValue(scan.value);
+    this.loadParts();
+  });
+}
+```
+
+**Signals:** `lastScan` (ScanEvent | null), `enabled` (boolean), `listening` (boolean), `context` (ScanContext), `hasRecentScan` (boolean — within 5s)
+**Methods:** `start()`, `stop()`, `setContext(ctx)`, `enable()`, `disable()`, `clearLastScan()`
+**ScanContext:** `'global' | 'parts' | 'inventory' | 'shop-floor' | 'kanban' | 'receiving' | 'shipping' | 'quality'`
+**ScanEvent:** `{ value: string, timestamp: Date, context: ScanContext }`
+
+**Integrated features:**
+- **Parts** — scanned value → search filter, triggers part lookup
+- **Inventory** — scanned value → search filter, switches to stock tab
+- **Kanban** — scanned job number → selects job on board, opens detail panel
+- **Quality** — scanned value → fills active tab's search (inspections or lots)
+- **Shop Floor Clock** — uses `BarcodeScanInputComponent` directly (focused input, not global scanner)
+
 ### LoadingService — Usage Guide
 
 Global loading overlay that blocks all interaction. Signal-based cause queue supports multiple concurrent loading sources. Integrates with `LoadingBlockDirective` for component-level loading.
@@ -1087,6 +1187,7 @@ _(No pending enhancements — all planned DataTable and UserPreferences work is 
 | Payments ⚡ | `payments/` | `PaymentsController` | Payment, PaymentApplication |
 | Price Lists | — (backend only) | `PriceListsController` | PriceList, PriceListEntry |
 | Recurring Orders | — (backend only) | `RecurringOrdersController` | RecurringOrder, RecurringOrderLine |
+| Status Lifecycle | — (integrated into detail panels) | `StatusTrackingController` | StatusEntry |
 
 ### Planned Features (Not yet implemented)
 
@@ -1101,11 +1202,11 @@ _(No pending enhancements — all planned DataTable and UserPreferences work is 
 ### Core Entities (in `qb-engineer.core/Entities/`)
 ```
 BaseEntity (Id, CreatedAt, UpdatedAt, DeletedAt, DeletedBy)
-├── Job, TrackType, JobStage, JobSubtask, JobActivityLog, JobLink
+├── Job (+ Disposition, DispositionNotes, DisposedAt, ParentJobId, PartId), TrackType, JobStage, JobSubtask, JobActivityLog, JobLink
 ├── Customer, Contact
-├── Part, BOMEntry
+├── Part (+ ToolingAssetId FK), BOMEntry (+ LeadTimeDays), ProcessStep
 ├── StorageLocation, BinContent, BinMovement
-├── Lead, Expense, Asset
+├── Lead, Expense, Asset (+ tooling fields: CavityCount, ToolLifeExpectancy, CurrentShotCount, IsCustomerOwned, SourceJobId, SourcePartId)
 ├── TimeEntry, ClockEvent
 ├── FileAttachment
 ├── PlanningCycle, PlanningCycleEntry (BaseEntity)
@@ -1117,11 +1218,12 @@ BaseEntity (Id, CreatedAt, UpdatedAt, DeletedAt, DeletedBy)
 ├── Payment, PaymentApplication        ← ⚡ standalone mode
 ├── PriceList, PriceListEntry
 ├── RecurringOrder, RecurringOrderLine
+├── StatusEntry (polymorphic: EntityType/EntityId, workflow + hold categories)
 ├── ReferenceData, SystemSetting, SyncQueueEntry
 ```
 
 ### Enums (in `qb-engineer.core/Enums/`)
-`JobPriority`, `JobLinkType`, `ActivityAction`, `PartType`, `PartStatus`, `BOMSourceType`, `LocationType`, `BinContentStatus`, `BinMovementReason`, `LeadStatus`, `ExpenseStatus`, `AssetType`, `AssetStatus`, `ClockEventType`, `SyncStatus`, `AccountingDocumentType`, `PlanningCycleStatus`, `PurchaseOrderStatus`, `SalesOrderStatus`, `QuoteStatus`, `ShipmentStatus`, `InvoiceStatus`, `PaymentMethod`, `CreditTerms`, `AddressType`
+`JobPriority`, `JobLinkType`, `JobDisposition`, `ActivityAction`, `PartType`, `PartStatus` (Draft, Prototype, Active, Obsolete), `BOMSourceType` (Make, Buy, Stock), `LocationType`, `BinContentStatus`, `BinMovementReason`, `LeadStatus`, `ExpenseStatus`, `AssetType`, `AssetStatus`, `ClockEventType`, `SyncStatus`, `AccountingDocumentType`, `PlanningCycleStatus`, `PurchaseOrderStatus`, `SalesOrderStatus`, `QuoteStatus`, `ShipmentStatus`, `InvoiceStatus`, `PaymentMethod`, `CreditTerms`, `AddressType`
 
 ---
 
@@ -1387,6 +1489,7 @@ Quote Requested → Quoted (Estimate) → Order Confirmed (Sales Order) → Mate
 - Never write data-fetching code without evaluating loading state — use `LoadingService` (global) or `LoadingBlockDirective` (section-level)
 - Never duplicate `@keyframes spin` — it's defined globally in `_shared.scss`
 - Never build financial features (invoices, payments, AR, P&L, vendor CRUD) without checking the accounting boundary — see below
+- Never store significant UI state (tabs, selected entity, filters, pagination) in signals/services alone — the URL must be the source of truth (see "URL as Source of Truth" pattern)
 
 ---
 

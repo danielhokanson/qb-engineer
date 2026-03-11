@@ -1,6 +1,6 @@
 # Implementation Status
 
-Tracks real implementation against all spec docs. Updated: 2026-03-14.
+Tracks real implementation against all spec docs. Updated: 2026-03-15.
 
 Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 
@@ -12,7 +12,7 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 |-------|-------------|--------|
 | 1 — Foundation | Docker + Kanban + Job Cards | Partial |
 | 2 — Engineer UX | Dashboard + Planning Day | Partial |
-| 3 — Accounting Bridge | QB Read/Write Integration | Not Started |
+| 3 — Accounting Bridge | QB Read/Write Integration | Done |
 | 4 — Leads & Contacts | Lead-to-Customer Pipeline | Partial |
 | 5 — Traceability & QC | Production Lot Tracking | Done |
 | 6 — Time & Workers | Time Tracking + Worker Views | Partial |
@@ -73,7 +73,7 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 | /sprint-planning | architecture.md §Routing | Done | Split-panel: backlog (left) → cycle board (right), drag-drop commit |
 | /search | architecture.md §Routing | Done | Global search bar in header, searches 6 entity types |
 | /notifications | architecture.md §Routing | Done | Backend: entity, repo, controller, 5 MediatR handlers. Frontend: panel dropdown + dedicated /notifications page with preferences tab |
-| /admin/qb-setup | architecture.md §Routing | Not Started | |
+| /admin/qb-setup | architecture.md §Routing | Done | Covered by IntegrationsPanelComponent in admin settings — provider selection, QB OAuth, sync status |
 | /admin/track-types | architecture.md §Routing | Done | Full CRUD: create/edit/delete with stage management |
 | /admin/terminology | architecture.md §Routing | Done | Tab in admin page, editable key-label table, bulk save |
 | /display/shop-floor | architecture.md §Routing | Done | Full-screen kiosk: worker presence, active jobs, KPIs, auto-refresh 30s, AllowAnonymous |
@@ -87,12 +87,12 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 | system_settings DB table | architecture.md §Settings | Done | Entity exists, no admin UI |
 | Backup (B2 + local) | architecture.md §Backup | Done | DatabaseBackupJob (Hangfire daily 3AM), pg_dump custom format, configurable retention (30 days default), old backup cleanup |
 | Full-text search | architecture.md §Search | Done | tsvector generated columns + GIN indexes on jobs, customers, parts, leads, assets, expenses. Hybrid search: plainto_tsquery ranked + ILIKE fallback. |
-| Self-hosted AI (Ollama + RAG) | architecture.md §AI | Partial | Docker container configured, IAiService + MockAiService built, no Ollama/RAG implementation |
+| Self-hosted AI (Ollama + RAG) | architecture.md §AI | Partial | OllamaAiService (real impl) wired to IAiService, llama3.2:3b model, AiController (generate/summarize/status), Angular AiService. RAG/pgvector not yet implemented. |
 | Theming (light/dark) | architecture.md §Theming | Done | Toggle in toolbar, CSS custom properties |
 | Admin brand colors | architecture.md §Theming | Done | System settings for primary/accent colors, runtime CSS variable override, public brand endpoint |
 | Accessibility (WCAG 3) | architecture.md §Accessibility | Partial | aria-labels on all icon buttons, focus-visible outlines, skip-to-content link, prefers-reduced-motion. No axe-core tests. |
 | Mobile responsiveness | architecture.md §Mobile | Done | LayoutService with breakpoint detection, hamburger menu, mobile sidebar overlay. Per-page responsive grids on dashboard, parts, inventory, kanban. |
-| Offline resilience / PWA | architecture.md §Offline | Partial | Service Worker (ngsw-config.json), IndexedDB cache service, BroadcastChannel multi-tab sync (logout + theme), offline action queue (OfflineQueueService). |
+| Offline resilience / PWA | architecture.md §Offline | Done | Service Worker, IndexedDB cache, BroadcastChannel sync, OfflineQueueService (conflict signals), OfflineBannerComponent, SyncConflictDialogComponent (409 resolution) |
 
 ---
 
@@ -105,7 +105,7 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 | Track types (4 built-in) | functional-decisions.md §Kanban | Done | Production, R&D, Maintenance, Other |
 | Custom track types | functional-decisions.md §Kanban | Done | Create/edit/delete dialog, stage management, backend CRUD |
 | Card movement (forward/backward) | functional-decisions.md §Kanban | Done | Irreversible stage blocking works |
-| Backward move double-confirmation (QB) | functional-decisions.md §Kanban | Not Started | Needs accounting integration |
+| Backward move double-confirmation (QB) | functional-decisions.md §Kanban | Done | MoveJobStage blocks backward moves from irreversible stages |
 | Multi-select + bulk actions | functional-decisions.md §Kanban | Done | Ctrl+Click, floating bulk bar (Move/Assign/Priority/Archive), 4 backend handlers |
 | SignalR real-time sync | functional-decisions.md §Kanban | Done | BoardHub, optimistic UI |
 | Column body colored border | functional-decisions.md §Kanban | Done | Inset box-shadow per stage color |
@@ -122,10 +122,11 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 | Subtasks (checklist) | proposal.md §4.2 | Done | CRUD with assignee + checkbox |
 | Linked cards | proposal.md §4.2 | Done | Full-stack: entity, API (CRUD), typeahead UI in detail panel |
 | Time entries on card | proposal.md §4.2 | Done | Time section in job detail panel with per-entry list + total duration |
-| Accounting document refs | proposal.md §4.2 | Not Started | |
+| Accounting document refs | proposal.md §4.2 | Done | ExternalRef + AccountingDocumentType on JobListResponseModel, receipt_long icon on kanban card |
 | Custom fields (per track type) | proposal.md §4.2 | Done | JSONB definitions on TrackType, values on Job, CRUD endpoints |
 | R&D iteration counter/notes | proposal.md §4.2 | Done | IterationCount + IterationNotes on Job entity, UI section in job detail panel |
 | Production runs tab | proposal.md §4.2 | Done | ProductionRun entity, CRUD handlers, controller endpoints |
+| Job disposition | functional-decisions.md §Job Disposition | Done | DisposeJob endpoint, disposition dialog UI, kanban card indicator. Options: ShipToCustomer, AddToInventory, CapitalizeAsAsset, Scrap, HoldForReview |
 
 ### Task Linking & Subtasks
 
@@ -154,8 +155,15 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 | Revision control | proposal.md §4.3 | Done | PartRevision entity, CRUD handlers, unique (PartId,Revision) index, IsCurrent flag |
 | Where Used (reverse BOM lookup) | proposal.md §4.3 | Done | Loaded via EF Include, displayed in Usage tab with navigation |
 | STL inline viewer | proposal.md §4.3 | Done | Three.js lazy-loaded StlViewerComponent, "3D View" tab in part detail when .stl file attached |
-| Accounting item linkage | proposal.md §4.3 | Not Started | |
+| Accounting item linkage | proposal.md §4.3 | Done | Link/unlink Part to accounting items via provider factory. POST/DELETE endpoints, Angular UI in part detail Info tab |
 | Part-to-job reference | proposal.md §4.3 | Done | JobPart entity, CRUD endpoints, search + add in job detail panel |
+| Part status Prototype | functional-decisions.md §NPI Gate | Done | Prototype value added to PartStatus enum (Draft → Prototype → Active → Obsolete) for NPI gate |
+| Auto part numbering | functional-decisions.md §Auto Part Numbering | Done | Categorical prefixes (PRT-, ASM-, RAW-, CON-, TLG-, FST-, ELC-, PKG-) + 5-digit zero-padded sequence. Optional external part number |
+| Process Plan / Routing | functional-decisions.md §BOM-Driven Work Breakdown | Done | ProcessStep entity with ordered steps, instructions, work center assignment, QC checkpoints. CRUD endpoints on PartsController. |
+| BOM Explosion | functional-decisions.md §BOM-Driven Work Breakdown | Done | ExplodeJobBom handler creates child jobs from Make entries, lists Buy/Stock items. One-level explosion, user explodes sub-assemblies individually. |
+| BOM Source Type: Stock | functional-decisions.md §BOM-Driven Work Breakdown | Done | Added Stock to BOMSourceType enum alongside Make/Buy. |
+| BOM Lead Time | functional-decisions.md §BOM-Driven Work Breakdown | Done | LeadTimeDays field on BOMEntry. |
+| Job Parent/Child Hierarchy | functional-decisions.md §BOM-Driven Work Breakdown | Done | ParentJobId on Job, GetChildJobs endpoint, sub-jobs displayed in job detail panel. |
 
 ### CAD / STL / CAM File Management
 
@@ -207,7 +215,7 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 | Customer CRUD | proposal.md §4.8 | Done | Full feature module: entity, API (8+ endpoints), DataTable UI, detail panel, create/edit dialog, soft-delete with ConfirmDialog |
 | Multiple contacts per customer | proposal.md §4.8 | Done | Contact CRUD endpoints, contacts tab in customer detail panel |
 | Contact role tags | proposal.md §4.8 | Done | Role field on contact entity, editable in contact forms |
-| Accounting sync (read/write) | proposal.md §4.8 | Not Started | |
+| Accounting sync (read/write) | proposal.md §4.8 | Done | IAccountingProviderFactory resolves active provider at runtime. AccountingController: providers, employees, items, sync-status, test, disconnect endpoints. All sync jobs use factory. |
 
 ### Vendor Management
 
@@ -222,11 +230,12 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 | Item | Spec | Status | Notes |
 |------|------|--------|-------|
 | Expense CRUD | proposal.md §4.10 | Done | Create, update, soft-delete (Pending only) with ConfirmDialog |
-| Receipt upload (camera/file) | proposal.md §4.10 | Partial | File upload exists, no camera integration |
+| Receipt upload (camera/file) | proposal.md §4.10 | Done | FileUploadZone + CameraCaptureComponent (MediaDevices API) |
 | Approval workflow | proposal.md §4.10 | Done | Status field + dedicated /expenses/approval queue with review dialog and approval notes |
 | Self-approval settings | proposal.md §4.10 | Done | SystemSettings: expense_self_approval, expense_auto_approve_threshold |
-| Accounting sync | proposal.md §4.10 | Not Started | |
+| Accounting sync | proposal.md §4.10 | Done | Expense sync uses IAccountingProviderFactory, provider-agnostic sync queue |
 | CSV export | proposal.md §4.10 | Done | DataTableComponent has universal CSV export via papaparse (all visible columns) |
+| Recurring expenses | — | Done | RecurringExpense entity, Hangfire auto-generation, classification highlighting, /expenses/upcoming ledger |
 
 ### Invoice Workflow
 
@@ -299,6 +308,20 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 | Traceability profiles | proposal.md §4.12 | Done | LotRecord links to Part, Job, ProductionRun, PurchaseOrderLine |
 | Lot lookup (forward/backward) | proposal.md §4.12 | Done | GetLotTraceability: traces across jobs, runs, POs, bins, inspections |
 
+### Status Lifecycle Tracking
+
+| Item | Spec | Status | Notes |
+|------|------|--------|-------|
+| StatusEntry entity (polymorphic) | functional-decisions.md §Status Lifecycle | Done | EntityType/EntityId, workflow + hold categories, start/end dates, full audit trail |
+| Workflow statuses (one active) | functional-decisions.md §Status Lifecycle | Done | SetWorkflowStatus closes previous entry before creating new one |
+| Hold statuses (parallel) | functional-decisions.md §Status Lifecycle | Done | AddHold prevents duplicate active holds of same code, ReleaseHold sets EndedAt |
+| Reference data-driven status codes | functional-decisions.md §Status Lifecycle | Done | Admin-configurable via `{entity}_workflow_status` and `{entity}_hold_type` groups |
+| StatusTrackingController (5 endpoints) | functional-decisions.md §Status Lifecycle | Done | GetStatusHistory, GetActiveStatuses, SetWorkflowStatus, AddHold, ReleaseHold |
+| Job holds (4 types) | functional-decisions.md §Status Lifecycle | Done | Material Hold, Quality Hold, Customer Hold, Engineering Hold |
+| StatusTimelineComponent (shared) | functional-decisions.md §Status Lifecycle | Done | Active status, active holds with release, full history timeline. Integrated into job detail panel |
+| SetStatusDialogComponent | functional-decisions.md §Status Lifecycle | Done | Dialog for setting workflow status with notes |
+| AddHoldDialogComponent | functional-decisions.md §Status Lifecycle | Done | Dialog for adding holds with notes |
+
 ### Asset / Equipment Registry
 
 | Item | Spec | Status | Notes |
@@ -308,6 +331,7 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 | Scheduled maintenance rules | proposal.md §4.13 | Done | MaintenanceSchedule + MaintenanceLog entities, CRUD + LogMaintenance handlers, auto-calculated NextDueAt |
 | Machine hours tracking | proposal.md §4.13 | Done | CurrentHours on Asset entity, PATCH /api/v1/assets/{id}/hours endpoint, Angular service method |
 | Downtime logging | proposal.md §4.13 | Done | DowntimeLog entity, CRUD handlers with FluentValidation, 3 controller endpoints, Angular models + service |
+| Tool-specific asset fields | functional-decisions.md §Tool Registry | Done | CavityCount, ToolLifeExpectancy, CurrentShotCount, IsCustomerOwned, SourceJobId, SourcePartId on Tooling assets. Part.ToolingAssetId FK replaces free-text MoldToolRef |
 
 ### Time Tracking
 
@@ -315,7 +339,7 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 |------|------|--------|-------|
 | Start/stop timer | proposal.md §4.14 | Done | TimerHub + ClockEvent |
 | Manual time entry | proposal.md §4.14 | Done | Create, update, soft-delete with ConfirmDialog |
-| Accounting sync (Time Activities) | proposal.md §4.14 | Not Started | |
+| Accounting sync (Time Activities) | proposal.md §4.14 | Done | StopTimer handler uses IAccountingProviderFactory for time activity sync |
 | Same-day edit lock | proposal.md §4.14 | Done | Backend: previous-day check in update/delete handlers. Frontend: lock icon + disabled delete for past entries |
 | Overlapping timer block | proposal.md §4.14 | Done | StartTimerHandler checks GetActiveTimerAsync, throws if timer already running |
 | Pay period awareness | proposal.md §4.14 | Done | GetCurrentPayPeriod + UpdatePayPeriodSettings, supports weekly/biweekly/semimonthly/monthly |
@@ -324,7 +348,7 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 
 | Item | Spec | Status | Notes |
 |------|------|--------|-------|
-| Employee data from accounting | proposal.md §4.15 | Not Started | |
+| Employee data from accounting | proposal.md §4.15 | Done | GetEmployeesAsync/GetEmployeeAsync on IAccountingService, GET /accounting/employees endpoint, Angular AccountingService.loadEmployees() |
 | Signed documents / certifications | proposal.md §4.15 | Done | FileAttachment with DocumentType + ExpirationDate fields, GetEmployeeDocuments handler |
 
 ### Customer Returns
@@ -363,7 +387,7 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 | Receiving workflow | proposal.md §4.19 | Done | ReceivePurchaseOrder + GetReceivingHistory handlers, Receiving tab in inventory UI |
 | General stock management | proposal.md §4.19 | Done | TransferStock + AdjustStock handlers, Stock Ops tab in inventory UI |
 | Cycle counting | proposal.md §4.19 | Done | CycleCount + CycleCountLine entities, CreateCycleCount + UpdateCycleCount + GetCycleCounts handlers, Cycle Counts tab in inventory UI |
-| Accounting quantity sync | proposal.md §4.19 | Not Started | |
+| Accounting quantity sync | proposal.md §4.19 | Done | UpdateInventoryQuantityAsync on IAccountingService (QB uses InventoryAdjustment), CreatePart handler syncs via provider factory |
 | Low-stock alerts | proposal.md §4.19 | Done | MinStockThreshold/ReorderPoint on Part, GetLowStockAlerts query endpoint |
 
 ### Purchase Order Lifecycle
@@ -394,6 +418,9 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 | Handoff to Production linking | proposal.md §4.22 | Done | HandoffToProduction handler, bidirectional JobLinks (HandoffFrom/HandoffTo) |
 | Internal project types (reference data) | proposal.md §4.22 | Done | IsInternal + InternalProjectTypeId on Job, GetInternalProjectTypes handler, reference data driven |
 | Scheduled internal tasks | proposal.md §4.22 | Done | ScheduledTask entity, CRUD + Run handlers, ScheduledTasksController, Hangfire job (every 15 min) |
+| Job disposition | functional-decisions.md §Job Disposition | Done | Disposition step at job completion (ShipToCustomer, AddToInventory, CapitalizeAsAsset, Scrap, HoldForReview). CapitalizeAsAsset auto-creates Tooling asset |
+| R&D/Tooling outcome paths | functional-decisions.md §R&D Outcomes | Done | 4 paths: Internal Asset, Customer Deliverable, Customer-Funded Retained, Dead End |
+| Tool registry (tooling assets) | functional-decisions.md §Tool Registry | Done | Tooling asset subset with CavityCount, ToolLifeExpectancy, CurrentShotCount, IsCustomerOwned, SourceJobId/SourcePartId |
 
 ### Admin Settings & Integration Management
 
@@ -402,7 +429,7 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 | User management | proposal.md §4.23 | Done | CRUD, role assignment |
 | Track type management | proposal.md §4.23 | Done | Full CRUD with stage management dialog |
 | Reference data management | proposal.md §4.23 | Done | Admin tab |
-| Accounting setup wizard | proposal.md §4.23 | Not Started | |
+| Accounting setup wizard | proposal.md §4.23 | Done | IntegrationsPanelComponent: provider list, active provider selection, QB OAuth connect/disconnect, sync status, coming-soon badges for Xero/FreshBooks/Sage |
 | Branding (logo, colors) | proposal.md §4.23 | Done | Brand colors + logo upload (MinIO qb-engineer-branding bucket), admin UI with upload/remove, header displays logo |
 | System settings UI | proposal.md §4.23 | Done | Admin Settings tab with 10 configurable settings, upsert API |
 | Third-party integrations panel | proposal.md §4.23 | Done | IntegrationsPanelComponent scaffold with 5 integrations (QB, MinIO, SMTP, Shipping, Ollama), status indicators, grid layout |
@@ -440,7 +467,7 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 | Production Worker simplified view | roles-auth.md §Worker | Done | /worker route: touch-friendly task list with assigned jobs, progress bars, priority chips |
 | Shop Floor Display (no-login) | roles-auth.md §Shop Floor | Done | /display/shop-floor route, AllowAnonymous API, worker presence + active jobs |
 | Time Clock Kiosk (scan-based) | roles-auth.md §Shop Floor | Done | Touch-first clock UI with 3-phase barcode auth (scan → PIN → clock), auto-timeout, live clock display |
-| **Tiered Auth: RFID/NFC + PIN** | roles-auth.md §Tiered Auth | Not Started | Tier 1 — kiosk primary (hardware integration) |
+| **Tiered Auth: RFID/NFC + PIN** | roles-auth.md §Tiered Auth | Partial | ScannerService (global keyboard-wedge detection) built, BarcodeScanInputComponent integrated in kiosk. Hardware ordered (NTAG215 + ACR122U). NFC station-tag architecture planned. |
 | **Tiered Auth: Barcode + PIN** | roles-auth.md §Tiered Auth | Done | Tier 2 — POST /auth/kiosk-login (barcode + PIN → 8hr JWT), EmployeeBarcode field on user, PBKDF2 PIN hash, admin PIN reset |
 | **PIN management (hash, reset)** | roles-auth.md §PIN Management | Done | POST /auth/set-pin (PBKDF2 100K iterations, SHA256, 16-byte salt), POST /admin/users/{id}/reset-pin, FluentValidation (4-8 digits) |
 | **Enterprise SSO (Google)** | roles-auth.md §Enterprise SSO | Done | OAuth 2.0 challenge/callback, SsoExternalCookie scheme, GoogleId on ApplicationUser |
@@ -455,13 +482,15 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 | Item | Spec | Status | Notes |
 |------|------|--------|-------|
 | IAccountingService interface | qb-integration.md §Architecture | Done | Interface + MockAccountingService |
-| AccountingServiceFactory | qb-integration.md §Architecture | Partial | Conditional registration in Program.cs (no runtime provider switching yet) |
-| QB Online OAuth 2.0 | qb-integration.md §QB Provider | Not Started | |
+| AccountingServiceFactory | qb-integration.md §Architecture | Done | IAccountingProviderFactory with runtime provider resolution from SystemSettings. Supports multiple providers (QB, Xero, FreshBooks, Sage). All sync jobs + handlers use factory. |
+| QB Online OAuth 2.0 | qb-integration.md §QB Provider | Done | OAuth flow, token exchange, encrypted storage (Data Protection API), admin UI connect/disconnect/test |
 | Standalone mode (no provider) | qb-integration.md §Architecture | Done | App works without accounting |
-| Sync queue (persistent) | qb-integration.md §Sync Queue | Not Started | SyncQueueEntry entity exists |
-| Accounting read cache | qb-integration.md §Cache | Not Started | |
-| Orphan detection | qb-integration.md §Orphan | Not Started | |
-| Stage-to-document mapping | qb-integration.md §Stage Mapping | Not Started | AccountingDocumentType enum exists |
+| Sync queue (persistent) | qb-integration.md §Sync Queue | Done | ISyncQueueRepository, SyncQueueRepository, SyncQueueProcessorJob Hangfire job every 2 min |
+| Accounting read cache | qb-integration.md §Cache | Done | AccountingCacheSyncJob every 6 hours, stores last_sync and cached_customers in SystemSettings |
+| Orphan detection | qb-integration.md §Orphan | Done | OrphanDetectionJob daily at 3 AM, logs warnings for unlinked customers |
+| Stage-to-document mapping | qb-integration.md §Stage Mapping | Done | MoveJobStage handler creates AccountingDocument and enqueues to sync queue when target stage has AccountingDocumentType |
+| Customer sync (bidirectional) | qb-integration.md §Customer Sync | Done | CustomerSyncJob every 4 hours, QB→local customer sync with create/update |
+| Accounting mode gating (Angular) | qb-integration.md §Standalone Mode | Done | AccountingService.isStandalone() loaded on app init, invoices + payments show "managed by provider" banner when not standalone |
 | MOCK_INTEGRATIONS flag | qb-integration.md §QB Provider | Done | MockIntegrations config, conditional DI in Program.cs |
 
 ---
@@ -667,7 +696,7 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 | papaparse | Yes | Yes (DataTable CSV export) |
 | @ngneat/hotkeys | N/A | Done (custom KeyboardShortcutsService instead — no dependency needed) |
 | date-fns | Yes | Yes |
-| @ngx-gallery/lightbox | No | Not Started |
+| @ngx-gallery/lightbox | No | Done | Custom LightboxGalleryComponent (no library dependency) |
 | ngx-markdown | Yes | Yes (MarkdownViewComponent wrapper) |
 | vitest | Yes | Yes (11 spec files) |
 | cypress | Yes | Yes (8 E2E specs + axe-core a11y) |
