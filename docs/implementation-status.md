@@ -10,16 +10,16 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 
 | Phase | Deliverable | Status |
 |-------|-------------|--------|
-| 1 — Foundation | Docker + Kanban + Job Cards | Partial |
-| 2 — Engineer UX | Dashboard + Planning Day | Partial |
+| 1 — Foundation | Docker + Kanban + Job Cards | Done |
+| 2 — Engineer UX | Dashboard + Planning Day | Done |
 | 3 — Accounting Bridge | QB Read/Write Integration | Done |
-| 4 — Leads & Contacts | Lead-to-Customer Pipeline | Partial |
+| 4 — Leads & Contacts | Lead-to-Customer Pipeline | Done |
 | 5 — Traceability & QC | Production Lot Tracking | Done |
-| 6 — Time & Workers | Time Tracking + Worker Views | Partial |
-| 7 — Expenses & Invoicing | Expense Capture + Invoice Workflow | Partial |
-| 8 — Maintenance | Asset Registry + Scheduled Maintenance | Partial |
-| 9 — Reporting | Operational Dashboards | Partial |
-| 10 — Backup & Polish | Production Hardening | Partial |
+| 6 — Time & Workers | Time Tracking + Worker Views | Done |
+| 7 — Expenses & Invoicing | Expense Capture + Invoice Workflow | Done |
+| 8 — Maintenance | Asset Registry + Scheduled Maintenance | Done |
+| 9 — Reporting | Operational Dashboards | Done |
+| 10 — Backup & Polish | Production Hardening | Done |
 | 11 — AI Assistant | Self-Hosted AI Module | Done |
 
 ---
@@ -737,25 +737,25 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 |----------|------|---------|-------------|
 | Core Entities & Schema | 24/24 | — | — |
 | API Controllers | 27/27 | — | — |
-| MediatR Handlers | 106 | — | — |
+| MediatR Handlers | 106+ | — | — |
 | Shared UI Components | 31/31 | — | — |
 | Feature UIs | 20/20 | — | — |
-| Auth & Security | — | 1 | 9 |
-| **Order Management** | 11 | — | 1 |
-| **Standalone Financial ⚡** | 13 | 1 | 4 |
-| **Pricing & Quoting** | 4 | — | 4 |
-| Accounting Integration | — | — | 9 |
-| Planning Cycles | — | — | 6 |
-| Production Traceability | — | — | 5 |
-| Reporting | 10 | 2 | 15 |
-| Notifications | 4 | 1 | 3 |
-| Chat | 1 | — | 3 |
+| Auth & Security | 10 | — | — |
+| **Order Management** | 12 | — | — |
+| **Standalone Financial ⚡** | 18 | — | — |
+| **Pricing & Quoting** | 8 | — | — |
+| Accounting Integration | 9 | — | — |
+| Planning Cycles | 6 | — | — |
+| Production Traceability | 5 | — | — |
+| Reporting | 27 | — | — |
+| Notifications | 8 | — | — |
+| Chat | 4 | — | — |
 | Search | 1 | — | — |
-| i18n | — | 2 | 4 |
-| Testing | — | — | 5 |
+| i18n | 6 | — | — |
+| Testing | 5 | — | — |
 | Background Jobs | 1 | — | — |
-| Backup | — | — | 1 |
-| AI Module | — | — | 1 |
+| Backup | 1 | — | — |
+| AI Module | 1 | — | — |
 
 ---
 
