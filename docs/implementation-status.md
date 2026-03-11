@@ -670,10 +670,10 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 
 | Area | Status | Notes |
 |------|--------|-------|
-| Angular unit tests (Vitest) | Partial | 15 spec files (195 tests): AuthService, ThemeService, FormValidationService, LoadingService, TerminologyPipe, AppComponent, SnackbarService, NotificationService, CacheService, BroadcastService, OfflineQueueService, StatusTrackingService, InventoryService, AiService, ShipmentService |
-| .NET unit tests (xUnit) | Partial | 19 test classes (142 tests): CreateJob, UpdateJob, MoveJobStage, CreatePart, StartTimer, StopTimer, CreateExpense, CreateCustomer, AdjustStock, CreateInvoiceFromJob, CreateLead, CreateVendor, CreateQuote, DisposeJob, CreateReservation, ReleaseReservation, ExplodeJobBom, SetWorkflowStatus, UploadFileChunk |
-| Integration tests | Partial | 24 tests via WebApplicationFactory: health, auth, protected endpoints (InMemory DB + Hangfire MemoryStorage) |
-| E2E tests (Cypress) | Partial | 12 spec files (login, dashboard, kanban, accessibility, parts, expenses, admin, inventory, shipments, quality, reports-expanded, calendar), custom cy.login() command |
+| Angular unit tests (Vitest) | Done | 23 spec files (330 tests): AuthService, ThemeService, FormValidationService, LoadingService, TerminologyPipe, AppComponent, SnackbarService, NotificationService, CacheService, BroadcastService, OfflineQueueService, StatusTrackingService, InventoryService, AiService, ShipmentService, KanbanService, PartsService, ExpensesService, LeadsService, CustomerService, AdminService, TimeTrackingService, AssetsService |
+| .NET unit tests (xUnit) | Done | 27 test classes (214 tests): CreateJob, UpdateJob, MoveJobStage, CreatePart, StartTimer, StopTimer, CreateExpense, CreateCustomer, AdjustStock, CreateInvoiceFromJob, CreateLead, CreateVendor, CreateQuote, DisposeJob, CreateReservation, ReleaseReservation, ExplodeJobBom, SetWorkflowStatus, UploadFileChunk, CreatePayment, CreateInvoice, PlaceBinContent, CreateAsset, CreateMaintenanceSchedule, ConvertQuoteToOrder, ActivatePlanningCycle, CreateCustomerReturn |
+| Integration tests | Done | 40 tests via WebApplicationFactory: health, auth, protected endpoints, POST validation (InMemory DB + Hangfire MemoryStorage) |
+| E2E tests (Cypress) | Done | 18 spec files (login, dashboard, kanban, accessibility, parts, expenses, admin, inventory, shipments, quality, reports-expanded, calendar, leads, assets, time-tracking, backlog, vendors, planning), custom cy.login() command |
 | axe-core accessibility tests | Done | 10 page tests (dashboard, kanban, login, parts, inventory, admin, reports, expenses, leads, time-tracking) — critical + serious violations |
 
 ---
@@ -752,7 +752,7 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 | Chat | 1 | — | 3 |
 | Search | 1 | — | — |
 | i18n | — | 2 | 4 |
-| Testing | — | 2 | 3 |
+| Testing | — | — | 5 |
 | Background Jobs | 1 | — | — |
 | Backup | — | — | 1 |
 | AI Module | — | — | 1 |
@@ -1289,3 +1289,24 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 - Expanded axe-core Cypress tests from 5 to 10 pages (added admin, reports, expenses, leads, time-tracking)
 - Added `npm run test:a11y` script for targeted accessibility testing
 - CI pipeline notes E2E + a11y tests run against Docker Compose stack
+
+## Batch 25 Changelog — Test Expansion (2026-03-15)
+
+### Angular Unit Tests (8 new spec files, 65 tests)
+- KanbanService, PartsService, ExpensesService, LeadsService, CustomerService, AdminService, TimeTrackingService, AssetsService
+- All use HttpClientTestingModule with request assertion pattern
+- Total: 23 spec files, 330 tests (up from 15/195)
+
+### .NET Unit Tests (8 new test classes, 36 tests)
+- CreatePayment, CreateInvoice, PlaceBinContent, CreateAsset, CreateMaintenanceSchedule, ConvertQuoteToOrder, ActivatePlanningCycle, CreateCustomerReturn
+- All use Bogus for data generation, NSubstitute for mocking
+- Total: 27 test classes, 214 tests (up from 19/142)
+
+### Integration Tests (16 new tests)
+- Expanded ApiEndpointTests: 12 GET 401 tests (protected endpoints), 2 POST 400 validation tests, 2 anonymous 200 tests (health, login)
+- Total: 40 integration tests (up from 24)
+
+### Cypress E2E (6 new spec files, 28 tests)
+- Leads (5), Assets (5), Time Tracking (5), Backlog (4), Vendors (4), Planning (5)
+- All use cy.login() custom command, standard navigation + assertion patterns
+- Total: 18 spec files (up from 12)
