@@ -83,6 +83,10 @@ qb-engineer-wrapper/
 | Namespaces | `QbEngineer.{Project}.{Folder}` | `QbEngineer.Api.Controllers` |
 | Models | `*ResponseModel` / `*RequestModel` | **Never "DTO"** |
 
+**Person Names:** When displaying a person's full name, always use `Last, First MI` format (e.g., "Hartman, Daniel J"). This applies everywhere: headers, dropdowns, tables, avatars, reports, PDFs.
+
+**Date Display:** Dates shown to users use `MM/dd/yyyy` (e.g., "03/11/2026"). When time is included, use `MM/dd/yyyy hh:mm` (e.g., "03/11/2026 02:30"). This applies to tables, detail panels, reports, PDFs — all user-facing date rendering.
+
 **Database:** snake_case for tables/columns (auto-converted by EF Core)
 **Docker:** services named `qb-engineer-*`
 
@@ -1237,16 +1241,39 @@ BaseEntity (Id, CreatedAt, UpdatedAt, DeletedAt, DeletedBy)
 
 ---
 
-## Accessibility (WCAG 3)
+## Accessibility — Full WCAG 2.2 AA Compliance (Non-Negotiable)
+
+**Every component, template, and page MUST be fully WCAG 2.2 AA compliant.** This is not aspirational — it is a hard requirement enforced by automated tooling.
+
+### Mandatory Rules (enforced by `@angular-eslint/template/accessibility-*` lint rules)
+- **`aria-label`** on ALL icon-only buttons, links, and interactive elements (e.g., `<button class="icon-btn" aria-label="Delete job">`)
+- **`role` attribute** on custom interactive widgets that don't use native HTML semantics (custom dropdowns, tabs, dialogs, grids)
+- **`<table>` elements** must have `<th>` with `scope="col"` or `scope="row"`, and tables must have a caption or `aria-label`
+- **`<img>` elements** must have `alt` attributes (empty `alt=""` for decorative images)
+- **Form inputs** must have associated `<label>` elements or `aria-label`/`aria-labelledby`
+- **`tabindex`** only `0` (natural order) or `-1` (programmatic focus) — never positive values
+- **Focus management** — dialogs trap focus, closing returns focus to trigger element
+- **Keyboard navigation** — all interactive elements reachable via Tab, actionable via Enter/Space, dismissible via Escape
+
+### Visual & Interaction Rules
 - APCA-based contrast scoring, validated at theme level
-- All interactive elements keyboard-navigable
-- `aria-label` on icon-only buttons
 - No info conveyed by color alone — always pair with icon/text
 - Focus indicators visible in both themes — enhance, don't suppress
 - Touch targets: minimum 44x44px on mobile (88x88px on shop floor kiosk)
 - `prefers-reduced-motion` respected — disable animations when set
-- axe-core integrated into E2E tests
 - Admin theme color pickers validate contrast before saving
+- Skip-to-content link as first focusable element
+
+### Automated Enforcement
+- **ESLint** — `@angular-eslint/template/accessibility-*` rules (error level) catch missing aria-labels, roles, alt text at build time
+- **Cypress axe-core** — `npm run test:a11y` runs axe-core audit on 10 pages, fails on `critical` + `serious` violations
+- **CI gate** — both ESLint a11y and Cypress a11y must pass before merge
+
+### When Writing New Components
+1. Run through the a11y checklist: labels, roles, keyboard nav, focus management, contrast
+2. Add the page to the Cypress accessibility spec if it's a new route
+3. Test with keyboard-only navigation (no mouse)
+4. Verify screen reader announcements for dynamic content (`aria-live` regions)
 
 ---
 
