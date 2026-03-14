@@ -21,6 +21,19 @@ docker compose up -d --build qb-engineer-api
 
 Do not ask the user — just do it after verifying the build passes.
 
+## Visual Verification (Non-Negotiable)
+
+**After any UI fix or visual change, take a Playwright screenshot and examine it before considering the task complete.** This catches issues that code review alone misses (wrong spacing, overlapping elements, broken layouts, missing gaps).
+
+**How to verify:**
+1. Run `npx playwright test screenshot-verify` from `qb-engineer-ui/`
+2. Examine the screenshot at `e2e/screenshots/{page}.png`
+3. If the screenshot shows the fix didn't work (hot-reload missed, wrong CSS, etc.), iterate
+
+**Reusable screenshot script:** `qb-engineer-ui/e2e/tests/screenshot-verify.spec.ts` — set `TARGET_PATH` env var or edit the route inline. Default: `/dashboard`.
+
+Do not ask the user — just verify visually after every UI change.
+
 ---
 
 ## Project Structure
@@ -128,13 +141,17 @@ Never raw `<input>`, `<select>`, or `<textarea>` in feature templates.
 
 | Component | Selector | Key Inputs |
 |-----------|----------|------------|
-| `InputComponent` | `<app-input>` | `label`, `type`, `placeholder`, `prefix`, `suffix`, `maxlength`, `isReadonly` |
-| `SelectComponent` | `<app-select>` | `label`, `options: SelectOption[]`, `multiple`, `placeholder` |
+| `InputComponent` | `<app-input>` | `label`, `type`, `placeholder`, `prefix`, `suffix`, `maxlength`, `isReadonly`, `mask`, `required` |
+| `SelectComponent` | `<app-select>` | `label`, `options: SelectOption[]`, `multiple`, `placeholder`, `required` |
 | `TextareaComponent` | `<app-textarea>` | `label`, `rows`, `maxlength` |
 | `DatepickerComponent` | `<app-datepicker>` | `label` |
 | `ToggleComponent` | `<app-toggle>` | `label` |
 
 All implement `ControlValueAccessor`. Use with `ReactiveFormsModule` (`FormGroup`/`FormControl`) — never `ngModel` / `FormsModule`.
+
+**Required field indicator:** When a field has `Validators.required`, pass `[required]="true"` to the shared wrapper. This adds the HTML `required` attribute which Angular Material uses to append `*` to the label automatically. Always pair `Validators.required` in the FormControl with `[required]="true"` on the template wrapper.
+
+**Input masks:** `InputComponent` supports `mask="phone"` (formats `(XXX) XXX-XXXX`) and `mask="zip"` (formats `XXXXX` or `XXXXX-XXXX`). Pair masks with corresponding `Validators.pattern()` on the FormControl.
 
 ```typescript
 // SelectOption (from select.component.ts)
@@ -312,6 +329,22 @@ Promotion rule: used by 2+ features → move to `shared/`.
 **Transitions:** `$transition-fast: 150ms ease` | `$transition-normal: 250ms ease` | `$transition-sidebar: 200ms ease`
 
 **Icon Sizes:** `$icon-size-xs: 14px` | `$icon-size-sm: 16px` | `$icon-size-md: 18px` | `$icon-size-lg: 20px` | `$icon-size-xl: 24px` | `$icon-size-xxl: 32px` | `$icon-size-hero: 48px`
+
+**Icon Standards (Material Icons Outlined):**
+| Action | Icon | Notes |
+|--------|------|-------|
+| Save/Create | `save` | All save, create, submit buttons |
+| Add/New | `add` | All "New X" / "Add X" buttons (never `person_add`, `add_business`, `add_circle_outline`) |
+| Edit | `edit` | All edit operations; `edit_note` for manual time entry only |
+| Delete | `delete` | All deletions (never `delete_outline`); `delete_sweep` for "clear all" |
+| Close | `close` | Dialogs, panels, dismissals |
+| Search | `search` | Search inputs |
+| Download | `download` | Export/download; `cloud_download` for sync conflict only |
+| Loading spinner | `sync` | In-progress operations (with spin animation) |
+| Refresh | `refresh` | User-triggered refresh actions |
+| Page loading | `hourglass_empty` | Initial page load placeholders |
+| Expand/collapse | `expand_more` / `expand_less` | Vertical toggle sections |
+| Navigation | `chevron_right` / `chevron_left` | Sidebar, directional nav |
 
 **Component Sizing:** `$btn-icon-size: 24px` | `$avatar-size-xs: 18px` | `$avatar-size-sm: 20px` | `$avatar-size-md: 28px` | `$avatar-size-lg: 36px` | `$dot-size-sm: 8px` | `$dot-size-md: 12px` | `$progress-bar-height: 4px` | `$sidebar-nav-height: 36px` | `$sidebar-icon-size: 20px` | `$badge-size-sm: 14px` | `$badge-size-md: 16px` | `$input-height: 2rem` | `$chart-height: 300px`
 
@@ -588,7 +621,13 @@ All list views must show `<app-empty-state>` when data is empty — icon + messa
 | `SetStatusDialogComponent` | `shared/components/set-status-dialog/` | Dialog for setting workflow status with notes |
 | `AddHoldDialogComponent` | `shared/components/add-hold-dialog/` | Dialog for adding holds with type + notes |
 | `StatusTrackingService` | `shared/services/` | Status lifecycle CRUD (workflow + holds) |
+| `AddressFormComponent` | `shared/components/address-form/` | Reusable address form (CVA) with configurable required fields, state dropdown, address verification |
+| `AddressService` | `shared/services/` | Address validation via `/api/v1/addresses/validate` |
 | `toIsoDate()` | `shared/utils/date.utils.ts` | Date → `YYYY-MM-DDT00:00:00Z` |
+| `toAddress()` / `fromAddressToProfile()` / `fromAddressToVendor()` | `shared/utils/address.utils.ts` | Map flat address fields ↔ Address object |
+| `phoneValidator` | `shared/validators/phone.validator.ts` | `Validators.pattern` for `(XXX) XXX-XXXX` format |
+| `CREDIT_TERMS_OPTIONS` / `PAYMENT_TERMS_OPTIONS` | `shared/models/credit-terms.const.ts` | Centralized credit/payment terms for selects |
+| `PRIORITIES` / `PRIORITY_OPTIONS` / `PRIORITY_FILTER_OPTIONS` | `shared/models/priority.const.ts` | Centralized priority values, select options, and filter options |
 
 ### AppDataTableComponent — Usage Guide
 
@@ -1178,7 +1217,9 @@ _(No pending enhancements — all planned DataTable and UserPreferences work is 
 | Assets | `assets/` | `AssetsController` | Asset |
 | Time Tracking | `time-tracking/` | `TimeTrackingController` | TimeEntry, ClockEvent |
 | Admin | `admin/` | `AdminController` | ApplicationUser, ReferenceData |
-| Auth | `auth/` (login, setup) | `AuthController` | ApplicationUser |
+| Company Profile | `admin/settings` | `AdminController` | SystemSetting (company.*) |
+| Company Locations | `admin/settings` | `CompanyLocationsController` | CompanyLocation |
+| Auth | `auth/` (login, setup) | `AuthController` | ApplicationUser, CompanyLocation |
 | File Storage | `FileUploadZoneComponent` | `FilesController` | FileAttachment |
 | Planning Cycles | `planning/` | `PlanningCyclesController` | PlanningCycle, PlanningCycleEntry |
 | Vendors | `vendors/` | `VendorsController` | Vendor |
@@ -1218,6 +1259,7 @@ BaseEntity (Id, CreatedAt, UpdatedAt, DeletedAt, DeletedBy)
 ├── SalesOrder, SalesOrderLine, Quote, QuoteLine
 ├── Shipment, ShipmentLine
 ├── CustomerAddress
+├── CompanyLocation (Name, Address, State, IsDefault, IsActive)
 ├── Invoice, InvoiceLine               ← ⚡ standalone mode
 ├── Payment, PaymentApplication        ← ⚡ standalone mode
 ├── PriceList, PriceListEntry
@@ -1471,6 +1513,13 @@ Quote Requested → Quoted (Estimate) → Order Confirmed (Sales Order) → Mate
 - Single `reference_data` table for all lookups (expense categories, lead sources, priorities, statuses, etc.)
 - Recursive grouping via `group_id`. `code` immutable, `label` admin-editable. `metadata` JSONB.
 - One admin screen manages everything — no scattered lookup tables
+
+### Company Profile & Locations
+- Company profile stored as `company.*` system settings (name, phone, email, EIN, website)
+- `CompanyLocation` entity — multiple locations per install, exactly one default (filtered unique index)
+- Per-employee `WorkLocationId` FK on `ApplicationUser` — determines state withholding; null = default location
+- Setup wizard: 2-step (admin account → company details + primary location)
+- Admin settings tab: Company Profile form, Locations DataTable (CRUD + set-default), CompanyLocationDialogComponent
 
 ### User Preferences
 - Centralized `user_preferences` table, key-value: `table:{id}`, `theme:mode`, `sidebar:collapsed`, `dashboard:layout`

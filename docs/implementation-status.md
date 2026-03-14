@@ -21,6 +21,7 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 | 9 — Reporting | Operational Dashboards | Done |
 | 10 — Backup & Polish | Production Hardening | Done |
 | 11 — AI Assistant | Self-Hosted AI Module | Done |
+| 12 — Domain AI Assistants | Configurable AI Assistants (HR, Procurement, Sales) | Done |
 
 ---
 
@@ -436,6 +437,10 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 | Accounting setup wizard | proposal.md §4.23 | Done | IntegrationsPanelComponent: provider list, active provider selection, QB OAuth connect/disconnect, sync status, coming-soon badges for Xero/FreshBooks/Sage |
 | Branding (logo, colors) | proposal.md §4.23 | Done | Brand colors + logo upload (MinIO qb-engineer-branding bucket), admin UI with upload/remove, header displays logo |
 | System settings UI | proposal.md §4.23 | Done | Admin Settings tab with 10 configurable settings, upsert API |
+| Company profile | Plan: Company Profile | Done | System settings key-value (company.name/phone/email/ein/website), GET/PATCH admin endpoints, profile form in admin settings tab |
+| Company locations | Plan: Company Locations | Done | CompanyLocation entity + CRUD controller (6 endpoints), admin locations DataTable with create/edit/delete/set-default, CompanyLocationDialogComponent with AddressFormComponent |
+| Per-employee work location | Plan: Work Location | Done | WorkLocationId FK on ApplicationUser, PATCH endpoint, work location select in user edit dialog, location options computed from active locations |
+| Setup wizard — company details | Plan: Setup Wizard | Done | 2-step setup wizard: Step 1 admin account (existing), Step 2 company details + primary location. AddressFormComponent CVA. Single API call on final submit |
 | Third-party integrations panel | proposal.md §4.23 | Done | IntegrationsPanelComponent scaffold with 5 integrations (QB, MinIO, SMTP, Shipping, Ollama), status indicators, grid layout |
 
 ### Chat System
@@ -478,6 +483,68 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 | **Enterprise SSO (Microsoft)** | roles-auth.md §Enterprise SSO | Done | Azure AD / Entra ID via MicrosoftAccount auth, MicrosoftId on ApplicationUser |
 | **Enterprise SSO (Generic OIDC)** | roles-auth.md §Enterprise SSO | Done | Configurable Authority/ClientId/ClientSecret, OidcSubjectId + OidcProvider on ApplicationUser |
 | **SSO identity linking** | roles-auth.md §Enterprise SSO | Done | Auto-link by email on first SSO login, manual link/unlink endpoints, login UI with SSO buttons |
+| **Employee compliance visibility** | Plan §Phase 6 | Done | Admin users table shows compliance status (completed/total items, missing items list, canBeAssignedJobs). Batch-loaded EmployeeProfiles in GetAdminUsers handler. |
+| **Job assignment blocking** | Plan §Phase 6 | Done | AssigneeComplianceCheck static helper enforces 4 blocking items (W-4, I-9, State Withholding, Emergency Contact) on CreateJob, UpdateJob, BulkAssignJob. Frontend warns in assignee dropdown. |
+
+---
+
+## DocuSeal Document Signing & Compliance Form Registry
+
+| Item | Spec | Status | Notes |
+|------|------|--------|-------|
+| **Core enums** | Plan §Phase 1 | Done | ComplianceFormType, ComplianceSubmissionStatus, IdentityDocumentType |
+| **ComplianceFormTemplate entity** | Plan §Phase 1 | Done | 16 fields, EF config, seed data (6 templates) |
+| **ComplianceFormSubmission entity** | Plan §Phase 1 | Done | TemplateId, UserId, DocuSealSubmissionId, Status, SignedAt, SignedPdfFileId |
+| **IdentityDocument entity** | Plan §Phase 1 | Done | UserId, DocumentType, FileAttachmentId, VerifiedAt/By, ExpiresAt, Notes |
+| **FileAttachment Sensitivity** | Plan §Phase 1 | Done | Added Sensitivity property for PII flagging |
+| **IDocumentSigningService** | Plan §Phase 1 | Done | Interface + DocuSealSigningService + MockDocumentSigningService |
+| **DocuSealOptions** | Plan §Phase 1 | Done | BaseUrl, ApiKey, TimeoutSeconds, WebhookSecret |
+| **ComplianceFormSyncJob** | Plan §Phase 2 | Done | Hangfire weekly job: downloads PDFs, SHA-256 hash comparison, pushes to DocuSeal |
+| **ComplianceFormsController** | Plan §Phase 2 | Done | 12 endpoints: template CRUD, sync, submissions, webhook, admin user detail, reminders |
+| **IdentityDocumentsController** | Plan §Phase 2 | Done | 5 endpoints: employee CRUD, admin view, verify |
+| **18 MediatR handlers** | Plan §Phase 2 | Done | Template CRUD (7), Submissions (4), Identity Docs (5), Admin (2) |
+| **Frontend ComplianceFormService** | Plan §Phase 3 | Done | Signal-based service with templates, submissions, identityDocuments |
+| **Tax form detail page** | Plan §Phase 3 | Done | Per-form route (/account/tax-forms/:formType), DocuSeal iframe, manual fallback, identity doc upload |
+| **Tax forms list refactor** | Plan §Phase 3 | Done | Loads from API instead of hardcoded, links to per-form detail routes |
+| **Collapsible sidebar sub-menu** | Plan §Phase 3 | Done | Tax & Compliance parent with dynamic children from templates, expand/collapse |
+| **KEY_ROUTE_MAP update** | Plan §Phase 3 | Done | Per-form routes: w4→/account/tax-forms/w4, etc. |
+| **Admin compliance tab** | Plan §Phase 4 | Done | ComplianceTemplatesPanelComponent (DataTable CRUD), ComplianceTemplateDialogComponent, UserCompliancePanelComponent |
+| **Admin service methods** | Plan §Phase 4 | Done | Template CRUD, sync, getUserComplianceDetail, sendReminder, verifyIdentityDocument |
+| **Docker DocuSeal container** | Plan §Phase 5 | Done | 8th container, profiles: [signing], docusealdata volume |
+| **nginx DocuSeal proxy** | Plan §Phase 5 | Done | /docuseal/ → qb-engineer-signing:3000 |
+| **appsettings DocuSeal** | Plan §Phase 5 | Done | DocuSeal section in appsettings.json + docker-compose env vars |
+| **PII MinIO bucket** | Plan §Phase 1 | Done | qb-engineer-pii-docs bucket in MinioOptions |
+
+---
+
+## Payroll Visibility & Office Manager Access
+
+| Item | Spec | Status | Notes |
+|------|------|--------|-------|
+| **PayrollDocumentSource enum** | Plan §Phase 1 | Done | Accounting, Manual |
+| **PayStubDeductionCategory enum** | Plan §Phase 1 | Done | 15 categories (FederalTax through Other) |
+| **TaxDocumentType enum** | Plan §Phase 1 | Done | W2, W2c, Misc1099, Nec1099, Other |
+| **PayStub entity + config** | Plan §Phase 1 | Done | BaseAuditableEntity, FK to FileAttachment (SetNull), index on UserId, unique filtered ExternalId |
+| **PayStubDeduction entity + config** | Plan §Phase 1 | Done | BaseEntity, FK to PayStub (Cascade), decimal(18,2) |
+| **TaxDocument entity + config** | Plan §Phase 1 | Done | BaseAuditableEntity, composite index (UserId, TaxYear), unique filtered ExternalId |
+| **DbContext DbSets** | Plan §Phase 1 | Done | PayStubs, PayStubDeductions, TaxDocuments |
+| **Accounting models** | Plan §Phase 1 | Done | AccountingPayStub, AccountingPayStubDeduction, AccountingTaxDocument |
+| **Response/Request models** | Plan §Phase 1 | Done | PayStubResponseModel, PayStubDeductionResponseModel, TaxDocumentResponseModel, Upload request models |
+| **IAccountingService payroll methods** | Plan §Phase 2 | Done | GetPayStubsAsync, GetPayStubPdfAsync, GetTaxDocumentsAsync, GetTaxDocumentPdfAsync |
+| **MockAccountingService payroll** | Plan §Phase 2 | Done | 3 bi-weekly pay stubs, 1 W-2 for 2025 |
+| **QuickBooksAccountingService stubs** | Plan §Phase 2 | Done | Log warning + return empty (QB Payroll API = future) |
+| **PayrollController (11 endpoints)** | Plan §Phase 3 | Done | Employee self-service + Admin/OM CRUD, sync |
+| **MediatR handlers (11)** | Plan §Phase 3 | Done | GetMyPayStubs, GetPayStubPdf, GetMyTaxDocuments, GetTaxDocumentPdf, GetUserPayStubs/TaxDocuments, Upload/Delete, SyncPayrollData |
+| **Role broadening (compliance/identity)** | Plan §Phase 4 | Done | ComplianceFormsController + IdentityDocumentsController admin endpoints → Admin,Manager,OfficeManager |
+| **Angular payroll models** | Plan §Phase 5 | Done | PayStub, PayStubDeduction, TaxDocument, PayrollDocumentSource, TaxDocumentType |
+| **PayrollService (Angular)** | Plan §Phase 5 | Done | Signal-based, employee + admin methods |
+| **Account Pay Stubs page** | Plan §Phase 5 | Done | DataTable, period/amount display, PDF download, source chip |
+| **Account Tax Documents page** | Plan §Phase 5 | Done | DataTable, type label mapping, PDF download |
+| **Account routes + sidebar** | Plan §Phase 5 | Done | /account/pay-stubs, /account/tax-documents, sidebar nav items |
+| **Admin route guard broadened** | Plan §Phase 6 | Done | roleGuard('Admin', 'Manager', 'OfficeManager') |
+| **Admin tab gating** | Plan §Phase 6 | Done | isAdmin() computed, non-admins see only Compliance tab, default to compliance |
+| **Sidebar admin item broadened** | Plan §Phase 6 | Done | Admin nav visible to Manager, OfficeManager |
+| **UserCompliancePanelComponent + payroll** | Plan §Phase 6 | Done | Pay stubs + tax documents tables, upload forms, delete for manual, PDF download |
 
 ---
 
@@ -1310,3 +1377,41 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 - Leads (5), Assets (5), Time Tracking (5), Backlog (4), Vendors (4), Planning (5)
 - All use cy.login() custom command, standard navigation + assertion patterns
 - Total: 18 spec files (up from 12)
+
+---
+
+## Batch 22 Changelog — Domain-Specific AI Assistants (2026-03-12)
+
+### AiAssistant Entity + CRUD
+- `AiAssistant` entity (BaseAuditableEntity): Name, Description, Icon, Color, Category, SystemPrompt, AllowedEntityTypes (JSON), StarterQuestions (JSON), IsActive, IsBuiltIn, SortOrder, Temperature, MaxContextChunks
+- `AiAssistantConfiguration`: max lengths, composite index on (IsActive, SortOrder)
+- `AppDbContext`: added DbSet<AiAssistant>
+- Seed data: 4 built-in assistants (General, HR, Procurement, Sales & Marketing) with domain-specific system prompts, entity type filters, and starter questions
+- 6 MediatR handlers: GetAiAssistants (active), GetAllAiAssistants (admin), GetAiAssistant, CreateAiAssistant (FluentValidation), UpdateAiAssistant (protects IsBuiltIn), DeleteAiAssistant (409 on built-in)
+- `AiAssistantsController`: GET/POST/PUT/DELETE with role-based auth (admin for mutations)
+- Response/request models in `qb-engineer.core/Models/`
+
+### AssistantChat Handler
+- Extended `IAiService` with `GenerateTextAsync(prompt, systemPrompt, temperature, ct)` overload
+- Extended `IEmbeddingRepository` with `SearchSimilarAsync` overload accepting `List<string>? entityTypeFilters`
+- `OllamaAiService`: passes `system` field and `options.temperature` to Ollama API
+- `MockAiService`: matching overload (ignores system prompt/temperature)
+- `EmbeddingRepository`: multi-entity-type filter via `.Where(e => entityTypeFilters.Contains(e.EntityType))`
+- `AssistantChat` handler: loads assistant, applies domain-scoped RAG filters, injects conversation history, calls LLM with per-assistant system prompt + temperature
+- Endpoint: `POST /api/v1/ai/assistants/{assistantId}/chat` on `AiController`
+
+### Admin UI — AI Assistants Tab
+- 8th admin tab: "AI Assistants" with smart_toy icon
+- `AiAssistantsPanelComponent`: DataTable with icon, name, category, entity filter count, active status, edit/delete actions
+- `AiAssistantDialogComponent`: MatDialog form with Name, Category, Description, Icon (with live Material Icons preview), Color picker, System Prompt (10-row textarea), Entity Type Filters (multi-select), Starter Questions (dynamic add/remove list), Active toggle, Sort Order, collapsible Advanced section (Temperature, Max Context Chunks)
+- Delete blocked for built-in assistants (button hidden)
+
+### AI Chat Page (`/ai`)
+- New feature route: `/ai/:assistantId` with redirect from `/ai` → `/ai/general`
+- `AiComponent`: left sidebar (assistant list as cards with icon/color/name/description), right chat panel with header, message history, starter questions on empty state, typing indicator, clear chat
+- In-memory conversation history per assistant (`Map<number, ChatMessage[]>`)
+- Starter questions clickable to send immediately
+- Enter to send, Shift+Enter for newline
+- Mobile responsive: sidebar collapses to horizontal scroll
+- Sidebar nav: "AI" entry with smart_toy icon in Management group
+- Extended `AiService`: `getAssistants()` and `assistantChat()` methods

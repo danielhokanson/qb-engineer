@@ -1269,6 +1269,17 @@ All third-party service connections are managed from one screen with a consisten
 - **Active user list** with role, last login, status indicators
 - **Unclaimed accounts list** with setup codes and regenerate option
 
+### Company Profile & Locations
+- **Company profile** stored as system settings (`company.name`, `company.phone`, `company.email`, `company.ein`, `company.website`) — editable in admin settings tab
+- `app.company_name` is the display name in the header; `company.name` is the legal name for documents. During initial setup both are set to the same value; admin can change independently.
+- **Company locations** (`CompanyLocation` entity) — one company per install, multiple locations. Each location has name, address, phone, state, `IsDefault` flag, `IsActive` flag.
+- Exactly one location must be default (enforced by unique filtered index on `IsDefault = true`)
+- **Per-employee work location** — `WorkLocationId` FK on `ApplicationUser`. Determines which state's withholding form applies to that employee. If null, falls back to default location.
+- **Setup wizard** captures company details on first run: Step 1 = admin account (existing), Step 2 = company name, phone, email, EIN, website + primary location (name + address via `AddressFormComponent`). Single API call on final submit.
+- Most adopters will have a single location. Multi-location is for companies with employees at different sites in different states.
+- Admin can CRUD locations, set default, and assign employees to locations via the user edit dialog.
+- Deleting a location soft-deletes it; cannot delete the default location. Users assigned to deleted locations fall back to default.
+
 ### System Settings Tab
 - Operational settings stored in `system_settings` DB table (key-value with data type)
 - Planning cycle duration, planning day toggle, auto-archive days, nudge timing thresholds
