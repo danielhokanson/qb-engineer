@@ -151,7 +151,7 @@ All implement `ControlValueAccessor`. Use with `ReactiveFormsModule` (`FormGroup
 
 **Required field indicator:** When a field has `Validators.required`, pass `[required]="true"` to the shared wrapper. This adds the HTML `required` attribute which Angular Material uses to append `*` to the label automatically. Always pair `Validators.required` in the FormControl with `[required]="true"` on the template wrapper.
 
-**Input masks:** `InputComponent` supports `mask="phone"` (formats `(XXX) XXX-XXXX`) and `mask="zip"` (formats `XXXXX` or `XXXXX-XXXX`). Pair masks with corresponding `Validators.pattern()` on the FormControl.
+**Input masks:** `InputComponent` supports `mask="phone"` (formats `(XXX) XXX-XXXX`), `mask="zip"` (formats `XXXXX` or `XXXXX-XXXX`), and `mask="ssn"` (formats `XXX-XX-XXXX`). Pair masks with corresponding `Validators.pattern()` on the FormControl.
 
 ```typescript
 // SelectOption (from select.component.ts)
@@ -621,6 +621,23 @@ All list views must show `<app-empty-state>` when data is empty — icon + messa
 | `SetStatusDialogComponent` | `shared/components/set-status-dialog/` | Dialog for setting workflow status with notes |
 | `AddHoldDialogComponent` | `shared/components/add-hold-dialog/` | Dialog for adding holds with type + notes |
 | `StatusTrackingService` | `shared/services/` | Status lifecycle CRUD (workflow + holds) |
+| `DynamicQbFormComponent` | `shared/components/dynamic-form/` | Root `<dynamic-qb-form>` — iterates model array, renders controls |
+| `DynamicQbFormControlComponent` | `shared/components/dynamic-form/` | Container that dynamically instantiates control component via `ViewContainerRef` |
+| `qbFormControlMapFn` | `shared/components/dynamic-form/qb-form-control-map.ts` | Routes `DynamicFormControlModel` → QB wrapper component (input, select, date, textarea, toggle, checkbox, radio, group, heading, paragraph, signature) |
+| `complianceDefinitionToModels` | `shared/components/dynamic-form/compliance-form-adapter.ts` | Converts `ComplianceFormDefinition` JSON → `DynamicFormModel` array (supports `pages` or flat `sections`) |
+| `sectionsToModels` | `shared/components/dynamic-form/compliance-form-adapter.ts` | Converts a subset of `FormSection[]` to models (used per-page/tab) |
+| `normalizeFormPages` | `shared/models/compliance-form-definition.model.ts` | Normalizes `ComplianceFormDefinition` — always returns `FormPage[]` (wraps flat `sections` in single page) |
+| `DynamicQbInputComponent` | `shared/components/dynamic-form/controls/` | Wraps `<app-input>` for `DynamicInputModel` (masks, types) |
+| `DynamicQbSelectComponent` | `shared/components/dynamic-form/controls/` | Wraps `<app-select>` for `DynamicSelectModel` |
+| `DynamicQbDatepickerComponent` | `shared/components/dynamic-form/controls/` | Wraps `<app-datepicker>` for `DynamicDatePickerModel` |
+| `DynamicQbTextareaComponent` | `shared/components/dynamic-form/controls/` | Wraps `<app-textarea>` for `DynamicTextAreaModel` |
+| `DynamicQbToggleComponent` | `shared/components/dynamic-form/controls/` | Wraps `<app-toggle>` for `DynamicSwitchModel` |
+| `DynamicQbCheckboxComponent` | `shared/components/dynamic-form/controls/` | Checkbox for `DynamicCheckboxModel` |
+| `DynamicQbRadioGroupComponent` | `shared/components/dynamic-form/controls/` | Radio group for `DynamicRadioGroupModel` |
+| `DynamicQbFormGroupComponent` | `shared/components/dynamic-form/controls/` | Nested fieldset for `DynamicFormGroupModel` |
+| `DynamicQbSignatureComponent` | `shared/components/dynamic-form/controls/` | Typed signature with cursive preview |
+| `DynamicQbHeadingComponent` | `shared/components/dynamic-form/controls/` | Display-only `<h4>` heading in dynamic forms |
+| `DynamicQbParagraphComponent` | `shared/components/dynamic-form/controls/` | Display-only `<p>` paragraph in dynamic forms |
 | `AddressFormComponent` | `shared/components/address-form/` | Reusable address form (CVA) with configurable required fields, state dropdown, address verification |
 | `AddressService` | `shared/services/` | Address validation via `/api/v1/addresses/validate` |
 | `toIsoDate()` | `shared/utils/date.utils.ts` | Date → `YYYY-MM-DDT00:00:00Z` |
@@ -1452,8 +1469,19 @@ docker compose exec qb-engineer-db psql -U postgres -d qb_engineer  # DB access
 - Interface: `qb-engineer.core/Interfaces/IShippingService.cs`
 - Models: `qb-engineer.core/Models/ShippingModels.cs` (ShipmentRequest, ShippingAddress, ShippingPackage, ShippingRate, ShippingLabel, ShipmentTracking, TrackingEvent)
 - Mock: `qb-engineer.integrations/MockShippingService.cs` — returns 3 mock carrier rates
-- Pluggable carrier integration: UPS, FedEx, USPS, DHL, EasyPost (not yet implemented)
+- Direct carrier integrations: UPS, FedEx, USPS, DHL (not yet implemented — each implements `IShippingService` directly, no middleman)
 - Manual mode always available (no API, user enters tracking number)
+- **Address validation is NOT part of IShippingService** — see `IAddressValidationService` below
+
+### Address Validation (`IAddressValidationService`)
+- Interface: `qb-engineer.core/Interfaces/IAddressValidationService.cs`
+- Decoupled from shipping — address validation uses USPS Web Tools directly (free)
+- Mock: `qb-engineer.integrations/MockAddressValidationService.cs` — format-only validation (state codes, ZIP regex, required fields)
+- Real: `qb-engineer.integrations/UspsAddressValidationService.cs` — USPS Address Information API v3 (XML REST, free with USPS Web Tools User ID)
+- Config: `UspsOptions` (`Usps:UserId` in appsettings.json) — register at https://www.usps.com/business/web-tools-apis/
+- Program.cs: USPS when User ID configured, mock otherwise (same pattern as other integrations)
+- Frontend: `AddressFormComponent` → `AddressService.validate()` → `POST /api/v1/addresses/validate` → `IAddressValidationService.ValidateAsync()`
+- USPS returns DPV (Delivery Point Validation) confirmation + standardized address
 
 ### AI (`IAiService` — Optional)
 - Interface: `qb-engineer.core/Interfaces/IAiService.cs`
@@ -1468,6 +1496,19 @@ docker compose exec qb-engineer-db psql -U postgres -d qb_engineer  # DB access
 - Real: `qb-engineer.integrations/MinioStorageService.cs` (MinIO S3-compatible)
 - Mock: `qb-engineer.integrations/MockStorageService.cs` — in-memory ConcurrentDictionary
 - Config: `MinioOptions` in `qb-engineer.core/Models/MinioOptions.cs`
+
+### PDF Form Extraction (pdf.js + PuppeteerSharp)
+- **Architecture:** pdf.js (via PuppeteerSharp headless Chromium) extracts text + form fields from PDFs. Smart parser infers ComplianceFormDefinition layout. AI verifies and refines.
+- **Full docs:** `docs/pdf-extraction-pipeline.md`
+- **3 interfaces:**
+  - `IPdfJsExtractorService` — raw pdf.js extraction (text items + annotations)
+  - `IFormDefinitionParser` — converts raw data → ComplianceFormDefinition JSON
+  - `IFormDefinitionVerifier` — structural checks + AI refinement loop (max 3 iterations)
+- **Real:** `PdfJsExtractorService.cs` (PuppeteerSharp singleton browser), `FormDefinitionParser.cs`, `FormDefinitionVerifier.cs`
+- **Mock:** `MockPdfJsExtractorService.cs` — returns canned extraction data
+- **JS extraction page:** `qb-engineer.api/wwwroot/pdf-extract.html` — bundled pdf.js, called via PuppeteerSharp `EvaluateFunctionAsync`
+- **Docker:** API container uses Debian base (not Alpine) with Chromium installed. `PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium`
+- **Pattern detection:** Step sections, amount lines, filing status, signature blocks, form headers — all inferred from structural cues, no per-form hardcoding
 
 ---
 

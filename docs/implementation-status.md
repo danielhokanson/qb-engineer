@@ -410,7 +410,7 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 | Item | Spec | Status | Notes |
 |------|------|--------|-------|
 | IShippingService interface | proposal.md §4.21 | Done | Interface + MockShippingService |
-| Carrier APIs (EasyPost) | proposal.md §4.21 | Done | EasyPostShippingService (IShippingService impl), GetShippingRates, CreateShippingLabel, GetShipmentTracking, ValidateShippingAddress handlers, Angular ShippingRatesDialog + TrackingTimeline components |
+| Carrier APIs (direct) | proposal.md §4.21 | Partial | MockShippingService in place. Direct carrier integrations (UPS, FedEx, USPS, DHL) not yet implemented. Address validation split to IAddressValidationService (USPS Web Tools). Handlers: GetShippingRates, CreateShippingLabel, GetShipmentTracking. Angular: ShippingRatesDialog + TrackingTimeline components |
 | Packing slips | proposal.md §4.21 | Done | QuestPDF: GET /shipments/{id}/packing-slip |
 | Multi-package tracking | proposal.md §4.21 | Done | ShipmentPackage entity, CRUD handlers, per-shipment package management |
 
@@ -514,6 +514,18 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 | **nginx DocuSeal proxy** | Plan §Phase 5 | Done | /docuseal/ → qb-engineer-signing:3000 |
 | **appsettings DocuSeal** | Plan §Phase 5 | Done | DocuSeal section in appsettings.json + docker-compose env vars |
 | **PII MinIO bucket** | Plan §Phase 1 | Done | qb-engineer-pii-docs bucket in MinioOptions |
+| **Per-employee state withholding** | Plan §Phase 9 | Done | 3-tier state resolution: WorkLocation.State → default CompanyLocation → company_state setting. No-tax states auto-complete. StateWithholdingInfoModel on responses. |
+| **State withholding admin banner** | Plan §Phase 9 | Done | UserCompliancePanelComponent shows state name, category, resolution source |
+| **Electronic form definitions** | Plan §Phase 10 | Done | FormDefinitionJson (jsonb) + FormDefinitionRevision on ComplianceFormTemplate. Dynamic form rendering from JSON definition. |
+| **Electronic form data** | Plan §Phase 10 | Done | FormDataJson (jsonb) on ComplianceFormSubmission. Save draft + submit endpoints. |
+| **Dynamic form definition extraction** | Plan §Phase 10 | Done | Form definitions are dynamically extracted from PDFs via pdf.js (PuppeteerSharp). 3-phase pipeline: IPdfJsExtractorService (raw extraction) → IFormDefinitionParser (smart pattern parser) → IFormDefinitionVerifier (structural checks + AI refinement). PdfPig removed. See `docs/pdf-extraction-pipeline.md`. |
+| **State withholding source URLs** | Plan §Phase 10 | Done | StateWithholdingUrls.cs: 37 official PDF download URLs seeded into reference data metadata (sourceUrl). Backfill for existing installs. |
+| **pdf.js extraction pipeline** | Plan §Phase 10 | Done | Replaced PdfPig (2,874-line monolith) with pdf.js via PuppeteerSharp. 3 focused services: PdfJsExtractorService (headless Chromium + pdf.js getTextContent/getAnnotations), FormDefinitionParser (pattern-based layout inference), FormDefinitionVerifier (structural checks + Ollama AI refinement, max 3 iterations). Dockerfile changed from Alpine to Debian for Chromium support. |
+| **Auto state form definition** | Plan §Phase 10 | Done | GetMyStateFormDefinition handler: 3-tier state resolution → reference data lookup → cache check → PDF download + AcroForm extraction → cache result. StateFormDefinitionCache entity (PK=StateCode). Lazy on first access. Verified: CA DE-4 (13 fields), ID W-4 (22 fields). Frontend fetches via `/compliance-forms/my-state-definition`, renders in ComplianceFormRenderer. |
+| **ComplianceFormRendererComponent** | Plan §Phase 10 | Done | Tabbed multi-page form renderer. Tab navigation (prev/next + clickable tabs), per-page model maps, readonly page detection, single FormGroup spanning all pages. Conditional fields, save draft, submit. Compact font sizes matching government documents. |
+| **QB Dynamic Forms Library** | Plan §Phase 10 | Done | Full ng-dynamic-forms UI wrapper: 11 control components (input, select, datepicker, textarea, toggle, checkbox, radio, group, signature, heading, paragraph), qbFormControlMapFn, DynamicQbFormControlComponent (ViewContainerRef-based container), DynamicQbFormComponent (root), complianceDefinitionToModels + sectionsToModels adapters, normalizeFormPages utility. Multi-page support via FormPage model. All controls render through QB shared wrappers for automatic design system inheritance. |
+| **Admin form definition endpoints** | Plan §Phase 10 | Done | PUT /{id}/form-definition (update), POST /{id}/extract-definition (PDF extraction), auto-extract on document upload. |
+| **Visual rendering comparison** | Plan §Phase 10 | Done | After extracting a form definition, PuppeteerSharp navigates to `/__render-form` Angular headless route, screenshots the rendered form, then compares against PDF page screenshots. Two tiers: structural (SkiaSharp block SSIM + content density + region detection) and semantic (Ollama vision, optional). Results stored on FormDefinitionVersion (visual_comparison_json, visual_similarity_score, visual_comparison_passed). Fire-and-forget from extraction pipeline. API: POST `/{id}/compare-visual`, GET `/versions/{id}/comparison`. Docker API container memory increased to 2GB for dual Chromium processes. |
 
 ---
 
@@ -1269,11 +1281,11 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 - AiController: added search, index, bulk-index endpoints
 - Angular: RAG results column in header AI search, AiHelpPanel with RAG-backed chat
 
-### Carrier Shipping (EasyPost)
-- `EasyPostShippingService`: full `IShippingService` implementation via EasyPost SDK
-- `EasyPostOptions` config model in appsettings.json
-- 4 new handlers: GetShippingRates, CreateShippingLabel, GetShipmentTracking, ValidateShippingAddress
-- ShipmentsController: 4 new endpoints
+### Carrier Shipping
+- `IShippingService` interface with MockShippingService (direct carrier integrations TBD)
+- Address validation decoupled: `IAddressValidationService` with `UspsAddressValidationService` (USPS Web Tools, free) + `MockAddressValidationService`
+- 3 shipping handlers: GetShippingRates, CreateShippingLabel, GetShipmentTracking
+- ShipmentsController endpoints
 - Angular: `ShippingRatesDialogComponent` (rate comparison table), `TrackingTimelineComponent` (shipment event timeline)
 
 ### Mapper & Build Fixes
@@ -1415,3 +1427,20 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 - Mobile responsive: sidebar collapses to horizontal scroll
 - Sidebar nav: "AI" entry with smart_toy icon in Management group
 - Extended `AiService`: `getAssistants()` and `assistantChat()` methods
+
+---
+
+## Batch 26 Changelog — Admin Onboarding E2E + SubmitFormData Bug Fix (2026-03-20)
+
+### Playwright E2E: Admin Onboarding (`admin-onboarding.spec.ts`)
+- Full 9-step onboarding flow: Profile, Contact, Emergency Contact, W-4, I-9, State Withholding, Workers' Comp, Employee Handbook, Direct Deposit
+- Cleaned up `page.evaluate()` debug diagnostic blocks from I-9 and State Withholding steps
+- Fixed `acknowledgeForm()` to be idempotent: detects already-complete acknowledgment forms via `.form-detail__status--complete` and skips without error (handles re-runs)
+- Fixed I-9 step: I-9 form was submitting to API (HTTP call reached server) but receiving 409 — see bug fix below
+- Test now passes cleanly in ~47s; final screenshot shows all 6 forms completed (green checkmarks)
+
+### Bug Fix: `ValidateRequiredFields` throws on `"required": null` in JSON
+- **File:** `qb-engineer.api/Features/ComplianceForms/SubmitFormData.cs`
+- **Root cause:** `I9FormDefinitionBuilder` serializes `["required"] = required` where `required` is `bool?`. Unset fields serialize as `"required": null`. `req.GetBoolean()` throws `InvalidOperationException` (not `JsonException`) on `null` values — bypassing the `catch (JsonException)` guard.
+- **Fix:** Replaced `req.GetBoolean()` with `req.ValueKind != JsonValueKind.True` — only considers a field required if the JSON value is explicitly `true`.
+- Applied same fix pattern to handle any other nullable boolean fields in form definitions safely.

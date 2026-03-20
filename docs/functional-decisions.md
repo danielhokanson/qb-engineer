@@ -940,9 +940,8 @@ Same pluggable pattern as accounting — `IShippingService` interface with provi
 **Supported carriers (implemented over time):**
 - **UPS** — UPS REST API (OAuth 2.0)
 - **FedEx** — FedEx REST API (OAuth 2.0)
-- **USPS** — USPS Web Tools API (or Stamps.com/EasyPost wrapper)
+- **USPS** — USPS Web Tools API (shipping + free address validation)
 - **DHL** — DHL Express API
-- **EasyPost** — meta-carrier API that wraps multiple carriers behind one integration (good starting point)
 - **Manual / No Carrier** — default mode, no API calls, user enters tracking number manually
 
 **Provider setup:**
@@ -1288,6 +1287,37 @@ All third-party service connections are managed from one screen with a consisten
 - Default role for new users
 - Backup schedule and retention
 - Terminology / label overrides (relabel any concept system-wide)
+
+## Employee Compliance Forms
+
+Employee-facing tax and compliance forms (W-4, I-9, state withholding, direct deposit, workers' comp, handbook). Each form template is admin-managed; employees fill out and submit through an electronic renderer or acknowledge via PDF.
+
+### Submission Lifecycle
+- **Pending** — employee has started (draft saved) but not submitted
+- **Completed** — employee has submitted the form; `SignedAt` timestamp recorded, employee profile updated (`W4CompletedAt`, etc.)
+- **Expired** — form version has been superseded (e.g., new tax year W-4)
+
+### Post-Submission Behavior (Non-Negotiable)
+- **Completed forms show a confirmation card**, not the blank form. The user sees "This form has already been submitted" with the completion date.
+- **Sensitive forms** (W-4, I-9, State Withholding — forms containing SSN or other PII) **never display previously submitted data back to the user**. The confirmation card explains this.
+- **Non-sensitive forms** (Direct Deposit, Workers' Comp, Handbook) may display previously submitted data in read-only mode.
+- **Resubmit option**: All completed forms offer a "Submit New Version" button. Clicking it opens a fresh blank form (for sensitive) or pre-filled form (for non-sensitive). The back button cancels resubmission and returns to the confirmation view.
+- **On resubmit**, the existing submission record is updated (not a new record) — `Status` resets to `Completed` with new `SignedAt` timestamp.
+
+### Profile Completion Bridge
+- Submitting a compliance form **must** update the corresponding `EmployeeProfile` completion timestamp (e.g., `W4CompletedAt`). This is what `GetProfileCompleteness` checks.
+- The `AcknowledgeFormCommand` handles this mapping. It accepts both camelCase (`stateWithholding`) and snake_case (`state_withholding`) keys for compatibility.
+- All submission paths (electronic form submit, DocuSeal webhook, manual acknowledge) must call `AcknowledgeFormCommand` to keep the profile in sync.
+
+### Template Types
+| Form Type | Sensitive | Can Expire | Blocks Job Assignment | Notes |
+|-----------|-----------|------------|----------------------|-------|
+| W-4 | Yes (SSN) | Yes (annual) | Yes | IRS form, extracted via PDF pipeline |
+| I-9 | Yes (SSN) | Yes (document expiration) | Yes | Requires identity document uploads |
+| State Withholding | Yes (SSN) | Varies by state | Yes | Per-state form definitions |
+| Direct Deposit | No | No | No | Bank routing/account info |
+| Workers' Comp | No | No | No | Acknowledgment only |
+| Handbook | No | No | No | Acknowledgment only |
 
 ## Shared Component Library & UI Patterns
 
