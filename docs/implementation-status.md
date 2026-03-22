@@ -1,6 +1,6 @@
 # Implementation Status
 
-Tracks real implementation against all spec docs. Updated: 2026-03-15.
+Tracks real implementation against all spec docs. Updated: 2026-03-21.
 
 Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 
@@ -359,8 +359,8 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 
 | Item | Spec | Status | Notes |
 |------|------|--------|-------|
-| Return button on completed jobs | proposal.md §4.16 | Done | CustomerReturn entity with RMA workflow (Received → Inspection → Rework → Resolved → Closed) |
-| Reason capture + auto-linked rework card | proposal.md §4.16 | Done | CreateReworkJob flag auto-creates Job + JobLink. 6 endpoints on CustomerReturnsController |
+| Return button on completed jobs | proposal.md §4.16 | Done | CustomerReturn entity with RMA workflow (Received → Inspection → Rework → Resolved → Closed). Angular `/customer-returns` route with list + detail panel + resolve/close workflow. |
+| Reason capture + auto-linked rework card | proposal.md §4.16 | Done | CreateReworkJob flag auto-creates Job + JobLink. 6 endpoints on CustomerReturnsController. `CustomerReturnDialogComponent` with EntityPicker for customer + job. |
 
 ### Guided Training System
 
@@ -1444,3 +1444,59 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 - **Root cause:** `I9FormDefinitionBuilder` serializes `["required"] = required` where `required` is `bool?`. Unset fields serialize as `"required": null`. `req.GetBoolean()` throws `InvalidOperationException` (not `JsonException`) on `null` values — bypassing the `catch (JsonException)` guard.
 - **Fix:** Replaced `req.GetBoolean()` with `req.ValueKind != JsonValueKind.True` — only considers a field required if the JSON value is explicitly `true`.
 - Applied same fix pattern to handle any other nullable boolean fields in form definitions safely.
+
+---
+
+## Batch 27 Changelog — Compliance PDF Download + Docs Accuracy (2026-03-21)
+
+### Compliance Form PDF Download
+- `DownloadSubmissionPdf` handler: `GET /api/v1/compliance-forms/submissions/{id}/pdf`
+  - If `SignedPdfFileId` is set (DocuSeal signed) → streams stored PDF from MinIO
+  - Otherwise → generates on-demand QuestPDF from `FormDefinitionVersion.FormDefinitionJson` + `FormDataJson`
+  - PDF layout: form name header, submission date, labeled field/value pairs by section, page numbers
+  - Access control: users see their own only; Admin/Manager/OfficeManager see any
+- `ComplianceFormService.downloadSubmissionPdf()` (Angular): fetches as Blob, triggers browser download
+- "Download PDF" button added to completed form card in `AccountTaxFormDetailComponent`
+- i18n: `account.downloadFormCopy` added (en + es)
+
+### Dead `src/assets/i18n/` Removed
+- `qb-engineer-ui/src/assets/` was never served (angular.json assets root = `public/`)
+- Deleted the duplicate `src/assets/i18n/en.json` and `src/assets/i18n/es.json`
+- Canonical i18n path: `qb-engineer-ui/public/assets/i18n/`
+
+### CLAUDE.md Documentation Accuracy Pass
+- Fixed: QB Online and Ollama RAG marked "not yet implemented" → corrected to implemented with file references
+- Added: Payroll, Chat, Reports (dynamic builder), AI, AI Assistants, Employee Compliance Forms, Quality, Sales Tax, Customer Returns, Production Lots, Scheduled Tasks, Notifications, Search to Features table
+- Added: 12 missing entity groups to the Entity Structure section
+- Added: "Planned / Partially Implemented" table replacing the single AR Aging "planned" row (AR Aging is implemented as a report; carrier APIs and alternative accounting providers correctly marked as remaining work)
+
+---
+
+## Batch 28 Changelog — Sales Tax UI, Customer Returns UI, Production Lots UI (2026-03-21)
+
+### Sales Tax Admin Panel
+- `SalesTaxPanelComponent` — DataTable with name/code/rate%/default/active columns, edit + delete per row
+- `SalesTaxDialogComponent` — create/edit dialog with rate as % input (÷100 for API), default toggle
+- Wired into admin as new `sales-tax` tab (Admin-only, placed between Teams and Compliance)
+- Uses existing `AdminService.getSalesTaxRates/createSalesTaxRate/updateSalesTaxRate/deleteSalesTaxRate` methods
+- i18n: `salesTax.*` section added (en + es), `admin.tabs.salesTax` added
+
+### Customer Returns Feature
+- New route `/customer-returns` — `roleGuard('Admin', 'Manager', 'PM', 'OfficeManager')`
+- `CustomerReturnsComponent` — `DataTableComponent` list with status filter, `DetailSidePanelComponent` for detail
+- Status chips: Received (info), ReworkOrdered (warning), InInspection (primary), Resolved (success), Closed (muted)
+- Resolve action: opens inline dialog for inspection notes → `POST /{id}/resolve`
+- Close action: `ConfirmDialogComponent` → `POST /{id}/close`
+- `CustomerReturnDialogComponent` — `EntityPickerComponent` for customer + job, reason, notes, return date
+- `CustomerReturnService` — full CRUD + resolve/close
+- Sidebar nav: `assignment_return` icon in Sales group
+- i18n: `customerReturns.*` section added (en + es), `nav.customerReturns` added
+
+### Production Lots Feature
+- New route `/lots` — `roleGuard('Admin', 'Manager', 'Engineer')`
+- `LotsComponent` — `DataTableComponent` with lot number (mono font), part, qty, job, supplier lot, expiry
+- `DetailSidePanelComponent` — full traceability panel: meta grid + chronological event timeline with type icons
+- `LotDialogComponent` — part picker, quantity, supplier lot, linked job, expiration date, notes
+- `LotService` — `getLots(search, partId, jobId)`, `trace(lotNumber)`, `create()`
+- Sidebar nav: `batch_prediction` icon in Supply group
+- i18n: `lots.*` section added (en + es), `nav.lots` added

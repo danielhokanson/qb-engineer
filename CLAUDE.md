@@ -1250,12 +1250,28 @@ _(No pending enhancements — all planned DataTable and UserPreferences work is 
 | Price Lists | — (backend only) | `PriceListsController` | PriceList, PriceListEntry |
 | Recurring Orders | — (backend only) | `RecurringOrdersController` | RecurringOrder, RecurringOrderLine |
 | Status Lifecycle | — (integrated into detail panels) | `StatusTrackingController` | StatusEntry |
+| Reports (Dynamic Builder) | `reports/` | `ReportBuilderController` | SavedReport | 28 entity sources, 350+ fields, 27 pre-seeded templates, ng2-charts |
+| Quality / QC | `quality/` | `QualityController` | QcTemplate, QcInspection | QC templates, inspections, production run integration |
+| Chat | `chat/` | `ChatController` | ChatMessage, ChatRoom, ChatRoomMember | 1:1 DMs + group rooms, SignalR real-time, file/entity sharing |
+| AI Assistant | `ai/` | `AiController` | DocumentEmbedding | Ollama RAG, smart search, document Q&A, Hangfire indexing |
+| AI Assistants (Configurable) | `admin/ai-assistants` | `AiAssistantsController` | AiAssistant | HR/Procurement/Sales domain assistants, admin panel |
+| Payroll | `account/pay-stubs`, `account/tax-documents` | `PayrollController` | PayStub, PayStubDeduction, TaxDocument | Employee self-service + admin upload, QB Payroll sync (stub) |
+| Employee Compliance Forms | `account/tax-forms/*` | `ComplianceFormsController` | ComplianceFormTemplate, ComplianceFormSubmission, FormDefinitionVersion, IdentityDocument | W-4, I-9, state withholding, PDF extraction pipeline, DocuSeal |
+| Sales Tax | — (backend only) | `SalesTaxController` | SalesTaxRate | Per-state/jurisdiction rates, invoice calculation |
+| Customer Returns | — (backend only) | `CustomerReturnsController` | CustomerReturn | Full CRUD + resolve/close lifecycle |
+| Production Lots | — (backend only) | `LotsController` | LotRecord | Lot creation, traceability query |
+| Scheduled Tasks | — (admin) | `ScheduledTasksController` | ScheduledTask | Admin-defined recurring tasks, Hangfire execution |
+| Notifications | `notifications/` | `NotificationsController` | AppNotification | Real-time SignalR push, bell badge, preferences, SMTP emails |
+| Search | — (header) | `SearchController` | — | Full-text tsvector + RAG hybrid across 6 entity types |
 
-### Planned Features (Not yet implemented)
+### Planned / Partially Implemented
 
-| Feature | UI Route | API Controller | Key Entities | Notes |
-|---------|----------|---------------|--------------|-------|
-| AR Aging ⚡ | `ar-aging/` | `ArAgingController` | (computed) | Standalone mode only |
+| Feature | Status | Notes |
+|---------|--------|-------|
+| AR Aging ⚡ | Done (as report) | Implemented as a report in the Reports module, not a standalone page |
+| Carrier APIs (UPS/FedEx/USPS/DHL) | Partial | Mock complete; direct carrier integrations not yet built |
+| Xero / FreshBooks / Sage accounting | Not Started | Interface + factory ready; only QB implemented |
+| QB Payroll API | Not Started | Controller + entities done; QB Payroll sync stubs return empty |
 
 ---
 
@@ -1283,6 +1299,15 @@ BaseEntity (Id, CreatedAt, UpdatedAt, DeletedAt, DeletedBy)
 ├── RecurringOrder, RecurringOrderLine
 ├── StatusEntry (polymorphic: EntityType/EntityId, workflow + hold categories)
 ├── ReferenceData, SystemSetting, SyncQueueEntry
+├── PayStub (+ PayStubDeduction), TaxDocument, EmployeeProfile
+├── ComplianceFormTemplate, ComplianceFormSubmission, FormDefinitionVersion, IdentityDocument
+├── DocumentEmbedding (pgvector vector(384) — RAG index)
+├── AiAssistant, ChatMessage, ChatRoom, ChatRoomMember
+├── AppNotification, UserNotificationPreference
+├── QcTemplate, QcInspection, LotRecord, ProductionRun
+├── CustomerReturn, SalesTaxRate, ScheduledTask
+├── AuditLogEntry, ActivityLog (polymorphic EntityType/EntityId)
+├── UserScanIdentifier, UserPreference
 ```
 
 ### Enums (in `qb-engineer.core/Enums/`)
@@ -1460,8 +1485,8 @@ docker compose exec qb-engineer-db psql -U postgres -d qb_engineer  # DB access
 - Interface: `qb-engineer.core/Interfaces/IAccountingService.cs`
 - Models: `qb-engineer.core/Models/AccountingModels.cs` (AccountingCustomer, AccountingDocument, AccountingLineItem, AccountingPayment, AccountingTimeActivity, AccountingSyncStatus)
 - Mock: `qb-engineer.integrations/MockAccountingService.cs` — returns canned data matching seeded customers
-- QuickBooks Online is default + primary provider (not yet implemented)
-- Additional providers (Xero, FreshBooks, Sage) implement same interface
+- QuickBooks Online is default + primary provider — **implemented** (`qb-engineer.integrations/QuickBooksAccountingService.cs`): OAuth 2.0, sync queue, customer/item/invoice/payment/time-activity sync, token encryption via Data Protection API
+- Additional providers (Xero, FreshBooks, Sage) implement same interface — **not yet implemented** (interface + factory ready)
 - App works fully in standalone mode (no provider) — financial features degrade gracefully
 - Sync queue, caching, orphan detection are provider-agnostic
 
@@ -1487,8 +1512,8 @@ docker compose exec qb-engineer-db psql -U postgres -d qb_engineer  # DB access
 - Interface: `qb-engineer.core/Interfaces/IAiService.cs`
 - Models: `qb-engineer.core/Models/AiModels.cs` (AiSearchResult)
 - Mock: `qb-engineer.integrations/MockAiService.cs` — returns canned text responses
-- Self-hosted Ollama + pgvector RAG (not yet implemented)
-- Use cases: smart search, job description drafting, QC anomaly detection, document Q&A
+- Self-hosted Ollama + pgvector RAG — **implemented** (`OllamaAiService.cs`): llama3.2:3b, `DocumentEmbedding` entity (pgvector vector(384)), RAG pipeline (IndexDocument / RagSearch / BulkIndexDocuments handlers), `DocumentIndexJob` (Hangfire 30 min), `AiController` (generate/summarize/status/search/index)
+- Use cases: smart search, job description drafting, QC anomaly detection, document Q&A, header AI search column with RAG results
 - Graceful degradation when AI container is down
 
 ### Storage (`IStorageService`)
