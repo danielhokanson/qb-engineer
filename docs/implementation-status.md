@@ -371,7 +371,8 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 | Help icon per page | proposal.md §4.17 | Done | PageHeader/PageLayout support helpTourId input with ? icon button |
 | Tour coverage audit (CI) | proposal.md §4.17 | Done | `npm run audit:tours` script scans features for TourService/HelpTourService references |
 | Admin training dashboard | proposal.md §4.17 | Done | TrainingDashboardComponent: DataTable with user progress, completion bars, per-device localStorage tracking |
-| Employee Training LMS | proposal.md §4.17 | Done | Full LMS: 20 seeded modules (Article/Video/Walkthrough/QuickRef/Quiz), training paths, per-user progress tracking, `/training` library with search/filter, module detail pages with type-specific renderers, quiz scoring, My Learning + Paths tabs, admin CRUD panel |
+| Employee Training LMS | proposal.md §4.17 | Done | Full LMS: 46 seeded modules across 8 paths, per-user progress tracking, `/training` with My Learning (default) / Learning Paths / All Modules tabs, module detail pages with type-specific renderers, quiz scoring (randomized pool), admin CRUD panel (Admin + Manager roles), per-user training detail drill-down panel |
+| Training Video Generation | — | Done | Playwright+ffmpeg pipeline records walkthrough videos (10-chapter, learning-style-aware), stores MP4 in MinIO, Hangfire `video` queue (single-worker), presigned-URL serving. Manuscripts in `docs/training-videos/`. Modules 19–24 generated. |
 
 ### Bin & Location Tracking
 
@@ -1541,3 +1542,92 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
   - **User Progress**: DataTable (name, role, enrolled paths, completed modules, last activity, completion %)
 - `TrainingModuleDialogComponent`: full form (title, summary, content type selector, estimated minutes, tags, published toggle, JSON content editor)
 - `TrainingPathDialogComponent`: title, description, icon, auto-assign toggle, module picker with drag-reorder
+
+---
+
+## Batch 30 Changelog — Training LMS Expansion (2026-03-23)
+
+### Backend: Training Content Expansion
+- `SeedAdditionalTrainingPathsAsync` added to `SeedData.cs` — separate from original seed, uses per-path title guards (safe for existing DBs)
+- `GetOrCreateModule` local helper: idempotent slug-based module creation
+- **28 new training modules** added across 6 new paths (slugs stable, never renamed)
+- **6 new training paths** (Paths 3–8): Shop Floor Worker, Production Manager, Office and Finance, Parts/Inventory/Quality, Admin Setup, Sales and Customer Management
+- Cross-path module reuse via `bySlug` dictionary (e.g., `kanban-board-basics` shared across Paths 1/2/4)
+- New quiz pools: `manager-quiz` (12 questions, select 5), `parts-inventory-quiz` (10 questions, select 5) — all with `questionsPerQuiz` randomization
+- **Total seeded content: 46 modules, 8 paths**
+
+### Backend: Manager Access + User Detail
+- `GetUserTrainingDetailQuery/Handler` + `UserTrainingDetailResponseModel` — per-user module breakdown endpoint
+- `TrainingController.GetAdminProgressSummary`: changed from `[Authorize(Roles = "Admin")]` to `[Authorize(Roles = "Admin,Manager")]`
+- `TrainingController.GetUserTrainingDetail`: new `GET /api/v1/training/admin/users/{userId}/detail` endpoint (Admin + Manager)
+
+### Frontend: Training UX Changes
+- Default tab changed: `/training` now redirects to `/training/my-learning` (was `library`)
+- Tab renamed: `library` → `all-modules` (route segment + `TrainingTab` type)
+- Page title: "Training Library" → "Training" (cleaner header)
+- Tab order: My Learning → Learning Paths → All Modules (paths-first UX)
+
+### Frontend: Manager Training Monitoring
+- `UserTrainingDetailPanelComponent` — smart component, `inject(TrainingService)`, `userId = input.required<number>()`, `effect()` auto-loads on userId change
+- `UserTrainingDetail` + `UserTrainingModuleDetail` models in `training/models/`
+- `TrainingService.getUserTrainingDetail(userId)` method added
+- `TrainingPanelComponent`: "detail" column added to User Progress DataTable, `selectedUser` signal, `DetailSidePanelComponent` + `UserTrainingDetailPanelComponent` wired up
+- Detail panel shows: user header (name, role chip), 3-stat summary (completed/total modules, %, paths enrolled), progress bar, per-module list with status chips, time spent, quiz score, dates
+
+### Frontend: Admin Access Control
+- `AdminComponent`: `MANAGER_AND_ADMIN_TABS = new Set(['training'])` extracted
+- `isManagerOrAdmin = computed(...)` signal added
+- Training tab now under `@if (isManagerOrAdmin())` (was `@if (isAdmin())`)
+- All other admin tabs remain Admin-only
+
+## Batch 31 Changelog — Training Video Generation Pipeline (2026-03-24)
+
+### Backend: Video Generation Infrastructure
+- `ITrainingVideoGeneratorService` interface + `PlaywrightTrainingVideoGeneratorService` implementation
+  - PuppeteerSharp / Playwright headless Chromium records each walkthrough step at 1920×1080
+  - `driver.js` popover overlay injected per step via JavaScript
+  - Per-step audio: `ITtsService` generates WAV → silence fallback (word-count × 130 wpm, floor 3s) when mock
+  - ffmpeg muxes audio+video clips per step, then `concat` filter assembles full MP4
+  - Chapter markers written as `ffmetadata` → embedded in MP4 container
+- `ITtsService` interface + `MockTtsService` (returns silence stub)
+- `ITrainingVideoGeneratorService` registered in `Program.cs` with mock/real toggle
+- `GenerateTrainingVideoCommand/Handler` in `Features/Training/GenerateTrainingVideo.cs`
+  - Sets `VideoGenerationStatus = Pending`, enqueues `TrainingVideoGenerationJob`
+- `TrainingVideoGenerationJob` (Hangfire): `[Queue("video")]` attribute — single-worker serialization
+- `VideoGenerationStatus` enum: None=0, Pending=1, Processing=2, Done=3, Failed=4
+- `VideoMinioKey` + `VideoGenerationStatus` + `VideoGenerationError` fields on `TrainingModule` entity
+- `GET /api/v1/training/modules/{id}/video-status` endpoint — returns presigned MinIO URL (60 min expiry)
+- MinIO bucket: `qb-engineer-training-videos`
+
+### Backend: Hangfire Queue Serialization
+- Added dedicated `video-worker` Hangfire server in `Program.cs` with `WorkerCount = 1`
+- Prevents concurrent Playwright sessions (OOM "Target crashed" when running 6+ simultaneously)
+- Default server: `Queues = ["video","default"]`, 4+ workers for everything else
+- Video server: `Queues = ["video"]`, 1 worker, named `video-worker`
+
+### Backend: SeedData — 10-Chapter Video Content
+- All 6 video modules (IDs 19–24) updated from 5-step to 10-step comprehensive content
+- `EstimatedMinutes` updated: kanban 6→12, time-tracking 5→11, expenses 4→11, parts 7→12, reports 6→12, shop-floor 5→12
+- Each module's `ContentJson` now includes: `chaptersJson` (10 entries), `steps[]` (10 steps), `transcript`
+- Steps written for all 4 learning styles: Visual (spatial orientation), Auditory (why), Reading/Writing (structure), Kinesthetic (prompts)
+- Comment: `// Manuscripts: docs/training-videos/0N-*.md — source of truth for regeneration`
+
+### Backend: Dockerfile (Production)
+- Switched from Alpine → Debian SDK base for Playwright/Chromium glibc compatibility
+- Playwright browsers baked into build stage: `pwsh playwright.ps1 install chromium ffmpeg`
+- Browser cache copied to runtime image; `chmod 755` applied
+- `PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium` env var set
+- `MinioOptions__PublicEndpoint` env var active in `docker-compose.yml` for presigned URL rewriting (internal `qb-engineer-storage:9000` → `localhost:9000`)
+
+### Docs: Training Video Manuscripts (Source Control)
+- `docs/training-videos/01-kanban-board.md` — 10 chapters, full narration scripts, Playwright selectors, chapter timestamps, Playwright generation spec JSON
+- `docs/training-videos/02-time-tracking.md` — 10 chapters (clock-in vs job timers distinction)
+- `docs/training-videos/03-expenses.md` — 10 chapters (full submit/reject/retract cycle)
+- `docs/training-videos/04-parts-catalog.md` — 10 chapters (Make/Buy/Stock, BOM, process steps)
+- `docs/training-videos/05-reports-analytics.md` — 10 chapters (builder, columns, charts, export)
+- `docs/training-videos/06-shop-floor-kiosk.md` — 10 chapters (zero-software-experience audience)
+- Each manuscript contains: chapter breakdown, estimated timestamps, narration script per chapter, alternative paths, kinesthetic prompts, full regeneration JSON spec
+
+### Video Generation Results
+- Module 19 (Kanban Board): Done — `module-19-*.mp4` in MinIO
+- Modules 20–24: Sequential generation queued via single-worker Hangfire `video` queue

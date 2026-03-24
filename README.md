@@ -2,27 +2,58 @@
 
 **Open source manufacturing operations platform — the operational layer that sits alongside your accounting system.**
 
-QB Engineer is a locally hosted web application for small and mid-size manufacturers. Your accounting system (QuickBooks Online by default, with pluggable support for Xero, Sage, and others) handles the finances. QB Engineer handles everything else: job tracking, production workflow, R&D iterations, CAD/STL file management, sprint-based work planning, lead management, production traceability, and an engineer-focused dashboard. Works in standalone mode without any accounting system too.
+QB Engineer is a locally hosted web application for small and mid-size manufacturers. Your accounting system (QuickBooks Online by default, with pluggable support for Xero, Sage, and others) handles the finances. QB Engineer handles everything else: job tracking, production workflow, purchasing, order management, inventory, employee compliance, training, and an engineer-focused dashboard. Works in standalone mode without any accounting system too.
 
 No SaaS fees. No cloud dependency. Runs entirely in Docker on your own infrastructure.
 
 ---
 
-## Why QB Engineer?
+## What's Included
 
-Accounting systems think in financial primitives (debits, credits, chart of accounts). Manufacturers think in shop primitives (jobs, materials, machines, deadlines). QB Engineer bridges that gap:
+### Production & Shop Floor
+- **Kanban board** with configurable track types (Production, R&D, Maintenance, custom), WIP limits, swimlane view, and multi-select bulk actions
+- **Job cards** with subtasks, file attachments, status timeline, activity log, and BOM/part links
+- **Shop floor kiosk** — touch-optimized display with RFID/NFC/barcode + PIN authentication for shop floor workers
+- **Sprint planning cycles** with 2-week cycles, backlog curation, drag-to-commit, and Planning Day guided flow
+- **Production lots and traceability** supporting FDA 21 CFR Part 820 / ISO 13485 when needed
 
-- **Kanban board** with configurable track types (Production, R&D, Maintenance, custom) aligned to your accounting document lifecycle
-- **Sprint-based planning** with 2-week cycles, backlog curation, and Planning Day guided flow
-- **Part catalog** with recursive BOM, revision control, and inline STL 3D viewing
-- **Production traceability** supporting FDA 21 CFR Part 820 / ISO 13485 when needed
-- **Lead management** with conversion to accounting system customers
-- **Time tracking** that feeds directly into your accounting system's payroll
-- **File management** with versioned CAD/STL/CAM attachments stored in MinIO
-- **Shop floor display** for real-time production visibility on kiosk screens
-- **Self-hosted AI assistant** (optional) for smart search, document Q&A, and QC anomaly detection
+### Parts, Inventory & Quality
+- **Part catalog** with recursive BOM, revision control, Make/Buy/Stock classification, process steps, and inline STL 3D viewing
+- **Inventory** with multi-location bin tracking, bin movements, receiving, and quantity-on-hand rollups
+- **Quality control** with QC templates, inspection records, and production run integration
 
-All accounting integration goes through a sync queue — the app works normally when your accounting system is unavailable, or with no accounting system at all.
+### Order Management (Quote-to-Cash)
+- **Quotes** → **Sales Orders** → **Shipments** → **Invoices** → **Payments** (full lifecycle)
+- **Purchase Orders** with line-level receiving
+- **Price lists** with quantity break pricing
+- **Recurring order templates** via Hangfire scheduling
+- **Customer address management** (multi-address per customer)
+- **Vendor management** with full CRUD
+- **Sales tax** per state/jurisdiction with invoice calculation
+- **Customer returns** with resolve/close lifecycle
+
+### People & HR
+- **Time tracking** with job timers and attendance clock-in/clock-out; feeds into QB Payroll
+- **Expense capture** with receipt photos, job linking, and manager approval queue
+- **Employee compliance forms** — W-4, I-9, state withholding (PDF extraction pipeline, DocuSeal e-signature)
+- **Payroll** — pay stubs and tax documents; employee self-service + admin upload
+- **Employee training LMS** — 46 seeded modules, 8 learning paths, quiz pools, walkthrough video generation with voiced narration
+
+### Reporting & Intelligence
+- **Dynamic report builder** — 28 entity sources, 350+ queryable fields, 27 pre-seeded templates, charts, CSV/PDF export
+- **AI assistant** (optional, self-hosted Ollama) — smart search, document Q&A, RAG pipeline over your own data
+- **Configurable AI assistants** — HR, Procurement, Sales domain assistants with admin panel
+
+### Collaboration
+- **Chat** — 1:1 DMs and group rooms with real-time SignalR messaging and entity/file sharing
+- **Notifications** — real-time push with severity levels, pinning, dismissal, and SMTP email digests
+
+### Admin & Configuration
+- **User management** with six additive roles (Engineer, PM, Production Worker, Manager, Office Manager, Admin)
+- **Tiered authentication** — credentials, SSO (Google/Microsoft/OIDC), and kiosk auth (RFID/NFC/barcode + PIN)
+- **Admin panel** — track types, reference data, terminology overrides, integrations, compliance templates
+- **Company profile and locations** — multiple locations with per-employee location assignment for state withholding
+- **Integration settings** — QB, SMTP, MinIO, AI, TTS configurable from the UI
 
 ---
 
@@ -30,15 +61,22 @@ All accounting integration goes through a sync queue — the app works normally 
 
 | Layer | Technology |
 |---|---|
-| Frontend | Angular 21 + Angular Material |
-| Backend | .NET 9 Web API |
-| Database | PostgreSQL + pgvector |
-| File Storage | MinIO (S3-compatible) |
-| Real-time | SignalR |
-| Background Jobs | Hangfire |
-| 3D Viewer | Three.js |
-| AI (optional) | Ollama + pgvector RAG |
-| Containerization | Docker Compose |
+| Frontend | Angular 21 + Angular Material 21 (zoneless, signals) |
+| Backend | .NET 9 Web API (MediatR CQRS, FluentValidation) |
+| Database | PostgreSQL 16 + pgvector (RAG embeddings) |
+| File Storage | MinIO (S3-compatible, self-hosted) |
+| Real-time | SignalR (board, notifications, timers, chat) |
+| Background Jobs | Hangfire (default + video queue) |
+| ORM | Entity Framework Core + Npgsql |
+| PDF | QuestPDF (server-side), pdf.js via PuppeteerSharp (extraction) |
+| 3D Viewer | Three.js (STL files) |
+| AI (optional) | Ollama (llama3.2:3b) + pgvector RAG |
+| TTS (optional) | Coqui TTS — self-hosted voiced narration for training videos |
+| Document Signing | DocuSeal (self-hosted e-signature) |
+| Barcode/QR | bwip-js + angularx-qrcode |
+| Charts | ng2-charts (Chart.js) |
+| Logging | Serilog |
+| Containerization | Docker Compose (5 core + 3 optional profiles) |
 
 See [docs/libraries.md](docs/libraries.md) for the complete library reference.
 
@@ -46,23 +84,28 @@ See [docs/libraries.md](docs/libraries.md) for the complete library reference.
 
 ## System Requirements
 
-### Minimum (without AI)
+### Minimum (core stack, no optional profiles)
 
 - Docker Engine 24+ and Docker Compose v2
 - 4 GB RAM
 - 20 GB disk (grows with file storage)
 - Any x86_64 Linux, Windows, or macOS host
 
-### Recommended (with AI module)
+### With AI profile (Ollama)
 
-- 16 GB RAM (CPU-only AI inference)
-- 16+ GB VRAM GPU for responsive AI (NVIDIA recommended, with nvidia-container-toolkit)
-- 50 GB disk
+- 16 GB RAM for CPU-only inference
+- NVIDIA GPU with 8+ GB VRAM for responsive AI (requires `nvidia-container-toolkit`)
+- 50 GB disk (model weights ~4 GB)
+
+### With TTS profile (Coqui)
+
+- +2 GB RAM (CPU inference, ~500 MB model download on first start)
 
 ### Browser Support
 
 - Chrome, Edge, Firefox, Safari (latest 2 versions)
 - Responsive down to 768px viewport width
+- Shop floor kiosk: 1280×800 minimum (full-screen recommended)
 
 ---
 
@@ -81,46 +124,65 @@ cd qb-engineer
 
 # Copy environment template and configure
 cp .env.example .env
-# Edit .env with your settings (SMTP, backup targets, etc.)
+# Edit .env — at minimum set JWT_KEY to a random 32+ character string
 
-# Start all containers (6 core services)
+# Start core stack (5 services: ui, api, db, storage, backup)
 docker compose up -d
 
-# Or include the optional AI module
+# Optional: include the self-hosted AI assistant
 docker compose --profile ai up -d
+
+# Optional: include Coqui TTS for training video narration
+docker compose --profile tts up -d
+
+# Optional: include DocuSeal for employee document e-signatures
+docker compose --profile signing up -d
+
+# All optional profiles at once
+docker compose --profile ai --profile tts --profile signing up -d
 ```
 
 The application will be available at `http://localhost:4200`.
 
-**Default admin credentials** are printed to the API container logs on first run. You will be prompted to change the password on first login.
-
 ### First-Run Setup
 
-1. Log in with the default admin credentials
-2. Navigate to Admin > Settings to configure your app name, logo, and brand colors
-3. Navigate to Admin > QB Setup to connect your QuickBooks Online account (or skip for standalone mode)
-4. Create users and assign roles
-5. The built-in guided tour walks through the rest
+A 2-step setup wizard runs automatically on first access:
+
+1. **Step 1 — Admin account** — set your admin email and password
+2. **Step 2 — Company details** — enter your company name, EIN, and primary location
+
+After setup:
+- Navigate to **Admin > Settings** to configure branding, colors, and integrations
+- Navigate to **Admin > QB Setup** to connect QuickBooks Online (or skip for standalone mode)
+- Create users, assign roles, and configure track types
+
+The built-in guided tours walk through each major feature on first visit.
 
 ---
 
-## Demo Mode
+## Demo / Development Mode
 
-Run the full application with mock data and no external dependencies:
+Run with realistic seed data and no external dependencies:
 
 ```bash
-# Start with mock integrations (no QB account needed)
-MOCK_INTEGRATIONS=true docker compose up -d
+# In .env (or as environment variable):
+MOCK_INTEGRATIONS=false   # already the default; set to true to bypass QB/SMTP
+RECREATE_DB=true          # drops and recreates the DB on each API start (dev only)
 ```
 
-Mock mode provides:
-- Fake QB customers, vendors, items, and employees from JSON fixtures
-- Simulated QB API responses (success, auth failure, rate limit scenarios)
-- Email notifications logged to console instead of sent via SMTP
-- Canned AI responses (if AI module is enabled)
-- Seed data: sample jobs across all track types, parts with BOMs, leads, assets, and expenses
+The seed data includes:
+- Sample jobs across all track types (Production, R&D, Maintenance)
+- Parts with recursive BOMs and process steps
+- Customers, vendors, leads, expenses, assets
+- 46 training modules across 8 learning paths
+- 27 pre-seeded report templates
+- Reference data, system settings, and a default admin user (`admin@qbengineer.local` / `Admin123!`)
 
-This is the recommended way to evaluate the application before connecting real services.
+With `MOCK_INTEGRATIONS=true`:
+- QB API calls return canned fixture data
+- Email notifications log to console instead of sending
+- Address validation uses format-only checks (no USPS API call)
+- AI responses are canned strings (no Ollama required)
 
 ---
 
@@ -131,78 +193,70 @@ This is the recommended way to evaluate the application before connecting real s
 - [.NET 9 SDK](https://dotnet.microsoft.com/download/dotnet/9.0)
 - [Node.js 22 LTS](https://nodejs.org/) + npm
 - [Docker Desktop](https://www.docker.com/products/docker-desktop/) (for Postgres + MinIO)
-- A code editor (VS Code or Rider recommended)
 
-### Backend (.NET API)
+### Hot-Reload Dev Stack
 
-```bash
-cd qb-engineer.api
-
-# Restore dependencies
-dotnet restore
-
-# Start infrastructure containers (Postgres + MinIO only)
-docker compose -f docker-compose.dev.yml up -d
-
-# Run database migrations
-dotnet ef database update --project ../qb-engineer.data
-
-# Start the API (with mock integrations enabled)
-MOCK_INTEGRATIONS=true dotnet run
-```
-
-API runs at `https://localhost:5001` with Scalar API docs at `https://localhost:5001/scalar`.
-
-### Frontend (Angular)
+The `docker-compose.dev.yml` overlay enables hot reload for both UI and API:
 
 ```bash
-cd qb-engineer-ui
+# .env already has:
+COMPOSE_FILE=docker-compose.yml;docker-compose.dev.yml
 
-# Install dependencies
-npm install
+# Starts full stack with hot reload
+docker compose up -d
 
-# Start dev server
-ng serve
+# API: dotnet watch (hot reload)
+# UI: ng serve with file polling
 ```
-
-UI runs at `http://localhost:4200` and proxies API calls to the backend.
 
 ### Running Tests
 
 ```bash
-# Angular unit tests
+# Angular unit tests (Vitest)
 cd qb-engineer-ui && npx vitest
 
-# .NET unit tests
-cd qb-engineer.tests && dotnet test
+# .NET unit tests (xUnit)
+cd qb-engineer-server && dotnet test qb-engineer.tests/
 
-# .NET integration tests (requires Postgres running)
-cd qb-engineer.tests && dotnet test --filter Category=Integration
+# Playwright E2E (requires full stack running)
+cd qb-engineer-ui && npm run e2e
 
-# Cypress E2E (requires full Docker Compose stack)
-cd qb-engineer-ui && npx cypress run
+# Playwright headed (for debugging)
+cd qb-engineer-ui && npm run e2e:headed
 ```
 
-### Build Scripts
+---
 
-```bash
-# Local build (Linux/macOS/CI)
-./scripts/build.sh
+## Project Structure
 
-# Local build (Windows)
-scripts\build.bat
-
-# Print current version
-./scripts/version.sh
 ```
-
-Version is derived automatically from git tags. See [docs/coding-standards.md](docs/coding-standards.md) Standard #24 for details.
+qb-engineer-wrapper/
+├── qb-engineer-server/          .NET 9 solution
+│   ├── qb-engineer.api/         Controllers, Features/ (MediatR handlers), Middleware
+│   ├── qb-engineer.core/        Entities, Interfaces, Models, Enums
+│   ├── qb-engineer.data/        DbContext, Repositories, Migrations, EF Config
+│   ├── qb-engineer.integrations/ QB, MinIO, SMTP, Ollama, Coqui TTS, Playwright, DocuSeal
+│   └── qb-engineer.tests/       xUnit unit + integration tests (Bogus test data)
+├── qb-engineer-ui/              Angular 21 application
+│   ├── src/
+│   │   ├── app/
+│   │   │   ├── shared/          Reusable components, services, directives, pipes
+│   │   │   ├── features/        Lazy-loaded feature modules
+│   │   │   └── core/            Singleton services (layout, nav, auth)
+│   │   └── styles/              Global SCSS (_variables, _mixins, _shared, _reset)
+│   └── e2e/                     Playwright E2E specs and helpers
+├── docs/                        Architecture, standards, and design documentation
+│   └── training-videos/         Video manuscripts and regeneration specs (01–06)
+├── docker-compose.yml           Production container orchestration
+├── docker-compose.dev.yml       Development hot-reload overlay
+└── .env                         Local environment configuration
+```
 
 ---
 
 ## Deployment
 
-### On-Premise (recommended for most users)
+### On-Premise (recommended)
 
 ```bash
 # Pull the latest release images
@@ -212,65 +266,55 @@ docker compose pull
 docker compose up -d
 
 # Verify health
-curl http://localhost:5001/health
+docker compose ps
+curl http://localhost:5000/health
 ```
 
-All configuration is via environment variables in `.env` and `appsettings.json`. No hardcoded hostnames or paths.
-
-### Cloud Deployment
-
-The same Docker images run on any container host:
-
-- **Docker Compose** on a VM (simplest)
-- **Kubernetes** with Helm chart (coming soon)
-- **Azure Container Apps**, **AWS ECS**, **Google Cloud Run**
-
-Swap MinIO for any S3-compatible provider. Swap Postgres for a managed database service (Azure Database for PostgreSQL, AWS RDS, etc.). No code changes required — only configuration.
+All configuration is via `.env` and environment variables. No hardcoded hostnames or paths.
 
 ### Backup
 
 - **Off-site**: Backblaze B2 via scheduled `pg_dump` + `rclone sync` for MinIO files
 - **On-site**: MinIO bucket replication + DB dumps to a secondary machine on LAN
-- **Retention**: 7 daily, 4 weekly, 3 monthly
+- **Retention**: 7 daily, 4 weekly, 3 monthly snapshots
 - Backup status visible in the admin system health panel
 
 ### Upgrade
 
 ```bash
-# Pull latest images
 docker compose pull
+docker compose up -d   # migrations run automatically on API start
 
-# Apply database migrations (automatic on API container start)
-docker compose up -d
-
-# Verify
 docker compose ps
-curl http://localhost:5001/health
+curl http://localhost:5000/health
 ```
 
 Database migrations run automatically on API startup. If a migration requires manual intervention, the release notes will specify the steps.
-
-**Version pinning:** To pin a specific version instead of `latest`, set the image tags in `docker-compose.yml` or your `.env` file:
-
-```
-QB_ENGINEER_VERSION=1.2.3
-```
 
 ---
 
 ## Environment Variables
 
-Key variables in `.env` (full list in `.env.example`):
+Key variables (full list in `.env.example`):
 
 | Variable | Default | Description |
 |---|---|---|
-| `MOCK_INTEGRATIONS` | `false` | Swap all external services for mock implementations |
-| `POSTGRES_CONNECTION` | — | PostgreSQL connection string |
-| `MINIO_ENDPOINT` | `minio:9000` | MinIO server address |
-| `MINIO_ACCESS_KEY` | — | MinIO access key |
-| `MINIO_SECRET_KEY` | — | MinIO secret key |
-| `JWT_SIGNING_KEY` | — | Secret key for JWT token signing (min 32 chars) |
-| `JWT_EXPIRATION_MINUTES` | `60` | Access token lifetime |
+| `MOCK_INTEGRATIONS` | `false` | Replace all external APIs with mock implementations |
+| `RECREATE_DB` | `false` | Drop and recreate the database on startup (dev only) |
+| `JWT_KEY` | — | Secret for JWT signing (min 32 chars, **required**) |
+| `JWT_ISSUER` | `qb-engineer` | JWT issuer claim |
+| `JWT_AUDIENCE` | `qb-engineer-ui` | JWT audience claim |
+| `POSTGRES_DB` | `qb_engineer` | PostgreSQL database name |
+| `POSTGRES_USER` | `postgres` | PostgreSQL user |
+| `POSTGRES_PASSWORD` | `postgres` | PostgreSQL password |
+| `MINIO_ROOT_USER` | `minioadmin` | MinIO access key |
+| `MINIO_ROOT_PASSWORD` | `minioadmin` | MinIO secret key |
+| `MINIO_PUBLIC_ENDPOINT` | `localhost:9000` | Public MinIO URL for presigned links |
+| `TTS_API_KEY` | — | OpenAI TTS API key (optional; Coqui used if unset) |
+| `COQUI_BASE_URL` | — | Coqui TTS server URL, e.g. `http://qb-engineer-tts:5002` |
+| `COQUI_SPEAKER_ID` | — | VCTK speaker ID, e.g. `p228` |
+| `OLLAMA_BASE_URL` | `http://qb-engineer-ai:11434` | Ollama API endpoint |
+| `DOCUSEAL_API_KEY` | — | DocuSeal API key for e-signature workflows |
 | `SMTP_HOST` | — | SMTP server for email notifications |
 | `SMTP_PORT` | `587` | SMTP port |
 | `SMTP_USERNAME` | — | SMTP credentials |
@@ -278,9 +322,41 @@ Key variables in `.env` (full list in `.env.example`):
 | `BACKUP_B2_KEY_ID` | — | Backblaze B2 application key ID |
 | `BACKUP_B2_APP_KEY` | — | Backblaze B2 application key |
 | `BACKUP_B2_BUCKET` | — | Backblaze B2 bucket name |
-| `OLLAMA_BASE_URL` | `http://qb-engineer-ai:11434` | Ollama API endpoint (AI module) |
 | `CORS_ORIGINS` | `http://localhost:4200` | Allowed CORS origins (comma-separated) |
-| `DEV_MODE` | `false` | Enable developer tooling (tour sync overlay, verbose logging) |
+| `USPS_USER_ID` | — | USPS Web Tools ID for address validation (optional) |
+
+---
+
+## Documentation
+
+| Document | Contents |
+|---|---|
+| [architecture.md](docs/architecture.md) | Tech stack, Docker topology, auth tiers, search, AI, backup |
+| [coding-standards.md](docs/coding-standards.md) | Angular and .NET coding standards, accessibility, loading states, security |
+| [functional-decisions.md](docs/functional-decisions.md) | Feature-level design decisions (Kanban, order management, standalone financials) |
+| [roles-auth.md](docs/roles-auth.md) | Role definitions, tiered authentication (RFID/kiosk/SSO), permission matrix |
+| [ui-components.md](docs/ui-components.md) | Shared component catalog with usage examples |
+| [qb-integration.md](docs/qb-integration.md) | Accounting boundary, sync queue, OAuth, caching, orphan detection |
+| [ai-system.md](docs/ai-system.md) | Ollama RAG pipeline, pgvector, document indexing, configurable assistants |
+| [pdf-extraction-pipeline.md](docs/pdf-extraction-pipeline.md) | PDF form extraction (pdf.js + PuppeteerSharp), form definition builder |
+| [libraries.md](docs/libraries.md) | Complete third-party library reference |
+| [implementation-status.md](docs/implementation-status.md) | Feature completion tracker (master TODO list) |
+| [training-videos/](docs/training-videos/) | Video manuscripts and Playwright regeneration specs for all 6 training videos |
+
+---
+
+## Roadmap
+
+The original phase plan is complete. Remaining known gaps:
+
+| Item | Status | Notes |
+|---|---|---|
+| Xero / FreshBooks / Sage | Not started | Interface + factory ready; only QB implemented |
+| QB Payroll API sync | Stub only | Controller + entities done; QB Payroll write-back not yet implemented |
+| UPS / FedEx / USPS / DHL carrier APIs | Mock only | `IShippingService` implemented; direct carrier integrations not built |
+| Kubernetes Helm chart | Not started | Docker Compose is the supported deployment target |
+
+Feature requests welcome via GitHub Issues.
 
 ---
 
@@ -289,96 +365,58 @@ Key variables in `.env` (full list in `.env.example`):
 ### Option 1: Admin UI (runtime, no rebuild)
 
 1. Navigate to **Admin > Settings > Theming**
-2. Pick your **Primary**, **Accent**, and **Warn** colors using the color pickers
-3. The UI validates contrast against WCAG 3 accessibility thresholds and warns you before saving inaccessible combinations
-4. Upload your logo and set your app name on the same screen
+2. Pick your Primary, Accent, and Warn colors
+3. The UI validates contrast against WCAG 2.2 AA thresholds before saving
+4. Upload your logo and set your app name
 5. Changes apply immediately to all users
 
-### Option 2: Code-level (deeper customization, requires rebuild)
+### Option 2: SCSS variables (requires rebuild)
 
-1. Edit `qb-engineer-ui/src/styles/_variables.scss` to change the spacing scale, typography, border radius, or other design tokens
-2. Rebuild the UI container: `docker compose build qb-engineer-ui`
-3. Restart: `docker compose up -d qb-engineer-ui`
+1. Edit `qb-engineer-ui/src/styles/_variables.scss` to change spacing, typography, or design tokens
+2. Rebuild: `docker compose build qb-engineer-ui && docker compose up -d qb-engineer-ui`
 
-Users can switch between light and dark themes via the toggle in the toolbar. Both themes are auto-generated from the admin-set color palette.
-
----
-
-## Project Structure
-
-```
-qb-engineer/
-  qb-engineer.sln                    .NET solution file
-  qb-engineer.api/                   .NET 9 Web API (controllers, middleware)
-  qb-engineer.core/                  Domain models, interfaces, enums
-  qb-engineer.data/                  EF Core DbContext, migrations, configurations
-  qb-engineer.integrations/          QB, Email, Storage, Backup, AI service layers
-  qb-engineer.tests/                 xUnit tests (unit + integration)
-  qb-engineer-ui/                    Angular 21 application
-    src/app/
-      shared/                        Reusable components, services, pipes, models
-      features/                      Lazy-loaded domain modules (kanban, dashboard, etc.)
-      core/                          Singleton services, layout shell
-    src/styles/                      Global SCSS (_variables, _mixins, theme)
-    cypress/                         E2E test specs
-  scripts/                           Build and versioning scripts
-  docs/                              Architecture, standards, and design documentation
-  docker-compose.yml                 Production container orchestration
-  docker-compose.dev.yml             Development infrastructure only
-  .github/workflows/                 CI/CD pipeline definitions
-```
-
----
-
-## Documentation
-
-All design and reference documentation lives in the [docs/](docs/) directory:
-
-| Document | Contents |
-|---|---|
-| [architecture.md](docs/architecture.md) | Tech stack, Docker topology, auth, search, AI, routing |
-| [coding-standards.md](docs/coding-standards.md) | 31 coding standards (Angular, .NET, database, CI/CD, accessibility, print, loading, security) |
-| [libraries.md](docs/libraries.md) | Complete third-party library reference with packages and justifications |
-| [functional-decisions.md](docs/functional-decisions.md) | Feature-level decisions (Kanban, sprints, leads, notifications, etc.) |
-| [proposal.md](docs/proposal.md) | Full project proposal with module descriptions and phased delivery plan |
-| [kickoff-prompt.md](docs/kickoff-prompt.md) | Developer onboarding guide with schema, conventions, and Phase 1 scope |
+Users can switch between light and dark themes via the toolbar toggle.
 
 ---
 
 ## Troubleshooting
 
 **Containers fail to start:**
-- Run `docker compose logs <service-name>` to check for errors
-- Ensure ports 4200, 5001, 5432, 9000 are not in use by other services
-- On Windows/macOS, ensure Docker Desktop has sufficient memory allocated (4 GB minimum)
+- Check logs: `docker compose logs <service-name>`
+- Ensure ports 4200, 5000, 5434, 9000 are not in use
+- On Windows/macOS: ensure Docker Desktop has at least 4 GB RAM allocated
 
-**Database migration errors:**
-- Check that `qb-engineer-db` is healthy: `docker compose ps`
-- View migration logs: `docker compose logs qb-engineer-api | grep -i migration`
-- To reset the database (destroys all data): `docker compose down -v && docker compose up -d`
+**Database issues:**
+- Check health: `docker compose ps`
+- View migration output: `docker compose logs qb-engineer-api | grep -i migration`
+- Reset (destroys all data): `docker compose down -v && docker compose up -d`
 
 **QB connection issues:**
-- Verify OAuth tokens in Admin > QB Setup
+- Verify OAuth tokens in Admin > Integrations > QuickBooks
 - Check token expiry in the system health panel
-- QB API rate limits: the sync queue handles retries with backoff automatically
-- With `MOCK_INTEGRATIONS=true`, QB issues are bypassed entirely
+- With `MOCK_INTEGRATIONS=true` QB issues are bypassed entirely
 
 **File upload failures:**
-- Check MinIO is running: `docker compose ps qb-engineer-storage`
-- Verify MinIO credentials in `.env` match the container configuration
-- Check disk space on the Docker host
+- Check MinIO: `docker compose ps qb-engineer-storage`
+- Verify `MINIO_ROOT_USER` / `MINIO_ROOT_PASSWORD` in `.env` match container config
+- Check host disk space
+
+**Training video generation:**
+- Requires Coqui TTS profile: `docker compose --profile tts up -d`
+- First start downloads the VCTK model (~500 MB); wait for `Serving Flask app` in logs
+- Videos are generated one at a time (single-worker Hangfire `video` queue) to avoid OOM
+- Check progress: `docker compose logs qb-engineer-api | grep VideoGen`
 
 **AI module not responding:**
-- Ollama needs to download models on first run (can take several minutes)
+- Ollama downloads models on first run (several minutes)
 - Check: `docker compose logs qb-engineer-ai`
-- Test directly: `curl http://localhost:11434/api/tags`
-- The app works fully without AI — features fall back to manual workflows
+- Test: `curl http://localhost:11434/api/tags`
+- The app works fully without AI — features fall back gracefully
 
 **Slow performance:**
-- Enable Postgres connection pooling if running many concurrent users
-- Check `docker stats` for container resource usage
-- For large file uploads, ensure MinIO has sufficient disk I/O
-- AI inference is CPU-bound without a GPU — consider a GPU for production AI use
+- Check resource usage: `docker stats`
+- AI inference is CPU-bound without a GPU
+- For large deployments, configure Postgres connection pooling
 
 ---
 
@@ -386,49 +424,34 @@ All design and reference documentation lives in the [docs/](docs/) directory:
 
 ### Reporting Vulnerabilities
 
-If you discover a security vulnerability, **do not open a public issue.** Instead, email security@qb-engineer.dev (or the address specified in `SECURITY.md`) with:
-
-- Description of the vulnerability
-- Steps to reproduce
-- Potential impact
-
-We will acknowledge receipt within 48 hours and provide a timeline for a fix.
+If you discover a security vulnerability, **do not open a public issue.** Email security@qb-engineer.dev with a description, reproduction steps, and potential impact. We will acknowledge within 48 hours.
 
 ### Security Practices
 
-- JWT bearer tokens with refresh token rotation
+- JWT access tokens + refresh token rotation; tokens short-lived (configurable)
 - QB OAuth tokens encrypted at rest via ASP.NET Data Protection API (AES-256, keys in Postgres)
-- All API endpoints require authentication (except `/display/shop-floor` which is read-only on trusted LAN)
+- Tiered kiosk authentication: RFID/NFC/barcode + separate PIN (PBKDF2 hashed)
+- All API endpoints require authentication; shop floor display endpoint is read-only
 - Rate limiting on authentication endpoints
-- Input validation via FluentValidation on all API requests
+- Input validation via FluentValidation on all requests
 - CORS restricted to configured origins
 - No secrets in source code — all credentials via environment variables
-- Soft delete ensures data is never permanently lost without admin action
-- Content Security Policy (CSP) headers — no inline scripts, `frame-ancestors 'none'`, strict resource origins
-- HSTS enforced in production (HTTPS)
+- Soft delete — records are never permanently removed without admin action
 - Audit log captures all create/update/delete operations with user and timestamp
+- CSP headers: `default-src 'self'`, no eval, `frame-ancestors 'none'`
+- HSTS enforced in production
 
 ---
 
-## Roadmap
+## Standalone Mode (No Accounting System)
 
-Development follows the phased plan in [docs/proposal.md](docs/proposal.md):
+QB Engineer is fully functional without a connected accounting system. In standalone mode:
 
-| Phase | Status | Scope |
-|---|---|---|
-| 1 — Foundation | In Progress | Docker, schema, auth, Kanban board, job cards, file attachments, STL viewer |
-| 2 — Engineer UX | Planned | Dashboard, sprint planning, daily priorities |
-| 3 — QB Bridge | Planned | Full QB read/write, sync queue, OAuth flow |
-| 4 — Leads & Contacts | Planned | Lead pipeline, conversion, contacts |
-| 5 — Traceability | Planned | Production runs, QC checklists, lot tracking |
-| 6 — Time & Workers | Planned | Timer, worker views, shop floor display |
-| 7 — Expenses & Invoicing | Planned | Expense capture, invoice workflow |
-| 8 — Maintenance | Planned | Asset registry, scheduled maintenance |
-| 9 — Reporting | Planned | Operational dashboards, charts, CSV export |
-| 10 — Backup & Polish | Planned | B2 backup, email notifications, mobile layouts |
-| 11 — AI Assistant | Planned | Ollama, RAG pipeline, smart search, document Q&A |
-
-Feature requests and phase feedback welcome via GitHub Issues.
+- All operations features work normally (Kanban, parts, inventory, purchasing, planning, QC, time, expenses, HR, training, chat, notifications)
+- Financial features (invoices, payments, AR aging, customer statements) are available locally instead of syncing to an external accounting system
+- Vendor management operates in full CRUD mode (becomes read-only when an accounting provider is connected)
+- Customer records are managed locally
+- Skip the QB Setup step during first-run wizard
 
 ---
 
@@ -436,71 +459,45 @@ Feature requests and phase feedback welcome via GitHub Issues.
 
 QB Engineer is open source under the GNU General Public License v3. Contributions are welcome.
 
-### Getting Started
-
 1. Fork the repository
 2. Create a feature branch: `git checkout -b feature/your-feature-name`
-3. Make your changes following the [coding standards](docs/coding-standards.md)
+3. Follow the [coding standards](docs/coding-standards.md)
 4. Write tests for new functionality
-5. Ensure all tests pass: unit, integration, and E2E
+5. Ensure all tests pass (unit, integration, E2E)
 6. Submit a pull request against `main`
 
-### Contribution Rules
+**Rules:**
+- No company-specific code — everything must be configurable
+- One logical change per PR
+- New features need tests; UI changes need Playwright coverage for the critical path
+- No new dependencies without a discussion issue first
+- Accessibility is non-negotiable — WCAG 2.2 AA, enforced by ESLint and Playwright axe-core
+- Branch naming: `feature/...`, `fix/...`, `chore/...`
+- Commit messages: imperative mood, under 72 characters
 
-- **Follow the coding standards.** All 31 standards in [docs/coding-standards.md](docs/coding-standards.md) are enforced. CI will reject non-conforming code.
-- **No company-specific code.** Everything must be configurable. No hardcoded company names, logos, branding, or workflow assumptions.
-- **One logical change per PR.** Keep PRs focused — one feature, one fix, or one refactor.
-- **Tests required.** New features need unit tests. Bug fixes need a regression test. UI changes need Cypress coverage for the critical path.
-- **No new dependencies without discussion.** Open an issue first to discuss adding a new library. Prefer libraries that are MIT/Apache licensed, actively maintained, and tree-shakeable.
-- **Accessibility is not optional.** All UI changes must meet WCAG 3 targets. The CI pipeline runs axe-core checks.
-- **Write plain language.** No accounting jargon in operational views. Comments and commit messages should be clear to a non-expert.
-- **Branch naming:** `feature/...`, `fix/...`, `chore/...`
-- **Commit messages:** imperative mood, under 72 characters
-
-### Reporting Issues
-
-Open an issue with:
-- Steps to reproduce
-- Expected vs. actual behavior
-- Browser/OS/Docker version
-- Screenshots or logs if applicable
-
-### Adding a Language Translation
-
-1. Copy `qb-engineer-ui/src/assets/i18n/en.json` to your locale file (e.g., `fr.json`)
-2. Translate all values (keys must remain unchanged)
-3. Submit a PR — no code changes needed beyond the JSON file
-
----
-
-## Standalone Mode (No QuickBooks)
-
-QB Engineer works without a QuickBooks connection. In standalone mode:
-
-- Job tracking, Kanban, sprints, files, parts, leads, assets, and traceability all function normally
-- Financial features (estimates, invoices, payments, time activity sync) are simply unavailable
-- Customer records are managed locally instead of syncing from QB
-- Expense tracking works locally without QB write-back
-- Skip the QB Setup wizard during first-run configuration
-
-This makes QB Engineer useful for any small manufacturer, even those not using QuickBooks.
+**Adding a translation:**
+Copy `qb-engineer-ui/public/assets/i18n/en.json` to your locale file (e.g., `fr.json`), translate the values (keys unchanged), and submit a PR.
 
 ---
 
 ## Acknowledgments
 
-QB Engineer is built on these open-source projects (among others):
+QB Engineer is built on these open-source projects (among many others):
 
 - [Angular](https://angular.dev/) and [Angular Material](https://material.angular.io/)
 - [.NET](https://dotnet.microsoft.com/) and [Entity Framework Core](https://learn.microsoft.com/ef/core/)
 - [PostgreSQL](https://www.postgresql.org/) and [pgvector](https://github.com/pgvector/pgvector)
 - [MinIO](https://min.io/)
-- [Three.js](https://threejs.org/)
-- [Ollama](https://ollama.ai/)
 - [Hangfire](https://www.hangfire.io/)
 - [MediatR](https://github.com/jbogard/MediatR)
-- [Mapperly](https://mapperly.riok.app/)
+- [Three.js](https://threejs.org/)
+- [Ollama](https://ollama.ai/)
+- [Coqui TTS](https://github.com/coqui-ai/TTS)
+- [PuppeteerSharp](https://www.puppeteersharp.com/)
+- [QuestPDF](https://www.questpdf.com/)
+- [DocuSeal](https://www.docuseal.com/)
 - [driver.js](https://driverjs.com/)
+- [Mapperly](https://mapperly.riok.app/)
 
 Full library list: [docs/libraries.md](docs/libraries.md)
 
