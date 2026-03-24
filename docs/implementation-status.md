@@ -1,6 +1,6 @@
 # Implementation Status
 
-Tracks real implementation against all spec docs. Updated: 2026-03-21.
+Tracks real implementation against all spec docs. Updated: 2026-03-23.
 
 Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 
@@ -371,6 +371,7 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 | Help icon per page | proposal.md §4.17 | Done | PageHeader/PageLayout support helpTourId input with ? icon button |
 | Tour coverage audit (CI) | proposal.md §4.17 | Done | `npm run audit:tours` script scans features for TourService/HelpTourService references |
 | Admin training dashboard | proposal.md §4.17 | Done | TrainingDashboardComponent: DataTable with user progress, completion bars, per-device localStorage tracking |
+| Employee Training LMS | proposal.md §4.17 | Done | Full LMS: 20 seeded modules (Article/Video/Walkthrough/QuickRef/Quiz), training paths, per-user progress tracking, `/training` library with search/filter, module detail pages with type-specific renderers, quiz scoring, My Learning + Paths tabs, admin CRUD panel |
 
 ### Bin & Location Tracking
 
@@ -1500,3 +1501,43 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 - `LotService` — `getLots(search, partId, jobId)`, `trace(lotNumber)`, `create()`
 - Sidebar nav: `batch_prediction` icon in Supply group
 - i18n: `lots.*` section added (en + es), `nav.lots` added
+
+---
+
+## Batch 29 Changelog — Employee Training LMS (2026-03-23)
+
+### Backend: Training Module System
+- `TrainingModule` entity: title, summary, content (JSONB), contentType enum (Article/Video/Walkthrough/QuickRef/Quiz), estimatedMinutes, tags, publishedAt, sortOrder, isPublished
+- `TrainingPath` entity: title, description, icon, isAutoAssigned, sortOrder; M2M `TrainingPathModule` join with order
+- `TrainingProgress` entity: per-user per-module status (NotStarted/InProgress/Completed), startedAt, completedAt, lastHeartbeatAt, quizScore, quizAttempts
+- `TrainingEnrollment` entity: per-user per-path enrollment with completedAt rollup
+- `TrainingController` with 16 endpoints: modules list/get, progress (start/heartbeat/complete), quiz submit, enrollments, paths list/get, admin CRUD + progress summary
+- 16 MediatR handlers in `Features/Training/`: GetTrainingModules, GetTrainingModule, GetTrainingModulesByRoute, CreateTrainingModule, UpdateTrainingModule, DeleteTrainingModule, RecordModuleStart, RecordProgressHeartbeat, CompleteModule, SubmitQuiz, GetMyEnrollments, GetMyProgress, EnrollUser, GetTrainingPath, GetTrainingPaths, GetAdminProgressSummary
+- Seed data: 20 training modules (Article×12, Walkthrough×4, QuickRef×1, Quiz×2, Video×1) covering all major feature areas
+- 2 seeded paths: "New Employee Onboarding" (7 modules, auto-assigned) + "Production Engineer Training" (8 modules, auto-assigned)
+- Enrollments auto-created for all users on seed
+
+### Frontend: Training Feature (`/training`)
+- Route: `/training/:tab` (library/my-learning/paths), `/training/module/:id`, `/training/path/:id`
+- `TrainingComponent`: 3-tab page (Library/My Learning/Learning Paths), search + type + learning style filters, card grid
+- **Training Cards**: colored left-border type bar (Article=info, Video=purple, Walkthrough=primary, QuickRef=accent, Quiz=warning), completion/in-progress status chips, corner triangle for completed, style hint footer ("Best for: Visual / Auditory learners")
+- `TrainingModuleComponent`: full module detail page with type-specific content renderer, progress timer, Mark as Complete / Back to Library footer buttons
+  - **Article**: table of contents sidebar, section headings, collapsible TOC
+  - **QuickRef**: tabular reference sections with Print button
+  - **Video**: YouTube embed, chapters list, transcript toggle
+  - **Walkthrough**: interactive tour via driver.js, step list, completion state
+  - **Quiz**: question list with radio options, progress bar, submit → score card (pass/fail) with review mode + retry
+- `TrainingPathComponent`: path detail with module list, per-module status chips, start/continue/review actions, progress bar
+- `TrainingService`: getModules, getModule, getPath, getPaths, getMyEnrollments, recordStart, recordHeartbeat, completeModule, submitQuiz
+- Models: TrainingModuleListItem, TrainingModule (full), TrainingPath, TrainingEnrollment, TrainingProgress, QuizContent, ArticleContent, VideoContent, WalkthroughContent, QuickRefContent; TrainingContentType/TrainingProgressStatus enums
+- Learning style filter: maps visual/auditory/reading/kinesthetic → content types
+- Sidebar nav: `school` icon in Management group
+
+### Admin: Training Panel (Admin Settings → Training tab)
+- New "Training" tab in Admin Settings
+- `TrainingDashboardComponent`: 3 sub-tabs: Content, Paths, User Progress
+  - **Content**: DataTable (title, type chip, time, published status, edit/delete actions), "+ New Module" button, `TrainingModuleDialogComponent`
+  - **Paths**: DataTable (icon, title, description, module count, auto-assign, edit/delete), `TrainingPathDialogComponent`
+  - **User Progress**: DataTable (name, role, enrolled paths, completed modules, last activity, completion %)
+- `TrainingModuleDialogComponent`: full form (title, summary, content type selector, estimated minutes, tags, published toggle, JSON content editor)
+- `TrainingPathDialogComponent`: title, description, icon, auto-assign toggle, module picker with drag-reorder

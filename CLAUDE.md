@@ -1263,6 +1263,7 @@ _(No pending enhancements — all planned DataTable and UserPreferences work is 
 | Scheduled Tasks | — (admin) | `ScheduledTasksController` | ScheduledTask | Admin-defined recurring tasks, Hangfire execution |
 | Notifications | `notifications/` | `NotificationsController` | AppNotification | Real-time SignalR push, bell badge, preferences, SMTP emails |
 | Search | — (header) | `SearchController` | — | Full-text tsvector + RAG hybrid across 6 entity types |
+| Employee Training LMS | `training/` | `TrainingController` | TrainingModule, TrainingPath, TrainingProgress, TrainingEnrollment | 20 seeded modules (Article/Video/Walkthrough/QuickRef/Quiz), 2 training paths, learning style filter, quiz scoring, progress tracking, admin CRUD panel |
 
 ### Planned / Partially Implemented
 
