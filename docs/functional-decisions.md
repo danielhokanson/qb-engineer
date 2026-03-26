@@ -1290,14 +1290,17 @@ All third-party service connections are managed from one screen with a consisten
 
 ## Employee Compliance Forms
 
-Employee-facing tax and compliance forms (W-4, I-9, state withholding, direct deposit, workers' comp, handbook). Each form template is admin-managed; employees fill out and submit through an electronic renderer or acknowledge via PDF.
+> **Full spec: `docs/compliance-forms-signing.md`** — covers the complete two-phase workflow (data collection → PDF fill → DocuSeal signing), I-9 two-party signing, employer Section 2 UI, data model changes, legal basis, and build order. The notes here cover rules that apply across all form types; see the dedicated spec for form-specific flows.
+
+Employee-facing tax and compliance forms (W-4, I-9, state withholding, direct deposit, workers' comp, handbook). Each form template is admin-managed. Employees fill out forms via the ng-dynamic-forms wizard (`ComplianceFormRendererComponent`); the backend fills the official government PDF with the submitted data and routes it through DocuSeal for legally-compliant electronic signing.
 
 ### Submission Lifecycle
 - **Pending** — employee has started (draft saved) but not submitted
-- **Completed** — employee has submitted the form; `SignedAt` timestamp recorded, employee profile updated (`W4CompletedAt`, etc.)
+- **Completed** — employee has submitted and signed; `SignedAt` timestamp recorded, employee profile updated (`W4CompletedAt`, etc.)
 - **Expired** — form version has been superseded (e.g., new tax year W-4)
+- **I-9 has additional sub-states** — see `docs/compliance-forms-signing.md §I-9 Submission Status States`
 
-### Post-Submission Behavior (Non-Negotiable)
+### Post-Submission Behaviour (Non-Negotiable)
 - **Completed forms show a confirmation card**, not the blank form. The user sees "This form has already been submitted" with the completion date.
 - **Sensitive forms** (W-4, I-9, State Withholding — forms containing SSN or other PII) **never display previously submitted data back to the user**. The confirmation card explains this.
 - **Non-sensitive forms** (Direct Deposit, Workers' Comp, Handbook) may display previously submitted data in read-only mode.
@@ -1310,14 +1313,24 @@ Employee-facing tax and compliance forms (W-4, I-9, state withholding, direct de
 - All submission paths (electronic form submit, DocuSeal webhook, manual acknowledge) must call `AcknowledgeFormCommand` to keep the profile in sync.
 
 ### Template Types
-| Form Type | Sensitive | Can Expire | Blocks Job Assignment | Notes |
-|-----------|-----------|------------|----------------------|-------|
-| W-4 | Yes (SSN) | Yes (annual) | Yes | IRS form, extracted via PDF pipeline |
-| I-9 | Yes (SSN) | Yes (document expiration) | Yes | Requires identity document uploads |
-| State Withholding | Yes (SSN) | Varies by state | Yes | Per-state form definitions |
-| Direct Deposit | No | No | No | Bank routing/account info |
+| Form Type | Sensitive | Can Expire | Blocks Job Assignment | Signing |
+|-----------|-----------|------------|----------------------|---------|
+| W-4 | Yes (SSN) | Yes (annual) | Yes | Single-party: employee via DocuSeal |
+| I-9 | Yes (SSN) | Yes (document expiration) | Yes | Two-party sequential: employee (Section 1) then employer (Section 2) |
+| State Withholding | Yes (SSN) | Varies by state | Yes | Single-party: employee via DocuSeal |
+| Direct Deposit | No | No | No | Acknowledgment only |
 | Workers' Comp | No | No | No | Acknowledgment only |
 | Handbook | No | No | No | Acknowledgment only |
+
+### I-9 Employer Review (Admin/Manager)
+The I-9 requires a second signature from an HR/Manager who physically examines the employee's identity documents. This is handled within the existing employee HR view — not a separate queue screen:
+
+- **Employee list** gains an `I9Status` chip column (warning/error when action required)
+- **Employee compliance panel** conditionally shows the Section 2 completion form when `I9Status` is `Section1Complete` or `Section2InProgress`
+- **Section 2 form**: document title/authority/number/expiration entry, List A vs B+C toggle, attestation checkbox, first day of employment, employer name/address pre-filled from company profile
+- **3-business-day deadline** is enforced: Hangfire job flags overdue, sends notifications to all Admin/Manager users
+
+See `docs/compliance-forms-signing.md` for the full Section 2 UI spec, all document list types (A, B, C), deadline rules, and reverification flow.
 
 ## Shared Component Library & UI Patterns
 

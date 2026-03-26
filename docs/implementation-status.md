@@ -1,6 +1,6 @@
 # Implementation Status
 
-Tracks real implementation against all spec docs. Updated: 2026-03-23.
+Tracks real implementation against all spec docs. Updated: 2026-03-26.
 
 Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 
@@ -528,6 +528,50 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 | **QB Dynamic Forms Library** | Plan §Phase 10 | Done | Full ng-dynamic-forms UI wrapper: 11 control components (input, select, datepicker, textarea, toggle, checkbox, radio, group, signature, heading, paragraph), qbFormControlMapFn, DynamicQbFormControlComponent (ViewContainerRef-based container), DynamicQbFormComponent (root), complianceDefinitionToModels + sectionsToModels adapters, normalizeFormPages utility. Multi-page support via FormPage model. All controls render through QB shared wrappers for automatic design system inheritance. |
 | **Admin form definition endpoints** | Plan §Phase 10 | Done | PUT /{id}/form-definition (update), POST /{id}/extract-definition (PDF extraction), auto-extract on document upload. |
 | **Visual rendering comparison** | Plan §Phase 10 | Done | After extracting a form definition, PuppeteerSharp navigates to `/__render-form` Angular headless route, screenshots the rendered form, then compares against PDF page screenshots. Two tiers: structural (SkiaSharp block SSIM + content density + region detection) and semantic (Ollama vision, optional). Results stored on FormDefinitionVersion (visual_comparison_json, visual_similarity_score, visual_comparison_passed). Fire-and-forget from extraction pipeline. API: POST `/{id}/compare-visual`, GET `/versions/{id}/comparison`. Docker API container memory increased to 2GB for dual Chromium processes. |
+
+### Unified Onboarding Wizard
+
+| Item | Status | Notes |
+|------|--------|-------|
+| **`OnboardingSubmitRequestModel` / result / status models** | Done | `qb-engineer.core/Models/OnboardingModels.cs` — all fields for 7 wizard steps, signing URL list, per-category completion status |
+| **`SubmitOnboarding` handler** | Done | Loads W-4/I-9/StateWithholding templates → `BuildFormDataDictionary()` (40+ canonical keys) → `FillAndSubmitFormForSigningCommand` per template → upserts EmployeeProfile (address, phone, DOB, direct deposit) → marks acknowledgments |
+| **`GetOnboardingStatus` handler** | Done | Reads EmployeeProfile timestamps → returns `OnboardingStatusModel` with per-category booleans + `AllComplete`/`CanBeAssigned` flags |
+| **`OnboardingController`** | Done | `POST /api/v1/onboarding/submit`, `GET /api/v1/onboarding/status` |
+| **`OnboardingWizardComponent` (frontend)** | Done | 7-step linear `MatStepper` at `/onboarding`: Personal Info, Address, Federal Tax (W-4), State Tax, I-9, Direct Deposit, Acknowledgments. Sequential DocuSeal iframe signing after submit. Completion screen. All forms use `ValidationPopoverDirective`. |
+| **`OnboardingService` (frontend)** | Done | Signal-based `_status`, `loadStatus()`, `submit()` |
+| **Account tax-forms linked to wizard** | Done | W-4/I-9/StateWithholding/DirectDeposit/WorkersComp/Handbook formTypes redirect to `/onboarding`; wizard-completion banner shown when incomplete; "Completed in wizard" badge when done |
+| **`TextareaComponent` `placeholder` input** | Done | Added `readonly placeholder = input('')` + `[attr.placeholder]` to template |
+
+---
+
+### PDF Fill & DocuSeal Signing Pipeline
+> Full spec: `docs/compliance-forms-signing.md`
+
+| Item | Spec | Status | Notes |
+|------|------|--------|-------|
+| **`AcroFieldMapJson` on ComplianceFormTemplate** | compliance-forms-signing.md §Data Model | Done | jsonb column; editable in compliance template dialog (system + custom forms) |
+| **`FilledPdfTemplateId` on ComplianceFormTemplate** | compliance-forms-signing.md §Data Model | Done | FK to FileAttachment; upload via `POST /{id}/blank-pdf-template` in template dialog |
+| **I-9 fields on ComplianceFormSubmission** | compliance-forms-signing.md §Data Model | Done | `FilledPdfFileId`, `I9Section1SignedAt`, `I9Section2SignedAt`, `I9EmployerUserId`, `I9DocumentListType`, `I9DocumentDataJson`, `I9Section2OverdueAt`, `I9ReverificationDueAt` |
+| **Migration: compliance form signing fields** | compliance-forms-signing.md §Data Model | Done | `20260326052036_AddPdfFillAndI9Fields` |
+| **`IPdfFormFillService`** | compliance-forms-signing.md §Backend Services | Done | Interface + PdfSharpFormFillService (real) + MockPdfFormFillService (pass-through) |
+| **`PdfSharpFormFillService`** | compliance-forms-signing.md §Backend Services | Done | PdfSharp (MIT): enumerate AcroForm fields, fill, flatten |
+| **`MockPdfFormFillService`** | compliance-forms-signing.md §Backend Services | Done | Returns template bytes unmodified |
+| **`IDocumentSigningService.CreateSubmissionFromPdfAsync`** | compliance-forms-signing.md §Backend Services | Done | Raw PDF upload → DocuSeal submission; 2 sequential submitters for I-9 |
+| **`FillAndSubmitFormForSigning` handler** | compliance-forms-signing.md §Build Order | Done | Fills PDF, uploads to MinIO, creates DocuSeal submission, returns signing URL |
+| **`CompleteI9Section2` handler** | compliance-forms-signing.md §Build Order | Done | Records document examination data, stamps Section 2 fields, marks submission Completed |
+| **`CheckI9Overdue` Hangfire job** | compliance-forms-signing.md §Notifications | Done | Daily 9AM UTC: flags Section2Overdue, fires Notification to Admin/Manager/OfficeManager |
+| **`CheckI9Reverification` Hangfire job** | compliance-forms-signing.md §Notifications | Done | Weekly Monday 9AM UTC: 90-day warning + overdue alerts, de-duplicated per 7 days |
+| **`POST /compliance-forms/{id}/fill-and-sign`** | compliance-forms-signing.md §API Endpoints | Done | Employee submits wizard → fill PDF → DocuSeal submission → signing URL |
+| **`POST /compliance-forms/{submissionId}/complete-i9-section2`** | compliance-forms-signing.md §API Endpoints | Done | Employer records document examination, marks submission Completed |
+| **`GET /compliance-forms/admin/i9-pending`** | compliance-forms-signing.md §API Endpoints | Done | Returns employees with I-9 requiring Section 2 (Admin/Manager/OfficeManager) |
+| **`POST /compliance-forms/{id}/blank-pdf-template`** | compliance-forms-signing.md §API Endpoints | Done | Upload blank government PDF, sets FilledPdfTemplateId on template |
+| **`I9Status` on `AdminUserResponseModel`** | compliance-forms-signing.md §Employee List | Done | Computed via `I9StatusComputer.Compute()` in GetAdminUsers handler; 8 states |
+| **Employee list I-9 chip** | compliance-forms-signing.md §Employee List | Done | I-9 status chip + "Complete Section 2" button in UserCompliancePanelComponent |
+| **Section 2 employer UI in `UserCompliancePanelComponent`** | compliance-forms-signing.md §Employer Section 2 UI | Done | `CompleteI9DialogComponent` — List A/B+C toggle, document fields, start date, reverification date |
+| **AcroField map editor in compliance template dialog** | compliance-forms-signing.md §Admin Config | Done | System form dialog: blank PDF upload zone + JSON textarea + Save Map. Non-system edit: acroFieldMapJson textarea in form. |
+| **I-9 notifications wired** | compliance-forms-signing.md §Notifications | Done | Section1 complete → notify via webhook handler; overdue/reverification via Hangfire jobs |
+| **W-4 post-wizard signing wired (frontend)** | compliance-forms-signing.md §W-4 Flow | Done | After wizard submit: if docuSealSubmitUrl + Pending → show signing iframe in tax-form-detail |
+| **State withholding post-wizard signing wired (frontend)** | compliance-forms-signing.md §State Withholding Flow | Done | Same pattern as W-4 — isFillAndSign computed signal, pendingSigning gate |
 
 ---
 

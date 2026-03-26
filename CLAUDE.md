@@ -233,6 +233,7 @@ readonly filterSignal = toSignal(this.searchControl.valueChanges, { initialValue
 ### URL as Source of Truth (Non-Negotiable)
 **All significant UI state must be reflected in the URL.** The user must be able to copy-paste a URL and land on the exact same view. This includes:
 - **Active tab** → route segment (e.g., `/admin/integrations`, `/inventory/receiving`)
+- **Multi-step wizard / stepper step** → query param (e.g., `/onboarding?step=2`)
 - **Selected entity / detail panel** → route param or query param (e.g., `/parts/42`, `/board?job=123`)
 - **Active filters** → query params (e.g., `/backlog?status=open&priority=high`)
 - **Pagination** → query params (e.g., `/parts?page=2&pageSize=50`)
@@ -266,6 +267,31 @@ protected switchTab(tab: string): void {
 ```
 
 Tab clicks call `switchTab()` which navigates; the `activeTab` signal reacts to the route change. Data loading per tab uses `effect()` on `activeTab`.
+
+**Multi-step wizard / stepper pattern:** Use a `?step=N` query param:
+```typescript
+// Read step from URL (never from a plain signal):
+private readonly route = inject(ActivatedRoute);
+protected readonly currentStepIndex = toSignal(
+  this.route.queryParamMap.pipe(map(p => {
+    const n = parseInt(p.get('step') ?? '0', 10);
+    return isNaN(n) || n < 0 || n > MAX_STEP ? 0 : n;
+  })),
+  { initialValue: 0 },
+);
+
+// Write step to URL (never mutate a signal directly):
+protected nextStep(): void {
+  const next = Math.min((this.currentStepIndex() ?? 0) + 1, MAX_STEP);
+  this.router.navigate([], { relativeTo: this.route, queryParams: { step: next }, queryParamsHandling: 'merge' });
+}
+protected prevStep(): void {
+  const prev = Math.max((this.currentStepIndex() ?? 0) - 1, 0);
+  this.router.navigate([], { relativeTo: this.route, queryParams: { step: prev }, queryParamsHandling: 'merge' });
+}
+```
+
+`mat-stepper` binds via `[selectedIndex]="currentStepIndex()"`. Back/forward browser navigation moves through steps naturally.
 
 ### Service Conventions
 - `providedIn: 'root'` (tree-shakeable singletons)
