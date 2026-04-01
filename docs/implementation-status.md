@@ -69,7 +69,9 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 | /expenses, /expenses/:id | architecture.md §Routing | Done | CRUD |
 | /time-tracking | architecture.md §Routing | Done | Timer + manual entry |
 | /admin/users | architecture.md §Routing | Done | User management |
-| /customers | architecture.md §Routing | Done | Full feature module: list, detail, contacts, create/edit |
+| /customers | architecture.md §Routing | Done | Customer list page — DataTable with search/status filter, row click navigates to detail |
+| /customers/:id/:tab | architecture.md §Routing | Done | Customer detail page — 9-tab layout: overview, contacts, addresses, estimates, quotes, orders, jobs, invoices, activity |
+| /estimates (API only) | — | Done | EstimatesController — standalone estimates list + CRUD (frontend access via customer detail Estimates tab) |
 | /reports | architecture.md §Routing | Done | 15 reports with charts (ng2-charts) + data tables, including 3 financial (AR Aging, Revenue, P&L) |
 | /admin/settings | architecture.md §Routing | Done | Reference data, terminology, system settings tabs |
 | /sprint-planning | architecture.md §Routing | Done | Split-panel: backlog (left) → cycle board (right), drag-drop commit |
@@ -215,9 +217,12 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 
 | Item | Spec | Status | Notes |
 |------|------|--------|-------|
-| Customer CRUD | proposal.md §4.8 | Done | Full feature module: entity, API (8+ endpoints), DataTable UI, detail panel, create/edit dialog, soft-delete with ConfirmDialog |
-| Multiple contacts per customer | proposal.md §4.8 | Done | Contact CRUD endpoints, contacts tab in customer detail panel |
+| Customer CRUD | proposal.md §4.8 | Done | Full feature module: entity, API (8+ endpoints), DataTable UI, create/edit dialog, soft-delete with ConfirmDialog |
+| Customer Detail Screen | functional-decisions.md §Customer Detail | Done | Dedicated `/customers/:id/:tab` page. Sticky header: name, status chip, contact info. Stats bar: open estimates, quotes, orders, active jobs, outstanding, YTD revenue. 9 tabs: Overview, Contacts, Addresses, Estimates, Quotes, Orders, Jobs, Invoices, Activity. URL-driven active tab. |
+| Multiple contacts per customer | proposal.md §4.8 | Done | Contact CRUD endpoints, contacts tab in customer detail screen |
 | Contact role tags | proposal.md §4.8 | Done | Role field on contact entity, editable in contact forms |
+| Customer summary endpoint | — | Done | `GET /api/v1/customers/{id}/summary` returns header fields + aggregate stats (estimate count, quote count, order count, active jobs, open invoice total, YTD revenue) |
+| Jobs filtered by customer | — | Done | `GET /api/v1/jobs?customerId=` filter added to IJobRepository, JobRepository, GetJobsQuery, JobsController |
 | Accounting sync (read/write) | proposal.md §4.8 | Done | IAccountingProviderFactory resolves active provider at runtime. AccountingController: providers, employees, items, sync-status, test, disconnect endpoints. All sync jobs use factory. |
 
 ### Vendor Management
@@ -253,8 +258,10 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 
 | Item | Spec | Status | Notes |
 |------|------|--------|-------|
+| Estimate entity + CRUD | functional-decisions.md §Estimates | Done | Estimate entity (non-binding, single amount), EstimateStatus enum (Draft/Sent/Accepted/Declined/Expired), EF config, 5 handlers, EstimatesController. ConvertEstimateToQuote creates Quote from Estimate, sets ConvertedToQuoteId + status. |
 | Sales Order entity + CRUD | functional-decisions.md §Order Management | Done | SalesOrder, SalesOrderLine, repo, handlers, controller |
 | Quote entity + CRUD | functional-decisions.md §Quotes | Done | Quote, QuoteLine, repo, handlers, controller |
+| Estimate → Quote conversion | functional-decisions.md §Estimates | Done | ConvertEstimateToQuote handler. POST /api/v1/estimates/{id}/convert |
 | Quote → Sales Order conversion | functional-decisions.md §Quotes | Done | ConvertQuoteToOrder handler |
 | Shipment entity + CRUD | functional-decisions.md §Shipments | Done | Shipment, ShipmentLine, auto SO status update |
 | Partial delivery tracking | functional-decisions.md §Shipments | Done | ShippedQuantity on SO lines, RemainingQuantity computed |

@@ -119,22 +119,48 @@ A Sales Order is the business commitment between the company and a customer. It 
 - Partial shipments supported per line (ship 200 of 500 ordered)
 - Order status auto-advances based on line statuses (all lines shipped → order "Shipped")
 
-### Quotes / Estimates
-Pre-order proposals sent to customers before commitment. Quotes can convert to Sales Orders.
+### Estimates
+An Estimate is an early-stage, non-binding ballpark figure used to explore whether a project fits within a customer's budget. The price can and often does change once the scope becomes clearer.
+
+- **Binding status:** Non-binding. Final price may change.
+- **Purpose:** Early exploratory cost discussion. "I expect this will cost roughly..."
+- **When used:** Before scope is defined, or when the work is unpredictable (e.g. opening walls may reveal hidden issues).
+- **Estimate number:** auto-generated (`EST-0001`)
+- **Status flow:** Draft → Sent → Accepted / Declined / Expired
+- **Conversion:** An accepted Estimate can be upgraded to a Quote via "Convert to Quote" — this copies the estimate amount and notes to a new Quote record, and sets the Estimate status to Accepted.
+
+**Estimate fields:**
+- Customer (FK), Title, Description (narrative scope)
+- Estimated Amount (single figure — not line-itemized at this stage)
+- Valid Until (optional expiration)
+- Notes
+- Assigned To (FK → users)
+- ConvertedToQuoteId, ConvertedAt (set on conversion)
+
+### Quotes
+A Quote is a fixed, binding price for a specific, well-defined scope of work. Once accepted it is treated as a legal commitment — the seller is committing to the described price and work.
+
+- **Binding status:** Legally binding once accepted.
+- **Purpose:** Final "out-the-door" cost. "This project will cost exactly..."
+- **When used:** Scope is clearly defined and costs are stable (known parts, known quantities).
+- **Quote number:** auto-generated (`QT-0001`)
+- **Status flow:** Draft → Sent → Accepted → Declined → Expired / Converted
 
 **Quote fields:**
-- Quote number (auto-generated: `QT-0001`)
 - Customer (FK)
-- Quote date, valid until date (expiration)
+- Quote date, Valid Until date (expiration)
 - Status: Draft → Sent → Accepted → Declined → Expired
-- Quote lines: same structure as SO lines (part, qty, unit price, description)
-- Notes / terms
+- Quote lines: Part (FK), Description, Quantity, Unit Price, Line Total
+- Notes / Terms
 
 **Quote → Sales Order conversion:**
 - "Convert to Sales Order" action copies all lines to a new SO
 - Quote status set to "Accepted", linked to the created SO
 - If accounting provider is connected, creates an Estimate document in the accounting system
 - If no accounting provider, quote exists only in the app — fully functional standalone
+
+**Lifecycle summary:**
+Estimate (exploratory, non-binding) → Quote (binding, line-itemized) → Sales Order (committed transaction)
 
 ### Shipments & Partial Delivery
 A Shipment records what was physically sent to the customer. Multiple shipments can fulfill a single Sales Order.
