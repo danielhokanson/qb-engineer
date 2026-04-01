@@ -1282,6 +1282,8 @@ _(No pending enhancements — all planned DataTable and UserPreferences work is 
 | Backlog | `backlog/` | `JobsController` | Job |
 | Parts | `parts/` | `PartsController` | Part, BOMEntry |
 | Inventory | `inventory/` | `InventoryController` | StorageLocation, BinContent, BinMovement |
+| Customers | `customers/` | `CustomersController` | Customer, Contact | List page + dedicated `/customers/:id/:tab` detail (9 tabs: Overview, Contacts, Addresses, Estimates, Quotes, Orders, Jobs, Invoices, Activity). Stats bar with live aggregates. |
+| Estimates | — (via customer detail Estimates tab) | `EstimatesController` | Estimate | Non-binding ballpark figures. Single amount (not line-itemized). Convert to Quote via POST /{id}/convert. |
 | Leads | `leads/` | `LeadsController` | Lead |
 | Expenses | `expenses/` | `ExpensesController` | Expense |
 | Assets | `assets/` | `AssetsController` | Asset |
@@ -1295,7 +1297,7 @@ _(No pending enhancements — all planned DataTable and UserPreferences work is 
 | Vendors | `vendors/` | `VendorsController` | Vendor |
 | Purchase Orders | `purchase-orders/` | `PurchaseOrdersController` | PurchaseOrder, PurchaseOrderLine, ReceivingRecord |
 | Sales Orders | `sales-orders/` | `SalesOrdersController` | SalesOrder, SalesOrderLine |
-| Quotes | `quotes/` | `QuotesController` | Quote, QuoteLine |
+| Quotes | `quotes/` | `QuotesController` | Quote, QuoteLine | Binding fixed-price commitments. Line-itemized (part + qty + unit price). Convert to Sales Order. Can originate from Estimate conversion or created directly. |
 | Shipments | `shipments/` | `ShipmentsController` | Shipment, ShipmentLine |
 | Customer Addresses | — (customer detail) | `CustomerAddressesController` | CustomerAddress |
 | Invoicing ⚡ | `invoices/` | `InvoicesController` | Invoice, InvoiceLine |
