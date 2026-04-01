@@ -36,6 +36,33 @@ Do not ask the user — just verify visually after every UI change.
 
 ---
 
+## Space Efficiency (Application-Wide Rule)
+
+**Every UI screen must fit and be usable at 1080p (1920×1080) without scrolling off-screen or hiding primary content.** This is a hard constraint, not a nice-to-have.
+
+### Rules
+
+1. **Reactive design first.** Use CSS to make layouts adapt — tighter spacing at shorter viewports via height-based media queries (`@media (max-height: 900px)`), fewer/smaller gaps, denser grids.
+
+2. **Dedicated mobile/narrow UI** only when reactive design isn't practical (e.g. kanban board, shop floor kiosk).
+
+3. **No redundant chrome.** Do not add a border/divider AND a large gap between every section. Pick one visual separator — either a thin border OR whitespace, not both. A single divider after the first content block (hero/title area) is sufficient; section-to-section separation uses gap alone.
+
+4. **Collapsible empty sections.** Sections that have no items (subtasks, linked cards, parts, etc.) must not render their full add-form at all times. Show just the section header + an inline [+] toggle. Expand on demand. Sections with content are always visible.
+
+5. **Spacing scale for dense panels** (detail panels, dialogs, sidebars):
+   - Panel body padding: `$sp-lg` (16px) max, `$sp-md` (8px) preferred
+   - Section gap: `$sp-md` (8px) between sections
+   - Section internal gap: `$sp-sm` (4px)
+   - Sidebar section padding: `$sp-md $sp-lg`
+   - Hero/title area: `$sp-xs` gap between title and subtitle
+
+6. **Section titles.** Use `$font-size-xxs` uppercase labels (`color: var(--text-muted)`) — not the larger `$font-size-xs` variant. Section titles are navigational aids, not headings.
+
+7. **Test at 1080p.** After any layout change, screenshot at the default kanban job detail panel size (or relevant view) and verify the primary content is visible without scrolling.
+
+---
+
 ## Project Structure
 
 ```
