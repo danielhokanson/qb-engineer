@@ -714,7 +714,7 @@ Reusable data table replacing all hand-rolled `<table>` markup. Features: client
 
 **Converted features:** Admin, Assets, Leads, Expenses, Time Tracking, Parts, Backlog, Inventory (8/8).
 
-**Backend:** `UserPreferencesController` (GET/PATCH/DELETE), `UserPreference` entity, MediatR handlers built. Frontend still uses localStorage (API switch pending).
+**Backend:** `UserPreferencesController` (GET/PATCH/DELETE), `UserPreference` entity, MediatR handlers built. Frontend uses `UserPreferencesService` with localStorage cache + debounced API PATCH.
 
 ```html
 <!-- Basic usage -->
