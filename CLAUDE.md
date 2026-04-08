@@ -1379,7 +1379,7 @@ _(No pending enhancements — all planned DataTable and UserPreferences work is 
 | Parts | `parts/` | `PartsController` | Part, BOMEntry |
 | Inventory | `inventory/` | `InventoryController` | StorageLocation, BinContent, BinMovement |
 | Customers | `customers/` | `CustomersController` | Customer, Contact | List page + dedicated `/customers/:id/:tab` detail (9 tabs: Overview, Contacts, Addresses, Estimates, Quotes, Orders, Jobs, Invoices, Activity). Stats bar with live aggregates. |
-| Estimates | — (via customer detail Estimates tab) | `EstimatesController` | Estimate | Non-binding ballpark figures. Single amount (not line-itemized). Convert to Quote via POST /{id}/convert. |
+| Estimates | — (via customer detail Estimates tab) | `EstimatesController` | Quote (Type=Estimate) | Non-binding ballpark figures. Single amount (not line-itemized). Stored in `quotes` table with `type='Estimate'`. Convert to Quote via POST /{id}/convert (creates new Quote-type row with `source_estimate_id` FK). |
 | Leads | `leads/` | `LeadsController` | Lead |
 | Expenses | `expenses/` | `ExpensesController` | Expense |
 | Assets | `assets/` | `AssetsController` | Asset |
@@ -1393,7 +1393,7 @@ _(No pending enhancements — all planned DataTable and UserPreferences work is 
 | Vendors | `vendors/` | `VendorsController` | Vendor |
 | Purchase Orders | `purchase-orders/` | `PurchaseOrdersController` | PurchaseOrder, PurchaseOrderLine, ReceivingRecord |
 | Sales Orders | `sales-orders/` | `SalesOrdersController` | SalesOrder, SalesOrderLine |
-| Quotes | `quotes/` | `QuotesController` | Quote, QuoteLine | Binding fixed-price commitments. Line-itemized (part + qty + unit price). Convert to Sales Order. Can originate from Estimate conversion or created directly. |
+| Quotes | `quotes/` | `QuotesController` | Quote (Type=Quote), QuoteLine | Binding fixed-price commitments. Line-itemized (part + qty + unit price). Convert to Sales Order. Can originate from Estimate conversion (`source_estimate_id` FK) or created directly. Shares `quotes` table with Estimates via `QuoteType` discriminator. |
 | Shipments | `shipments/` | `ShipmentsController` | Shipment, ShipmentLine |
 | Customer Addresses | — (customer detail) | `CustomerAddressesController` | CustomerAddress |
 | Invoicing ⚡ | `invoices/` | `InvoicesController` | Invoice, InvoiceLine |
@@ -1441,7 +1441,7 @@ BaseEntity (Id, CreatedAt, UpdatedAt, DeletedAt, DeletedBy)
 ├── FileAttachment
 ├── PlanningCycle, PlanningCycleEntry (BaseEntity)
 ├── Vendor, PurchaseOrder, PurchaseOrderLine (BaseEntity), ReceivingRecord
-├── SalesOrder, SalesOrderLine, Quote, QuoteLine
+├── SalesOrder, SalesOrderLine, Quote (Type: Estimate|Quote, SourceEstimateId self-FK), QuoteLine
 ├── Shipment, ShipmentLine
 ├── CustomerAddress
 ├── CompanyLocation (Name, Address, State, IsDefault, IsActive)
@@ -1463,7 +1463,7 @@ BaseEntity (Id, CreatedAt, UpdatedAt, DeletedAt, DeletedBy)
 ```
 
 ### Enums (in `qb-engineer.core/Enums/`)
-`JobPriority`, `JobLinkType`, `JobDisposition`, `ActivityAction`, `PartType`, `PartStatus` (Draft, Prototype, Active, Obsolete), `BOMSourceType` (Make, Buy, Stock), `LocationType`, `BinContentStatus`, `BinMovementReason`, `LeadStatus`, `ExpenseStatus`, `AssetType`, `AssetStatus`, `ClockEventType`, `SyncStatus`, `AccountingDocumentType`, `PlanningCycleStatus`, `PurchaseOrderStatus`, `SalesOrderStatus`, `QuoteStatus`, `ShipmentStatus`, `InvoiceStatus`, `PaymentMethod`, `CreditTerms`, `AddressType`
+`JobPriority`, `JobLinkType`, `JobDisposition`, `ActivityAction`, `PartType`, `PartStatus` (Draft, Prototype, Active, Obsolete), `BOMSourceType` (Make, Buy, Stock), `LocationType`, `BinContentStatus`, `BinMovementReason`, `LeadStatus`, `ExpenseStatus`, `AssetType`, `AssetStatus`, `ClockEventType`, `SyncStatus`, `AccountingDocumentType`, `PlanningCycleStatus`, `PurchaseOrderStatus`, `SalesOrderStatus`, `QuoteType` (Estimate, Quote), `QuoteStatus` (Draft, Sent, Accepted, Declined, Expired, ConvertedToQuote, ConvertedToOrder), `ShipmentStatus`, `InvoiceStatus`, `PaymentMethod`, `CreditTerms`, `AddressType`
 
 ---
 
@@ -1900,7 +1900,7 @@ RecurringOrder, RecurringOrderLine
 ```
 
 ### New Enums
-`SalesOrderStatus`, `QuoteStatus`, `ShipmentStatus`, `InvoiceStatus`, `PaymentMethod`, `CreditTerms`, `AddressType`
+`SalesOrderStatus`, `QuoteType`, `QuoteStatus`, `ShipmentStatus`, `InvoiceStatus`, `PaymentMethod`, `CreditTerms`, `AddressType`
 
 ---
 
