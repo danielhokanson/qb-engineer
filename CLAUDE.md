@@ -1706,7 +1706,7 @@ All form fields and interactive elements in dialog/form templates must have `dat
 - Interface: `qb-engineer.core/Interfaces/IAiService.cs`
 - Models: `qb-engineer.core/Models/AiModels.cs` (AiSearchResult)
 - Mock: `qb-engineer.integrations/MockAiService.cs` — returns canned text responses
-- Self-hosted Ollama + pgvector RAG — **implemented** (`OllamaAiService.cs`): llama3.2:3b, `DocumentEmbedding` entity (pgvector vector(384)), RAG pipeline (IndexDocument / RagSearch / BulkIndexDocuments handlers), `DocumentIndexJob` (Hangfire 30 min), `AiController` (generate/summarize/status/search/index)
+- Self-hosted Ollama + pgvector RAG — **implemented** (`OllamaAiService.cs`): gemma3:4b, `DocumentEmbedding` entity (pgvector vector(384)), RAG pipeline (IndexDocument / RagSearch / BulkIndexDocuments handlers), `DocumentIndexJob` (Hangfire 30 min), `AiController` (generate/summarize/status/search/index)
 - Use cases: smart search, job description drafting, QC anomaly detection, document Q&A, header AI search column with RAG results
 - Graceful degradation when AI container is down
 
