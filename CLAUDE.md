@@ -698,6 +698,15 @@ All list views must show `<app-empty-state>` when data is empty — icon + messa
 | `phoneValidator` | `shared/validators/phone.validator.ts` | `Validators.pattern` for `(XXX) XXX-XXXX` format |
 | `CREDIT_TERMS_OPTIONS` / `PAYMENT_TERMS_OPTIONS` | `shared/models/credit-terms.const.ts` | Centralized credit/payment terms for selects |
 | `PRIORITIES` / `PRIORITY_OPTIONS` / `PRIORITY_FILTER_OPTIONS` | `shared/models/priority.const.ts` | Centralized priority values, select options, and filter options |
+| `DirtyFormIndicatorComponent` | `shared/components/dirty-form-indicator/` | Orange dot + "Unsaved changes" chip for dirty forms |
+| `DraftRecoveryBannerComponent` | `shared/components/draft-recovery-banner/` | Per-form "Recovered from [timestamp]. [Discard]" banner |
+| `DraftRecoveryPromptComponent` | `shared/components/draft-recovery-prompt/` | Post-login / TTL expiry dialog listing all drafts |
+| `LogoutDraftsDialogComponent` | `shared/components/logout-drafts-dialog/` | Logout confirmation with draft list |
+| `DraftService` | `shared/services/` | Draft orchestrator: register/unregister, auto-save, TTL, cross-tab sync |
+| `DraftStorageService` | `shared/services/` | IndexedDB CRUD for drafts (`qb-engineer-drafts` DB) |
+| `DraftBroadcastService` | `shared/services/` | Cross-tab BroadcastChannel for draft sync |
+| `DraftRecoveryService` | `shared/services/` | Post-login recovery, TTL cleanup, logout warning |
+| `unsavedChangesGuard` | `shared/guards/` | `CanDeactivateFn` — warns on navigation away from dirty forms |
 
 ### AppDataTableComponent — Usage Guide
 
@@ -1265,6 +1274,93 @@ IHubContext<BoardHub> boardHub
 await boardHub.Clients.Group($"board:{trackTypeId}")
     .SendAsync("jobCreated", new BoardJobCreatedEvent(...), cancellationToken);
 ```
+
+### Form Draft / Unsaved Changes System
+
+Auto-saves dirty form state to IndexedDB. Recovers drafts on login. Warns before navigation/logout. Cross-tab sync via BroadcastChannel.
+
+**Core services:**
+- `DraftStorageService` — IndexedDB wrapper (`qb-engineer-drafts` DB, separate from cache)
+- `DraftService` — orchestrator: `register(form)` / `unregister()`, debounced auto-save (2.5s), TTL management
+- `DraftBroadcastService` — cross-tab sync via `qb-engineer-draft-sync` BroadcastChannel
+- `DraftRecoveryService` — post-login draft check, TTL cleanup with 5-min grace period, logout warning
+
+**UI components:**
+- `DirtyFormIndicatorComponent` — orange dot + "Unsaved changes" chip
+- `DraftRecoveryBannerComponent` — "Recovered unsaved changes from [timestamp]. [Discard]"
+- `DraftRecoveryPromptComponent` — MatDialog listing all drafts (recovery + TTL expiry modes)
+- `LogoutDraftsDialogComponent` — MatDialog listing drafts on manual logout
+
+**Guard:** `unsavedChangesGuard` — `CanDeactivateFn` for route navigation. `beforeunload` managed by `DraftService.register()`.
+
+**Dialog dirty guard:** `DialogComponent` has `[dirty]` input — when dirty, backdrop/close asks for confirmation via `ConfirmDialogComponent`.
+
+**How forms opt in:**
+```typescript
+// 1. Implement DraftableForm interface
+export class MyFormComponent implements DraftableForm, OnInit, OnDestroy {
+  private readonly draftService = inject(DraftService);
+  
+  get entityType(): string { return 'my-entity'; }
+  get entityId(): string { return this.entity()?.id?.toString() ?? 'new'; }
+  get displayLabel(): string { return 'My Entity - Edit'; }
+  get route(): string { return '/my-entity'; }
+  get form(): FormGroup { return this.myForm; }
+  isDirty(): boolean { return this.myForm.dirty; }
+  getFormSnapshot(): Record<string, unknown> { return this.myForm.getRawValue(); }
+  restoreDraft(data: Record<string, unknown>): void {
+    this.myForm.patchValue(data);
+    this.myForm.markAsDirty();
+  }
+
+  // 2. In ngOnInit: load draft, register
+  ngOnInit(): void {
+    this.draftService.loadDraft(this.entityType, this.entityId).then(draft => {
+      if (draft) {
+        this.restoreDraft(draft.formData);
+        this.restoredDraftTimestamp.set(draft.lastModified);
+      }
+    });
+    this.draftService.register(this);
+  }
+
+  // 3. In ngOnDestroy: unregister
+  ngOnDestroy(): void {
+    this.draftService.unregister(this.entityType, this.entityId);
+  }
+
+  // 4. On save: clear draft
+  onSave(): void {
+    this.draftService.clearDraftAndBroadcastSave(this.entityType, this.entityId);
+  }
+}
+```
+
+```html
+<!-- 5. Template: add dirty indicator, recovery banner, pass [dirty] to dialog -->
+<app-dialog [title]="'Edit'" [dirty]="myForm.dirty" (closed)="cancel()">
+  <app-dirty-form-indicator [dirty]="myForm.dirty" />
+  <app-draft-recovery-banner
+    [visible]="restoredDraftTimestamp() !== null"
+    [timestamp]="restoredDraftTimestamp() ?? 0"
+    (discarded)="restoredDraftTimestamp.set(null); draftService.clearDraft(entityType, entityId)" />
+  ...
+</app-dialog>
+```
+
+**Draft lifecycle:**
+- Drafts persist through logout (manual or forced), browser crash, token expiry
+- Cleared ONLY by: explicit discard, successful save, or TTL expiration (with prompt)
+- TTL is user-configurable in Account > Customization (1 day / 3 days / 1 week / 2 weeks)
+- Post-login: recovery prompt shown immediately; TTL cleanup runs after 5-min grace period
+- Restoring one draft resets TTL on all user drafts
+
+**Key:** `{userId}:{entityType}:{entityId|'new'}`
+
+**Cross-tab behavior:**
+- Draft updates propagate to other tabs editing the same record
+- Save in Tab A clears draft in Tab B + shows snackbar
+- Last-write-wins for IndexedDB (no tab locking)
 
 ### Pending Enhancements
 
