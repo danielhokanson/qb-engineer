@@ -768,7 +768,7 @@ protected readonly partRowStyle = (row: unknown): Record<string, string> => {
 
 **ColumnDef interface:** `field`, `header`, `sortable?`, `filterable?`, `type?` ('text'|'number'|'date'|'enum'), `filterOptions?` (SelectOption[]), `width?`, `visible?`, `align?` ('left'|'center'|'right')
 
-**Additional inputs:** `loading` (boolean, shows `LoadingBlockDirective` overlay on scroll area), `stickyFirstColumn` (boolean, keeps first data column visible during horizontal scroll), `expandable` (boolean, adds expand/collapse chevron column)
+**Additional inputs:** `loading` (boolean, shows `LoadingBlockDirective` overlay on scroll area), `stickyFirstColumn` (boolean, keeps first data column visible during horizontal scroll), `expandable` (boolean, adds expand/collapse chevron column), `clickableRows` (boolean, adds pointer cursor + hover highlight on rows that have a `(rowClick)` handler)
 
 ```html
 <!-- Expandable rows (e.g., Inventory bin details) -->
@@ -1564,13 +1564,15 @@ BaseEntity (Id, CreatedAt, UpdatedAt, DeletedAt, DeletedBy)
 - No `cy.wait(ms)` — use built-in retry/assertions
 - Specs in `cypress/e2e/` organized by feature
 
-### E2E (Playwright — SignalR Diagnostics)
+### E2E (Playwright — SignalR Diagnostics & Simulation)
 - Playwright for multi-browser context tests (required for SignalR real-time sync verification)
+- Also powers the week simulation framework (see §E2E Simulation Framework above)
 - Tests in `qb-engineer-ui/e2e/tests/`, helpers in `e2e/helpers/`
 - Run headless: `npm run e2e` | headed: `npm run e2e:headed`
 - Config: `e2e/playwright.config.ts` — Chromium only, no webServer (assumes Docker stack running)
 - Auth via API helper (`e2e/helpers/auth.helper.ts`) — sets localStorage directly, no UI login
 - Seeded test users: `admin@qbengineer.local` / `Admin123!`, `akim@qbengineer.local` / `Engineer123!`
+- `ui-actions.helper.ts`: reusable helpers (navigateTo, fillInput, fillMatSelect, fillDatepicker, clickButton)
 - **SignalR diagnostic:** `signalr-board-sync.spec.ts` — verifies real-time board sync between two browser contexts
 - **Troubleshooting SignalR:** Run `npm run e2e` from `qb-engineer-ui/` as a quick diagnostic. Creates two browser contexts, logs in both, moves a job via API, asserts the second browser updates within 5s via SignalR.
 
@@ -1622,6 +1624,46 @@ docker compose exec qb-engineer-db psql -U postgres -d qb_engineer  # DB access
 ```
 
 7 containers: `qb-engineer-ui`, `qb-engineer-api`, `qb-engineer-db`, `qb-engineer-storage`, `qb-engineer-backup`, `qb-engineer-ai` (optional), `qb-engineer-backup-target` (separate compose)
+
+### Deployment Script (`refresh.ps1`)
+```powershell
+.\refresh.ps1          # Pull latest, rebuild all containers with --no-cache
+```
+- Pulls from origin/main, rebuilds all services with `--force-recreate --no-cache`
+- Detects node_modules volume, bakes version.json from git tag + commit hash
+
+---
+
+## IClock Abstraction
+
+Injectable clock for testable time-dependent code. Production uses `SystemClock` (wraps `DateTime.UtcNow`), E2E simulation uses `SimulationClock` (controllable time).
+
+```csharp
+// Inject in handlers/services:
+private readonly IClock _clock;
+
+// Use instead of DateTime.UtcNow:
+var now = _clock.UtcNow;
+```
+
+Registered in `Program.cs`. Used by `AppDbContext.SetTimestamps()` and time-dependent handlers.
+
+---
+
+## E2E Simulation Framework
+
+Playwright-based week simulation spanning 431 weeks (2018–2026) for realistic data generation:
+
+- `qb-engineer-ui/e2e/tests/` — simulation specs
+- `e2e/helpers/ui-actions.helper.ts` — reusable Playwright helpers (navigateTo, fillInput, fillMatSelect, fillDatepicker, clickButton)
+- `e2e/helpers/auth.helper.ts` — `seedAuth()` for pre-authenticated browser contexts
+- Resume support: queries API for latest data to skip already-processed weeks
+- Rate limiter bypass for loopback IPs in `Program.cs` for E2E throughput
+
+### data-testid Conventions
+All form fields and interactive elements in dialog/form templates must have `data-testid` attributes:
+- Format: `{entity}-{field}` (e.g., `data-testid="job-title"`, `data-testid="job-save-btn"`)
+- Used by Playwright simulation runner and E2E tests
 
 ---
 
@@ -1711,6 +1753,15 @@ docker compose exec qb-engineer-db psql -U postgres -d qb_engineer  # DB access
 - SignalR real-time sync, last-write-wins, optimistic UI
 - Cards archived (never deleted)
 - Column body: white background (`--surface`) with 2px inset border matching stage color via `--col-tint` CSS custom property
+- **IsShopFloor filter**: boolean on `TrackType` + `JobStage` — controls which stages appear on the shop floor display (physical-work stages only)
+
+### Shop Floor Display
+- Full-screen kiosk at `/display/shop-floor` with RFID/barcode scan → PIN auth flow
+- **Worker card grid**: 5-column, square cards with horizontal layout, left status stripe matching stage color
+- **Job actions**: timer start/stop, Mark Complete overlay
+- **Auto-dismiss timeouts**: PIN phase (20s), job-select phase (15s)
+- **Theme/font persistence**: saved to localStorage for kiosk continuity
+- **IsShopFloor filter**: only shows jobs in stages where `IsShopFloor = true`
 
 ### Production Track Stages (QB-aligned)
 Quote Requested → Quoted (Estimate) → Order Confirmed (Sales Order) → Materials Ordered (PO) → Materials Received → In Production → QC/Review → Shipped (Invoice) → Invoiced/Sent → Payment Received (Payment)

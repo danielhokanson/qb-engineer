@@ -262,6 +262,23 @@ features/kanban/
 - No `cy.wait(ms)` — use Cypress's built-in retry/assertion waiting
 - Screenshot on failure for CI debugging
 
+### E2E — Playwright (SignalR Diagnostics & Simulation)
+
+- Playwright for multi-browser context tests (required for SignalR real-time sync verification)
+- Tests in `qb-engineer-ui/e2e/tests/`, helpers in `e2e/helpers/`
+- Run headless: `npm run e2e` | headed: `npm run e2e:headed`
+- Config: `e2e/playwright.config.ts` — Chromium only, no webServer (assumes Docker stack running)
+- Auth via API helper (`e2e/helpers/auth.helper.ts`) — sets localStorage directly, no UI login
+- Seeded test users: `admin@qbengineer.local` / `Admin123!`, `akim@qbengineer.local` / `Engineer123!`
+- `ui-actions.helper.ts`: reusable Playwright helpers (navigateTo, fillInput, fillMatSelect, fillDatepicker, clickButton)
+
+### data-testid Conventions
+
+- All form fields, buttons, and interactive elements in dialog/form templates must have `data-testid` attributes
+- Format: `{entity}-{field}` (e.g., `data-testid="job-title"`, `data-testid="job-save-btn"`)
+- Used by both Playwright simulation runner and future E2E test expansion
+- Applied across: leads, expenses, kanban, quotes, POs, time tracking, chat, login
+
 ---
 
 ## 11. Git Conventions

@@ -12,8 +12,16 @@
 - API Docs: OpenAPI + Scalar
 - Containerization: Docker Compose
 - AI (optional): Ollama + pgvector RAG
+- E2E Simulation: Playwright + IClock abstraction
 
 See `docs/libraries.md` for the complete library reference.
+
+## IClock Abstraction
+- `IClock` interface (`qb-engineer.core/Interfaces/IClock.cs`) — injectable clock for testable time-dependent code
+- `SystemClock` (production): wraps `DateTime.UtcNow`
+- `SimulationClock` (E2E): controllable time for deterministic week simulation tests
+- Injected into `AppDbContext.SetTimestamps()` and time-dependent handlers
+- Registered via DI in `Program.cs`
 
 ## Docker Compose -- 7 Containers (AI optional)
 1. qb-engineer-ui -- Nginx + Angular build
@@ -115,7 +123,7 @@ All major UI states are URL-addressable and render in that state on direct navig
 /invoices/:id                ← invoice detail (standalone mode: editable; integrated: read-only)
 /payments                    ← payment list (standalone mode only)
 /ar-aging                    ← accounts receivable aging (standalone mode only)
-/display/shop-floor
+/display/shop-floor          ← kiosk: RFID/barcode scan → PIN → job grid (IsShopFloor filter), timer/complete actions
 /display/shop-floor/clock    ← time clock kiosk (scan in/out, quick actions)
 ```
 
@@ -208,6 +216,20 @@ Plural nouns for collections. No verbs in URLs except RPC-like actions (`/api/v1
 - Reduced motion support (`prefers-reduced-motion`)
 - axe-core integrated into E2E tests for automated screen reader verification
 - Minimum 44x44px touch targets on mobile
+
+## Deployment & Updates
+- `refresh.ps1`: PowerShell script for production updates — pulls latest from origin/main, rebuilds all Docker services with `--no-cache`, `--force-recreate`
+- Build versioning: `version.json` (git tag + commit hash) baked during Docker build
+- About dialog: shows current version + checks GitHub latest release API
+- No-cache meta tags in `index.html` prevent stale app shell after deployments
+
+## E2E Simulation Framework
+- Playwright-based week simulation spanning 431 weeks (2018–2026) with ~22K actions
+- UI-driven: navigates pages, fills forms, clicks buttons (not API-direct)
+- Resume support: queries API for latest data to skip already-processed weeks
+- `data-testid` attributes on all form fields for reliable element selection
+- `seedAuth()` helper for pre-authenticated browser contexts
+- Rate limiter bypass for loopback IPs in `Program.cs` for E2E throughput
 
 ## Mobile
 - Responsive Angular -- same build, different layouts by viewport

@@ -1,6 +1,6 @@
 # Implementation Status
 
-Tracks real implementation against all spec docs. Updated: 2026-03-26.
+Tracks real implementation against all spec docs. Updated: 2026-04-07.
 
 Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 
@@ -80,8 +80,8 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 | /admin/qb-setup | architecture.md §Routing | Done | Covered by IntegrationsPanelComponent in admin settings — provider selection, QB OAuth, sync status |
 | /admin/track-types | architecture.md §Routing | Done | Full CRUD: create/edit/delete with stage management |
 | /admin/terminology | architecture.md §Routing | Done | Tab in admin page, editable key-label table, bulk save |
-| /display/shop-floor | architecture.md §Routing | Done | Full-screen kiosk: worker presence, active jobs, KPIs, auto-refresh 30s, AllowAnonymous |
-| /display/shop-floor/clock | architecture.md §Routing | Done | Touch-first kiosk clock UI |
+| /display/shop-floor | architecture.md §Routing | Done | Full-screen kiosk: RFID/barcode scan auth, per-worker job grid (IsShopFloor-filtered), job actions (timer start/stop, mark complete), square cards with status stripes, auto-dismiss timeouts (PIN 20s, job-select 15s), theme/font persistence, global loading overlay |
+| /display/shop-floor/clock | architecture.md §Routing | Done | Touch-first kiosk clock UI, RFID/barcode scan + PIN auth |
 
 ### Other Architecture Items
 
@@ -650,7 +650,7 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 
 | Component | Status | Consumed By |
 |-----------|--------|-------------|
-| DialogComponent | Done | Job dialog, admin |
+| DialogComponent | Done | All 26 dialog forms. Centralized draft auto-save via `[draftConfig]` + `[draftFormGroup]` inputs. Dirty indicator, draft recovery banner, unsaved changes guard. |
 | PageHeaderComponent | Done | Most features |
 | PageLayoutComponent | Done | Ready for adoption |
 | ToolbarComponent + SpacerDirective | Done | Ready for adoption |
@@ -661,7 +661,7 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 
 | Component | Status | Consumed By |
 |-----------|--------|-------------|
-| DataTableComponent | Done | 7/8 features (Inventory pending) |
+| DataTableComponent | Done | All 8 features converted (Admin, Assets, Leads, Expenses, Time Tracking, Parts, Backlog, Inventory). `clickableRows` input for pointer cursor + hover highlight on row-click tables. |
 | ColumnFilterPopoverComponent | Done | DataTable |
 | ColumnManagerPanelComponent | Done | DataTable |
 | ConfirmDialogComponent | Done | Parts, Expenses, Assets, Time Tracking, Leads, Customers |
@@ -699,6 +699,15 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 | BoardHubService | Done | SignalR board sync |
 | NotificationHubService | Done | Hub + panel + header bell wired |
 | TimerHubService | Done | Full SignalR integration: connect/disconnect, onTimerStartedEvent/onTimerStoppedEvent, wired in time-tracking component |
+| DraftService | Done | Draft orchestrator: register/unregister forms, debounced auto-save (2.5s), TTL management, cross-tab event handling |
+| DraftStorageService | Done | IndexedDB wrapper (`qb-engineer-drafts` DB), userId index |
+| DraftBroadcastService | Done | Cross-tab BroadcastChannel `qb-engineer-draft-sync` |
+| DraftRecoveryService | Done | Post-login recovery, 5-min TTL grace period, logout warning dialog |
+| DirtyFormIndicatorComponent | Done | Orange dot + "Unsaved changes" chip for dirty forms |
+| DraftRecoveryBannerComponent | Done | Per-form "Recovered from [timestamp]. [Discard]" banner |
+| DraftRecoveryPromptComponent | Done | Post-login/expiry dialog listing all drafts |
+| LogoutDraftsDialogComponent | Done | Logout confirmation with draft list |
+| unsavedChangesGuard | Done | `CanDeactivateFn` — warns on navigation away from dirty forms |
 
 ### Pending Enhancements
 
@@ -870,7 +879,7 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 | Core Entities & Schema | 24/24 | — | — |
 | API Controllers | 27/27 | — | — |
 | MediatR Handlers | 106+ | — | — |
-| Shared UI Components | 31/31 | — | — |
+| Shared UI Components | 35/35 | — | — |
 | Feature UIs | 20/20 | — | — |
 | Auth & Security | 10 | — | — |
 | **Order Management** | 12 | — | — |
@@ -1682,3 +1691,120 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 ### Video Generation Results
 - Module 19 (Kanban Board): Done — `module-19-*.mp4` in MinIO
 - Modules 20–24: Sequential generation queued via single-worker Hangfire `video` queue
+
+---
+
+## Batch — Simulation Infrastructure & IClock (2026-04-03)
+
+### IClock Abstraction
+- `IClock` interface in `qb-engineer.core/Interfaces/` — injectable clock for testable time-dependent code
+- `SystemClock` implementation (production): wraps `DateTime.UtcNow`
+- `SimulationClock` implementation (E2E): controllable time for deterministic tests
+- Registered via DI in `Program.cs`; `AppDbContext.SetTimestamps()` uses IClock
+
+### Week Simulation Runner (Playwright)
+- Full simulation framework spanning 431 weeks (2018–2026), ~22K+ actions, 8.7% error rate
+- UI-driven via Playwright (not API-direct): navigates pages, fills forms, clicks buttons
+- Resume support: queries API for latest simulation-era lead to skip already-processed weeks
+- Expanded test data pools: 120 companies, 120 first/last names, scenario data
+- `ui-actions.helper.ts`: reusable Playwright helpers (navigateTo, fillInput, fillMatSelect, fillDatepicker, clickButton)
+- Auth seed injection via `seedAuth()` for pre-fetched session into browser context
+- `data-testid` attributes added across templates (leads, expenses, kanban, quotes, POs, time tracking, chat, login)
+
+### PostgreSQL Job Number Sequence
+- Replaced app-level counter with Postgres sequence for race-condition-free job number generation
+
+### Rate Limiting Bypass for E2E
+- Loopback IP exemption in `Program.cs` for E2E throughput (rate limiter skips 127.0.0.1/::1)
+
+---
+
+## Batch — Seed Data, Versioning & Deployment (2026-04-03)
+
+### Seed Data Migration to JSON
+- Historical seed data (reference data, track types, stages) migrated from inline C# to JSON files
+- `AppDbContext.SetTimestamps()` preserves explicit CreatedAt on seed entities
+
+### Build Versioning
+- `version.json` generated during build (git tag + commit hash)
+- About dialog shows current version + checks GitHub latest release
+- `environment.prod.ts` file swap fixed for production builds
+
+### Deployment Script (`refresh.ps1`)
+- PowerShell script: pulls latest from origin/main, rebuilds all Docker services with `--no-cache`
+- `--force-recreate` + `docker rm -sf` for full clean rebuild
+- Node modules volume detection, version baking
+
+### Docker Health Check Fixes
+- API health endpoint path corrected (`/api/v1/health`)
+- UI container binds IPv4 for health check compatibility
+
+### CSP Fix
+- Google Fonts CDN allowed in Content-Security-Policy
+- Material inline handler allowlisting
+
+### Auth Interceptor Fix
+- HTTP error interceptor now only logs out user on 401 from primary app API, not external APIs (e.g., Ollama, USPS)
+
+### No-Cache Meta Tags
+- `index.html` updated with cache-busting meta tags to prevent stale app shell after deployments
+
+---
+
+## Batch — Shop Floor Overhaul & RFID (2026-04-05)
+
+### Shop Floor Display Redesign
+- **RFID/barcode → PIN kiosk flow**: scan tap-in, PIN auth popup (auto-dismiss 20s), full password fallback
+- **Worker card redesign**: 5-column grid, square cards, horizontal layout, left status stripe with stage color, internal scroll for overflow
+- **Job actions overlay**: timer start/stop, Mark Complete with actions panel
+- **IsShopFloor filter**: new boolean on `TrackType` + `JobStage` entities — filters display to physical-work stages only
+- **Auto-dismiss timeouts**: PIN phase (20s), job-select phase (15s) — returns to scan screen on inactivity
+- **Theme/font persistence**: saved to localStorage, persists across kiosk refreshes
+- **Global loading overlay**: all shop floor actions show blocking overlay during API calls
+- **Live elapsed timer**: client-side 1-second ticker computed from `timerStart`, no API polling
+
+### RFID Relay Improvements
+- Service cleanup, permission hardening (takeown/icacls for SYSTEM files)
+- Unified `ScannerService` bridges WebHidRfidService scans into single signal source
+- Scanner.stop() skipped on display routes to avoid lifecycle conflicts
+
+### DataTable `clickableRows` Input
+- New `clickableRows` input: pointer cursor + hover highlight on rows with `(rowClick)` handler
+- Applied across all feature pages using row click navigation
+
+---
+
+## Batch — Form Draft System (2026-04-06)
+
+### Draft Auto-Save System (Client-Side Only)
+- **IndexedDB storage**: `qb-engineer-drafts` database, separate from cache DB
+- **DraftService**: orchestrator with register/unregister, debounced auto-save (2.5s), TTL management
+- **DraftStorageService**: IndexedDB wrapper with userId index
+- **DraftBroadcastService**: cross-tab sync via `qb-engineer-draft-sync` BroadcastChannel
+- **DraftRecoveryService**: post-login recovery prompt, 5-min TTL grace period, logout warning
+
+### Centralized DialogComponent Integration
+- All draft logic centralized in `DialogComponent` via `[draftConfig]` + `[draftFormGroup]` inputs
+- `DraftConfig` model: entityType, entityId, route, optional snapshotFn/restoreFn for line-item forms
+- Parent calls `dialogRef.clearDraft()` after successful save
+- DialogComponent handles: adapter building, draft loading, auto-save registration, DestroyRef cleanup
+- **26 dialog forms** converted to centralized pattern (zero per-component DraftableForm boilerplate)
+
+### UI Components
+- `DirtyFormIndicatorComponent`: orange dot + "Unsaved changes" chip in dialog header
+- `DraftRecoveryBannerComponent`: "Recovered unsaved changes from [timestamp]. [Discard]" in dialog body
+- `DraftRecoveryPromptComponent`: post-login MatDialog listing all drafts
+- `LogoutDraftsDialogComponent`: logout confirmation with draft list
+
+### Navigation Protection
+- `unsavedChangesGuard` (`CanDeactivateFn`): warns on route navigation away from dirty forms
+- `beforeunload` event: warns on browser close/refresh with unsaved changes
+- DialogComponent dirty guard: backdrop/close click triggers ConfirmDialog when form dirty
+
+### User-Configurable TTL
+- Draft retention setting in Account > Customization (1 day / 3 days / 1 week / 2 weeks)
+- Default: 1 week
+- Restoring any draft resets TTL on all user drafts
+
+### Date Transform Interceptor Fix
+- Widened regex to match `+00:00` offset format (in addition to `Z` suffix)
