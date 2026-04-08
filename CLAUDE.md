@@ -1434,7 +1434,7 @@ _(No pending enhancements — all planned DataTable and UserPreferences work is 
 BaseEntity (Id, CreatedAt, UpdatedAt, DeletedAt, DeletedBy)
 ├── Job (+ Disposition, DispositionNotes, DisposedAt, ParentJobId, PartId), TrackType, JobStage, JobSubtask, JobActivityLog, JobLink
 ├── Customer, Contact
-├── Part (+ ToolingAssetId FK), BOMEntry (+ LeadTimeDays), ProcessStep
+├── Part (+ ToolingAssetId FK), BOMEntry (+ LeadTimeDays), Operation, OperationMaterial
 ├── StorageLocation, BinContent, BinMovement
 ├── Lead, Expense, Asset (+ tooling fields: CavityCount, ToolLifeExpectancy, CurrentShotCount, IsCustomerOwned, SourceJobId, SourcePartId)
 ├── TimeEntry, ClockEvent

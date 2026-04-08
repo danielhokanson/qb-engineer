@@ -1,6 +1,6 @@
 # Implementation Status
 
-Tracks real implementation against all spec docs. Updated: 2026-04-07.
+Tracks real implementation against all spec docs. Updated: 2026-04-08.
 
 Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 
@@ -164,7 +164,7 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 | Part-to-job reference | proposal.md §4.3 | Done | JobPart entity, CRUD endpoints, search + add in job detail panel |
 | Part status Prototype | functional-decisions.md §NPI Gate | Done | Prototype value added to PartStatus enum (Draft → Prototype → Active → Obsolete) for NPI gate |
 | Auto part numbering | functional-decisions.md §Auto Part Numbering | Done | Categorical prefixes (PRT-, ASM-, RAW-, CON-, TLG-, FST-, ELC-, PKG-) + 5-digit zero-padded sequence. Optional external part number |
-| Process Plan / Routing | functional-decisions.md §BOM-Driven Work Breakdown | Done | ProcessStep entity with ordered steps, instructions, work center assignment, QC checkpoints. CRUD endpoints on PartsController. |
+| Routing (Operations) | functional-decisions.md §BOM-Driven Work Breakdown | Done | Operation entity (renamed from ProcessStep) with ordered steps, instructions, work center assignment, QC checkpoints. OperationMaterial join entity linking BOM entries to operations. Tabbed 800px dialog (Details, Materials, Files, Activity). CRUD endpoints on PartsController. |
 | BOM Explosion | functional-decisions.md §BOM-Driven Work Breakdown | Done | ExplodeJobBom handler creates child jobs from Make entries, lists Buy/Stock items. One-level explosion, user explodes sub-assemblies individually. |
 | BOM Source Type: Stock | functional-decisions.md §BOM-Driven Work Breakdown | Done | Added Stock to BOMSourceType enum alongside Make/Buy. |
 | BOM Lead Time | functional-decisions.md §BOM-Driven Work Breakdown | Done | LeadTimeDays field on BOMEntry. |
@@ -1314,14 +1314,17 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 - Angular: Prototype status in filter options with info-colored chip
 
 ### BOM-Driven Work Breakdown
-- `ProcessStep` entity: StepNumber, Title, Instructions, WorkCenterId, EstimatedMinutes, IsQcCheckpoint, QcCriteria
+- `Operation` entity (renamed from ProcessStep): StepNumber, Title, Instructions, WorkCenterId, EstimatedMinutes, IsQcCheckpoint, QcCriteria, ReferencedOperationId (self-referencing FK)
+- `OperationMaterial` join entity: links BOM entries to specific operations
 - `BOMSourceType`: added `Stock` value alongside Make/Buy
 - `BOMEntry`: added `LeadTimeDays` field
 - Job entity: added `PartId`, `ParentJobId` (self-referencing FK), `ChildJobs` navigation
-- 4 ProcessStep CRUD handlers on PartsController
+- 4 Operation CRUD handlers on PartsController (`/api/v1/parts/:id/operations`)
+- Operation materials CRUD (`/api/v1/parts/:id/operations/:opId/materials`)
+- Operation activity/comments (`/api/v1/parts/:id/operations/:opId/activity`)
 - `ExplodeJobBom` handler: walks BOM, creates child jobs for Make entries with bidirectional JobLinks
 - `GetChildJobs` handler: returns child job tree
-- Angular: `ProcessPlanComponent` (ordered step cards with QC indicators), `ProcessStepDialogComponent`
+- Angular: `RoutingComponent` (ordered operation cards with QC indicators), `OperationDialogComponent` (800px tabbed: Details, Materials, Files, Activity)
 
 ### Status Lifecycle Tracking (Polymorphic)
 - `StatusEntry` entity: EntityType/EntityId polymorphism, StatusCode (reference_data driven), Category (workflow/hold)
@@ -1808,3 +1811,17 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 
 ### Date Transform Interceptor Fix
 - Widened regex to match `+00:00` offset format (in addition to `Z` suffix)
+
+---
+
+## Batch 22 — Operation Enhancements (2026-04-08)
+
+### ProcessStep → Operation Rename
+- Rename ProcessStep → Operation and Process Plan → Routing across full stack (entity, models, handlers, controllers, frontend components, translations, database migration)
+- Add OperationMaterial join entity linking BOM entries to specific operations
+- Add self-referencing ReferencedOperationId FK on Operation for cross-step references
+- Redesign operation dialog from 520px sidebar to 800px tabbed dialog (Details, Materials, Files, Activity)
+- Materials tab: assign/remove BOM entries with inline add form
+- Files tab: image/video preview grid with drag-and-drop upload
+- Activity tab: chronological timeline with inline comment posting
+- New API endpoints: operation materials CRUD, operation activity/comments
