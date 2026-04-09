@@ -76,7 +76,7 @@ No SaaS fees. No cloud dependency. Runs entirely in Docker on your own infrastru
 | Barcode/QR | bwip-js + angularx-qrcode |
 | Charts | ng2-charts (Chart.js) |
 | Logging | Serilog |
-| Containerization | Docker Compose (5 core + 3 optional profiles) |
+| Containerization | Docker Compose (5 core services + 3 optional profiles: ai, tts, signing) |
 
 See [docs/libraries.md](docs/libraries.md) for the complete library reference.
 
@@ -116,11 +116,13 @@ See [docs/libraries.md](docs/libraries.md) for the complete library reference.
 - [Docker Desktop](https://www.docker.com/products/docker-desktop/) or Docker Engine + Compose
 - [Git](https://git-scm.com/)
 
+> **Linux users:** Your user must be in the `docker` group to run Docker commands without `sudo`. Run `sudo usermod -aG docker $USER` and then **log out and back in** for the change to take effect. Without this you will get `permission denied while trying to connect to the Docker daemon`.
+
 ### Run with Docker Compose
 
 ```bash
-git clone https://github.com/your-org/qb-engineer.git
-cd qb-engineer
+git clone https://github.com/danielhokanson/qb-engineer-wrapper.git
+cd qb-engineer-wrapper
 
 # Copy environment template and configure
 cp .env.example .env
@@ -310,6 +312,8 @@ Key variables (full list in `.env.example`):
 | `MINIO_ROOT_USER` | `minioadmin` | MinIO access key |
 | `MINIO_ROOT_PASSWORD` | `minioadmin` | MinIO secret key |
 | `MINIO_PUBLIC_ENDPOINT` | `localhost:9000` | Public MinIO URL for presigned links |
+| `STORAGE_PROVIDER` | `minio` | Storage backend: `minio` or `local` |
+| `FRONTEND_BASE_URL` | `http://localhost:4200` | Public frontend URL (used in emails, webhooks) |
 | `TTS_API_KEY` | — | OpenAI TTS API key (optional; Coqui used if unset) |
 | `COQUI_BASE_URL` | — | Coqui TTS server URL, e.g. `http://qb-engineer-tts:5002` |
 | `COQUI_SPEAKER_ID` | — | VCTK speaker ID, e.g. `p228` |
@@ -323,7 +327,8 @@ Key variables (full list in `.env.example`):
 | `BACKUP_B2_APP_KEY` | — | Backblaze B2 application key |
 | `BACKUP_B2_BUCKET` | — | Backblaze B2 bucket name |
 | `CORS_ORIGINS` | `http://localhost:4200` | Allowed CORS origins (comma-separated) |
-| `USPS_USER_ID` | — | USPS Web Tools ID for address validation (optional) |
+| `USPS_CONSUMER_KEY` | — | USPS OAuth consumer key for address validation (optional) |
+| `USPS_CONSUMER_SECRET` | — | USPS OAuth consumer secret for address validation (optional) |
 
 ---
 
@@ -381,9 +386,14 @@ Users can switch between light and dark themes via the toolbar toggle.
 
 ## Troubleshooting
 
+**"Permission denied" connecting to Docker daemon (Linux):**
+- Your user must be in the `docker` group: `sudo usermod -aG docker $USER`
+- **Log out and back in** (or run `newgrp docker`) for the group change to take effect
+- Verify with: `docker ps`
+
 **Containers fail to start:**
 - Check logs: `docker compose logs <service-name>`
-- Ensure ports 4200, 5000, 5434, 9000 are not in use
+- Ensure ports 4200, 5000, 5432, 9000 are not in use
 - On Windows/macOS: ensure Docker Desktop has at least 4 GB RAM allocated
 
 **Database issues:**

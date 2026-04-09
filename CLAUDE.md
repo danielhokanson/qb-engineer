@@ -81,7 +81,7 @@ qb-engineer-wrapper/
 │   ├── qb-engineer.data/     # DbContext, Repositories, Migrations, Configuration
 │   └── qb-engineer.integrations/
 ├── docs/                     # Specs: coding-standards, architecture, functional-decisions, ui-components, roles-auth, libraries
-└── docker-compose.yml        # 7 containers: ui, api, db, storage, backup, ai (optional), backup-target
+└── docker-compose.yml        # 5 core + 3 optional profiles (ai, tts, signing)
 ```
 
 ---
@@ -1652,7 +1652,7 @@ docker compose logs -f qb-engineer-api        # API logs
 docker compose exec qb-engineer-db psql -U postgres -d qb_engineer  # DB access
 ```
 
-7 containers: `qb-engineer-ui`, `qb-engineer-api`, `qb-engineer-db`, `qb-engineer-storage`, `qb-engineer-backup`, `qb-engineer-ai` (optional), `qb-engineer-backup-target` (separate compose)
+5 core services: `qb-engineer-ui`, `qb-engineer-api`, `qb-engineer-db`, `qb-engineer-storage`, `qb-engineer-backup`. Optional profiles: `ai` (Ollama + model init), `tts` (Coqui TTS), `signing` (DocuSeal).
 
 ### Deployment Script (`refresh.ps1`)
 ```powershell
