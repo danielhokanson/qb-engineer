@@ -1600,7 +1600,7 @@ BaseEntity (Id, CreatedAt, UpdatedAt, DeletedAt, DeletedBy)
 - Run headless: `npm run e2e` | headed: `npm run e2e:headed`
 - Config: `e2e/playwright.config.ts` — Chromium only, no webServer (assumes Docker stack running)
 - Auth via API helper (`e2e/helpers/auth.helper.ts`) — sets localStorage directly, no UI login
-- Seeded test users: `admin@qbengineer.local` / `Admin123!`, `akim@qbengineer.local` / `Engineer123!`
+- Seeded test users: `admin@qbengineer.local`, `akim@qbengineer.local` — password set via `SEED_USER_PASSWORD` env var
 - `ui-actions.helper.ts`: reusable helpers (navigateTo, fillInput, fillMatSelect, fillDatepicker, clickButton)
 - **SignalR diagnostic:** `signalr-board-sync.spec.ts` — verifies real-time board sync between two browser contexts
 - **Troubleshooting SignalR:** Run `npm run e2e` from `qb-engineer-ui/` as a quick diagnostic. Creates two browser contexts, logs in both, moves a job via API, asserts the second browser updates within 5s via SignalR.

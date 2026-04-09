@@ -198,7 +198,7 @@ The seed data includes:
 - Customers, vendors, leads, expenses, assets
 - 46 training modules across 8 learning paths
 - 27 pre-seeded report templates
-- Reference data, system settings, and a default admin user (`admin@qbengineer.local` / `Admin123!`)
+- Reference data, system settings, and a default admin user (`admin@qbengineer.local` — password set via `SEED_USER_PASSWORD` env var)
 
 With `MOCK_INTEGRATIONS=true`:
 - QB API calls return canned fixture data
