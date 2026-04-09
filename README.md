@@ -278,6 +278,37 @@ qb-engineer-wrapper/
 
 ## Deployment
 
+### Raspberry Pi
+
+QB Engineer runs on Raspberry Pi 4 or 5 (64-bit OS required, 4+ GB RAM). An automated setup script handles everything:
+
+```bash
+# On the Pi — clone and run
+git clone https://github.com/danielhokanson/qb-engineer-wrapper.git
+cd qb-engineer-wrapper
+chmod +x setup-pi.sh
+./setup-pi.sh
+```
+
+The script will:
+- Check prerequisites (Git, Docker, Docker Compose, 64-bit ARM, RAM, disk)
+- Give install instructions with copy-paste commands if anything is missing
+- Create `.env` with a random JWT key and your Pi's network IP
+- Apply Pi-tuned memory limits via `docker-compose.pi.yml`
+- Build and start the core stack
+- Print instructions for router port forwarding to make it publicly accessible
+
+**To make the site publicly accessible:**
+1. Forward port 80 on your router to the Pi's local IP (shown at end of setup)
+2. Find your public IP: `curl -4 ifconfig.me`
+3. Access from anywhere: `http://<your-public-ip>`
+4. Add your public IP to `CORS_ORIGINS` in `.env`, then restart the API
+
+**Hardware tips:**
+- Use a USB 3.0 SSD instead of the SD card — dramatically improves Docker build times and database performance
+- Skip AI and TTS profiles on 4 GB models
+- 8 GB Pi 5 is the sweet spot for the full stack
+
 ### On-Premise (recommended)
 
 ```bash
