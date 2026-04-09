@@ -261,7 +261,7 @@ readonly filterSignal = toSignal(this.searchControl.valueChanges, { initialValue
 **All significant UI state must be reflected in the URL.** The user must be able to copy-paste a URL and land on the exact same view. This includes:
 - **Active tab** → route segment (e.g., `/admin/integrations`, `/inventory/receiving`)
 - **Multi-step wizard / stepper step** → query param (e.g., `/onboarding?step=2`)
-- **Selected entity / detail panel** → route param or query param (e.g., `/parts/42`, `/board?job=123`)
+- **Selected entity / detail dialog** → `?detail=type:id` query param via `DetailDialogService` (e.g., `/kanban?detail=job:1055`, `/parts?detail=part:42`)
 - **Active filters** → query params (e.g., `/backlog?status=open&priority=high`)
 - **Pagination** → query params (e.g., `/parts?page=2&pageSize=50`)
 
@@ -644,6 +644,7 @@ All list views must show `<app-empty-state>` when data is empty — icon + messa
 | `MiniCalendarWidgetComponent` | `shared/components/mini-calendar-widget/` | Dashboard calendar with highlight dates |
 | `ValidationPopoverDirective` | `shared/directives/` | Hover popover showing form violations |
 | `FormValidationService` | `shared/services/` | Derives violation messages from FormGroup |
+| `DetailDialogService` | `shared/services/` | Centralized detail dialog opener with `?detail=type:id` URL sync |
 | `UserPreferencesService` | `shared/services/` | Per-user preference storage (localStorage, API-ready) |
 | `SnackbarService` | `shared/services/` | Bottom-center snackbar convenience methods |
 | `ToastService` | `shared/services/` | Upper-right toast management |
@@ -856,6 +857,34 @@ Slide-out right panel (400px, full-width on mobile). Backdrop click + Escape clo
   </div>
 </app-detail-side-panel>
 ```
+
+### DetailDialogService — Usage Guide
+
+Centralized dialog opener that syncs `?detail=entityType:entityId` to the URL. Replaces the old `openDetailDialog()` utility function. All 16 entity detail dialog sites use this service.
+
+```typescript
+// Open a detail dialog — URL updates automatically
+private readonly detailDialog = inject(DetailDialogService);
+
+openPartDetail(partId: number): void {
+  this.detailDialog.open<PartDetailDialogComponent, PartDetailDialogData, PartDetailDialogResult | undefined>(
+    'part', partId, PartDetailDialogComponent, { partId },
+  ).afterClosed().subscribe(result => {
+    if (result?.action === 'edit') { this.editPart(result.part); }
+    this.loadParts();
+  });
+}
+
+// Auto-open from URL on page load (in ngOnInit, after data loads)
+const detail = this.detailDialog.getDetailFromUrl();
+if (detail?.entityType === 'part') {
+  this.openPartDetail(detail.entityId);
+}
+```
+
+**Entity type strings** (used in URLs): `job`, `part`, `asset`, `lead`, `invoice`, `quote`, `vendor`, `sales-order`, `purchase-order`, `shipment`, `payment`, `customer-return`, `lot`, `training`
+
+**URL format:** `?detail=job:1055` — set on open, cleared on close (`replaceUrl: true`). Shareable, bookmarkable, survives refresh.
 
 ### PageLayoutComponent — Usage Guide
 
