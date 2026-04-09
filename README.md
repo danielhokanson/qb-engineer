@@ -118,7 +118,27 @@ See [docs/libraries.md](docs/libraries.md) for the complete library reference.
 
 > **Linux users:** Your user must be in the `docker` group to run Docker commands without `sudo`. Run `sudo usermod -aG docker $USER` and then **log out and back in** for the change to take effect. Without this you will get `permission denied while trying to connect to the Docker daemon`.
 
-### Run with Docker Compose
+### Automated Setup (Recommended)
+
+The setup script checks all prerequisites, creates your `.env`, generates a secure JWT key, builds images, and starts the stack:
+
+```bash
+git clone https://github.com/danielhokanson/qb-engineer-wrapper.git
+cd qb-engineer-wrapper
+
+# Core stack only (ui, api, db, storage, backup)
+.\setup.ps1
+
+# Include optional profiles
+.\setup.ps1 -IncludeAi           # Ollama AI assistant
+.\setup.ps1 -IncludeTts          # Coqui TTS for training video narration
+.\setup.ps1 -IncludeSigning      # DocuSeal e-signature service
+.\setup.ps1 -IncludeAll          # All optional profiles
+```
+
+If a prerequisite is missing (Git, Docker, Docker Compose), the script will tell you exactly what to install and where to get it.
+
+### Manual Setup
 
 ```bash
 git clone https://github.com/danielhokanson/qb-engineer-wrapper.git
