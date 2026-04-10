@@ -1864,6 +1864,7 @@ Quote Requested → Quoted (Estimate) → Order Confirmed (Sales Order) → Mate
 - Never duplicate `@keyframes spin` — it's defined globally in `_shared.scss`
 - Never build financial features (invoices, payments, AR, P&L, vendor CRUD) without checking the accounting boundary — see below
 - Never store significant UI state (tabs, selected entity, filters, pagination) in signals/services alone — the URL must be the source of truth (see "URL as Source of Truth" pattern)
+- Never hardcode lists into selects, autocompletes, or multi-selects — options must come from the database via API (roles, statuses, categories, teams, etc.). The only exceptions are truly static UI choices (sort direction, pagination sizes).
 
 ---
 
