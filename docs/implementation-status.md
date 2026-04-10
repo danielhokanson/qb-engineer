@@ -1874,3 +1874,57 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 - **New endpoint:** `GET /api/v1/events/upcoming/{userId}` (Admin,Manager) — view events for a specific employee
 - **Frontend:** `EmployeeEventsTabComponent` — DataTable with event type, start/end times, location, required flag, RSVP status per employee
 - **Employee detail:** Added `'events'` tab after jobs
+
+## Batch 24 — Clock Event Refactor, User Integrations, Mobile Platform (2026-04-10)
+
+### Phase 1: Clock Event Type Refactor
+- **Reference data driven:** Clock event types (ClockIn, ClockOut, BreakStart, BreakEnd, LunchStart, LunchEnd) now stored as `clock_event_type` reference data with JSONB metadata (`statusMapping`, `oppositeCode`, `category`, `countsAsActive`, `isMismatchable`, `icon`, `color`)
+- **New service:** `IClockEventTypeService` + `ClockEventTypeService` — wraps `IReferenceDataRepository` with `IMemoryCache` (60-min TTL)
+- **Handler updates:** `GetClockStatus`, `CreateClockInOut`, `CreateClockEvent`, `CheckMismatchedClockEventsJob` — use metadata-driven lookup instead of hardcoded enum checks
+- **Entity:** `ClockEvent` gains `EventTypeCode` string column alongside existing enum (migration populates from enum values)
+- **Seed data:** 6 entries in `SeedData.cs` under `clock_event_type` group
+- **Frontend:** Shop floor display + mobile clock load event type definitions dynamically for button rendering
+
+### Phase 2A: User Integration Infrastructure
+- **New entity:** `UserIntegration` — userId, category, providerId, displayName, encryptedCredentials (Data Protection API), isActive, lastSyncAt, lastError
+- **New service:** `IUserIntegrationService` + `UserIntegrationService` — CRUD with credential encryption via `ITokenEncryptionService`, 16 provider definitions across 4 categories
+- **User controller:** `UserIntegrationsController` at `/api/v1/user-integrations` — all endpoints scoped to authenticated user's JWT claims (no userId parameter for credential access)
+- **Admin controller:** `AdminUserIntegrationsController` at `/api/v1/admin/user-integrations` — Admin role only, returns summaries (never credentials), revoke with audit trail
+- **Security:** Application-layer RLS, encrypted credentials never exposed via API, admin sees provider/status only, revocation creates ActivityLog + user notification
+- **Migration:** `AddUserIntegrations` with unique (userId, providerId) constraint filtered by soft-delete
+
+### Phase 2B-2E: Integration Providers
+- **Calendar (5 providers):** `GoogleCalendarService` (Google Calendar API v3), `OutlookCalendarService` (Microsoft Graph), `IcsCalendarFeedService` (universal .ics feed), `MockCalendarIntegrationService` — interface `ICalendarIntegrationService` (push/update/delete/freebusy/sync/test)
+- **Messaging (4 providers):** `SlackMessagingService`, `TeamsMessagingService`, `DiscordMessagingService`, `GoogleChatMessagingService` — all webhook-based, severity emojis/colors, `MockMessagingIntegrationService`
+- **Cloud Storage:** `MockCloudStorageIntegrationService` — interface `ICloudStorageIntegrationService` (upload/download/list/share/delete/test), real providers deferred to Phase 5
+- **GitHub:** `IGitHubIssueService` + `GitHubIssueService` — creates issues against configured repo
+- **Models:** `CalendarModels.cs`, `MessagingModels.cs` (core records for all providers)
+- **Registration:** Program.cs conditional mock/real based on `MockIntegrations` flag
+
+### Phase 2F: Account Integrations UI
+- **Service:** `UserIntegrationService` (Angular) — signal-based CRUD, `providedIn: 'root'`
+- **Models:** `UserIntegrationSummary`, `IntegrationProviderInfo`, `CreateIntegrationRequest`
+- **Page:** `AccountIntegrationsComponent` at `/account/integrations` — 4 category groups (calendar, messaging, storage, other), connected list + available providers with dashed borders
+- **Dialog:** `ConnectIntegrationDialogComponent` — auth-type-aware form (webhook URL, OAuth token, basic credentials, JSON config)
+- **Account sidebar:** Added "Integrations" nav item
+
+### Phase 3A: Mobile Layout Shell + PWA
+- **PWA manifest:** `manifest.webmanifest` with `start_url: "/m/"`, `display: standalone`, theme color `#0d9488`
+- **Index.html:** Manifest link, theme-color meta, apple-mobile-web-app meta tags
+- **Layout:** `MobileLayoutComponent` — 100dvh flex column, teal header, `<router-outlet>`, 5-tab bottom nav (Home, My Jobs, Clock, Scan, Account) with active state
+- **Routes:** `/m/` prefix with `authGuard`, lazy-loaded children
+- **Layout service:** `checkDisplayRoute` includes `/m/` paths to hide desktop chrome (sidebar, toolbar)
+
+### Phase 3B: Mobile Worker Views
+- **Home:** `MobileHomeComponent` — time-of-day greeting, clock status banner (In/Break/Lunch/Out with animated dot), 4-column quick-action grid (88px touch targets), active jobs list with stage colors
+- **My Jobs:** `MobileJobsComponent` — assigned jobs list with stage stripe, priority badge, overdue indicator, chevron links to detail
+- **Job Detail:** `MobileJobDetailComponent` at `/m/jobs/:jobId` — back nav, status card (stage/priority/customer/part/due date), timer start/stop control, description, add note textarea
+- **My Hours:** `MobileHoursComponent` at `/m/time` — week navigator (prev/next), week total with primary accent, Mon-Sun day rows with expand/collapse for entry details, read-only info note
+- **Clock:** `MobileClockComponent` — 80px status indicator, context-aware action buttons (Clock In/Out, Break, Lunch), snackbar confirmations
+- **Account:** `MobileAccountComponent` — avatar + profile info, navigation links to account sections, desktop view link, logout
+
+### Phase 3E: Mobile Scanning
+- **Library:** `html5-qrcode` npm package for camera-based barcode/QR decoding
+- **Scan page:** `MobileScanComponent` at `/m/scan` — camera viewport with `Html5Qrcode` (environment-facing camera, 250px QR box, 10fps), scan result card with type detection (job/part/asset/unknown), navigate-to-result action, resume scanning, manual entry fallback with keyboard input
+- **Scan routing:** Pattern matching for JOB-XXXX, PT/PART-XXXX, AST/ASSET-XXXX prefixes and URL-based QR codes
+- **Camera fallback:** When camera unavailable (headless, permissions denied), shows fallback UI with manual entry prominently displayed
