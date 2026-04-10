@@ -1444,6 +1444,9 @@ _(No pending enhancements — all planned DataTable and UserPreferences work is 
 | Notifications | `notifications/` | `NotificationsController` | AppNotification | Real-time SignalR push, bell badge, preferences, SMTP emails |
 | Search | — (header) | `SearchController` | — | Full-text tsvector + RAG hybrid across 6 entity types |
 | Employee Training LMS | `training/` | `TrainingController` | TrainingModule, TrainingPath, TrainingProgress, TrainingEnrollment | 46 seeded modules (Article/Video/Walkthrough/QuickRef/Quiz), 8 paths, randomized quiz pools (`questionsPerQuiz`), learning style filter, progress tracking, admin CRUD panel (Admin + Manager), per-user detail drill-down (`UserTrainingDetailPanelComponent`), My Learning default tab |
+| Events | `admin/events` | `EventsController` | Event, EventAttendee | Meeting/Training/Safety/Other types, attendee RSVP, admin CRUD panel, shop floor upcoming section, employee detail tab, 15-min reminder job |
+| Time Corrections | `admin/time-corrections` | `TimeTrackingController` | TimeCorrectionLog | Admin/manager time entry correction with audit trail, original value snapshot, required reason |
+| Contact Interactions | — (customer detail) | `CustomersController` | ContactInteraction | Call/Email/Meeting/Note types, customer detail Interactions tab, per-contact filter |
 
 ### Planned / Partially Implemented
 
@@ -1489,10 +1492,13 @@ BaseEntity (Id, CreatedAt, UpdatedAt, DeletedAt, DeletedBy)
 ├── CustomerReturn, SalesTaxRate, ScheduledTask
 ├── AuditLogEntry, ActivityLog (polymorphic EntityType/EntityId)
 ├── UserScanIdentifier, UserPreference
+├── Event, EventAttendee
+├── TimeCorrectionLog
+├── ContactInteraction
 ```
 
 ### Enums (in `qb-engineer.core/Enums/`)
-`JobPriority`, `JobLinkType`, `JobDisposition`, `ActivityAction`, `PartType`, `PartStatus` (Draft, Prototype, Active, Obsolete), `BOMSourceType` (Make, Buy, Stock), `LocationType`, `BinContentStatus`, `BinMovementReason`, `LeadStatus`, `ExpenseStatus`, `AssetType`, `AssetStatus`, `ClockEventType`, `SyncStatus`, `AccountingDocumentType`, `PlanningCycleStatus`, `PurchaseOrderStatus`, `SalesOrderStatus`, `QuoteType` (Estimate, Quote), `QuoteStatus` (Draft, Sent, Accepted, Declined, Expired, ConvertedToQuote, ConvertedToOrder), `ShipmentStatus`, `InvoiceStatus`, `PaymentMethod`, `CreditTerms`, `AddressType`
+`JobPriority`, `JobLinkType`, `JobDisposition`, `ActivityAction`, `PartType`, `PartStatus` (Draft, Prototype, Active, Obsolete), `BOMSourceType` (Make, Buy, Stock), `LocationType`, `BinContentStatus`, `BinMovementReason`, `LeadStatus`, `ExpenseStatus`, `AssetType`, `AssetStatus`, `ClockEventType`, `SyncStatus`, `AccountingDocumentType`, `PlanningCycleStatus`, `PurchaseOrderStatus`, `SalesOrderStatus`, `QuoteType` (Estimate, Quote), `QuoteStatus` (Draft, Sent, Accepted, Declined, Expired, ConvertedToQuote, ConvertedToOrder), `ShipmentStatus`, `InvoiceStatus`, `PaymentMethod`, `CreditTerms`, `AddressType`, `EventType` (Meeting, Training, Safety, Other), `AttendeeStatus` (Invited, Accepted, Declined, Attended), `InteractionType` (Call, Email, Meeting, Note)
 
 ---
 

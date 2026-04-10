@@ -1,6 +1,6 @@
 # Implementation Status
 
-Tracks real implementation against all spec docs. Updated: 2026-04-08.
+Tracks real implementation against all spec docs. Updated: 2026-04-10.
 
 Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 
@@ -1825,3 +1825,52 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 - Files tab: image/video preview grid with drag-and-drop upload
 - Activity tab: chronological timeline with inline comment posting
 - New API endpoints: operation materials CRUD, operation activity/comments
+
+---
+
+## Batch 23 — Shop Floor Fixes, Time Corrections, Contact History, Events (2026-04-10)
+
+### Phase 1: Shop Floor Dialog Fixes (SCSS-only)
+- **1A — Scrollable action dialog:** Added `max-height: 85vh; overflow-y: auto; @include custom-scrollbar(4px)` to `.sf-actions-card`
+- **1B — Jobs as grid:** Changed `.sf-actions-card__jobs` from `flex-direction: column` to `display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr))`. Widened `.sf-actions-card` from 560px to 800px. Restyled `.sf-actions-card__job` as vertical cards with top border accent for active jobs.
+
+### Phase 2A: Admin/Manager Time Entry Correction
+- **New entity:** `TimeCorrectionLog` — tracks original snapshot (jobId, date, duration, category, notes) + reason + correctedByUserId
+- **New handlers:** `AdminCorrectTimeEntry` (PATCH, bypasses date/lock restrictions, snapshots originals), `GetTimeCorrections` (GET, filter by userId/date range)
+- **New endpoints:** `PATCH /api/v1/time-tracking/entries/{id}/correct` (Admin,Manager), `GET /api/v1/time-tracking/corrections` (Admin,Manager)
+- **Frontend:** `TimeCorrectionsPanelComponent` — admin panel with two DataTables (all time entries + correction history), employee/date filters, correction dialog showing original values with required reason field
+- **Admin tab:** Added `'time-corrections'` to admin tabs (Manager + Admin)
+- **Sidebar:** Added Time Corrections entry under Admin children
+
+### Phase 2B: Mismatched Clock Event Notifications
+- **New Hangfire job:** `CheckMismatchedClockEventsJob` — runs daily at 10 PM UTC, queries previous day's clock events, finds users whose last event is ClockIn with no subsequent ClockOut
+- Creates notification for affected employee + their manager
+- Duplicate detection: checks existing notifications with same type/date before creating
+- Registered in Program.cs: `Cron.Daily(22)`
+
+### Phase 3: Customer Contact Interaction History
+- **New enum:** `InteractionType` (Call, Email, Meeting, Note)
+- **New entity:** `ContactInteraction` — ContactId FK, UserId, Type, Subject, Body, InteractionDate, DurationMinutes
+- **New handlers:** `CreateContactInteraction`, `GetContactInteractions` (by customerId, optional contactId filter), `UpdateContactInteraction`, `DeleteContactInteraction`
+- **New endpoints:** 4 endpoints at `api/v1/customers/{id}/interactions` (GET, POST, PATCH, DELETE)
+- **Frontend:** `CustomerInteractionsTabComponent` — chronological DataTable with contact/type filters, create/edit dialog, type icons (phone/email/groups/note), delete via ConfirmDialog
+- **Customer detail:** Added `'interactions'` tab after contacts
+
+### Phase 4A: Events System (Backend + Admin UI)
+- **New enums:** `EventType` (Meeting, Training, Safety, Other), `AttendeeStatus` (Invited, Accepted, Declined, Attended)
+- **New entities:** `Event` (title, description, start/end, location, type, isRequired, createdByUserId, isCancelled, reminderSentAt), `EventAttendee` (eventId, userId, status, respondedAt, composite unique index)
+- **New controller:** `EventsController` at `api/v1/events` — 8 endpoints (GET list, GET by id, POST create, PUT update, DELETE cancel, POST respond, GET upcoming, GET upcoming/{userId})
+- **New handlers:** `CreateEvent` (+ attendees + invite notifications), `GetEvents` (from/to/eventType filters), `GetEventById`, `UpdateEvent` (attendee sync), `DeleteEvent` (soft cancel), `RespondToEvent`, `GetUpcomingEventsForUser`
+- **New Hangfire job:** `EventReminderJob` — every 15 min, notifies attendees 30 min before events, skips declined, marks ReminderSentAt
+- **Frontend:** `EventsPanelComponent` — admin panel with DataTable, type filter, create/edit dialog with date+time fields, attendee multi-select, required toggle
+- **Admin tab:** Added `'events'` to admin tabs (Manager + Admin)
+
+### Phase 4B: Shop Floor Events Section
+- Added `upcomingEvents` signal to `ShopFloorDisplayComponent`
+- Events loaded in `loadData()` forkJoin alongside overview + workers
+- "Upcoming Events" section after unassigned jobs grid — `.sf-events-grid` with `.sf-event-card` cards showing type icon, title, time, location, required badge
+
+### Phase 4C: Employee Events Tab
+- **New endpoint:** `GET /api/v1/events/upcoming/{userId}` (Admin,Manager) — view events for a specific employee
+- **Frontend:** `EmployeeEventsTabComponent` — DataTable with event type, start/end times, location, required flag, RSVP status per employee
+- **Employee detail:** Added `'events'` tab after jobs

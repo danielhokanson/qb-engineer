@@ -1420,6 +1420,37 @@ Polymorphic status tracking system for any entity (same pattern as FileAttachmen
 - **SetStatusDialogComponent** — dialog for transitioning workflow status with optional notes
 - **AddHoldDialogComponent** — dialog for adding a hold with type selection and notes
 
+## Events System
+- **Event types:** Meeting, Training, Safety, Other
+- **Attendee RSVP:** Invited, Accepted, Declined, Attended
+- **Creation:** Admin/Manager only — creates event + attendee records + invite notifications
+- **Cancellation:** Soft cancel via `IsCancelled` flag (not hard delete) — preserves history
+- **Attendee sync on update:** Adds new attendees, removes absent ones, preserves existing RSVP responses
+- **Reminders:** Hangfire job every 15 minutes — notifies attendees 30 min before event start, skips declined, marks `ReminderSentAt` to prevent duplicates
+- **Shop floor display:** Upcoming events section below unassigned jobs grid — shows type icon, title, time, location, required badge
+- **Employee detail:** Events tab shows upcoming events for that employee with RSVP status
+- **Admin panel:** Full CRUD via DataTable in admin Events tab
+
+## Time Entry Corrections
+- **Purpose:** Allow Admin/Manager to correct any time entry, bypassing date/lock restrictions
+- **Audit trail:** Every correction snapshots original values (jobId, date, duration, category, notes) into `TimeCorrectionLog` with required reason
+- **Notification:** Corrected employee receives a notification about the change
+- **Admin panel:** Time Corrections tab shows all time entries (filterable by employee + date range) with correction dialog showing original values
+- **Partial updates:** Only changed fields are sent — unchanged fields are omitted from the request
+
+## Mismatched Clock Events
+- **Hangfire job:** Runs daily at 10 PM UTC
+- **Detection:** Queries previous day's clock events, groups by user, finds users whose last event is ClockIn with no subsequent ClockOut
+- **Notifications:** Creates notification for affected employee ("You have an unmatched clock-in from {date}") and their manager
+- **Deduplication:** Checks for existing notifications with same type and date before creating
+
+## Customer Contact Interactions
+- **Interaction types:** Call, Email, Meeting, Note — each with distinct icon
+- **Scoped by customer:** Queries use customer's contact IDs to scope results; optional per-contact filter
+- **Contact fallback:** When no contactId specified on create, falls back to customer's primary contact
+- **Hard delete:** These are log entries, not business documents — hard delete, not soft delete
+- **Customer detail tab:** Interactions tab after contacts with chronological DataTable, contact/type filters, inline create/edit dialog
+
 ## Open Source (GNU License)
 - Nothing company-specific committed
 - All branding, company names, logos configurable in system settings
