@@ -1660,12 +1660,25 @@ docker compose exec qb-engineer-db psql -U postgres -d qb_engineer  # DB access
 
 5 core services: `qb-engineer-ui`, `qb-engineer-api`, `qb-engineer-db`, `qb-engineer-storage`, `qb-engineer-backup`. Optional profiles: `ai` (Ollama + model init), `tts` (Coqui TTS), `signing` (DocuSeal).
 
-### Deployment Script (`refresh.ps1`)
-```powershell
-.\refresh.ps1          # Pull latest, rebuild all containers with --no-cache
+### Setup & Refresh Scripts
+
+**First-time setup:**
+```bash
+.\setup.ps1            # Windows / PowerShell (any platform with pwsh)
+./setup.sh             # Linux / macOS (bash — auto-detects ARM, low-RAM, headless)
 ```
-- Pulls from origin/main, rebuilds all services with `--force-recreate --no-cache`
-- Detects node_modules volume, bakes version.json from git tag + commit hash
+
+**Ongoing updates:**
+```bash
+.\refresh.ps1          # Windows / PowerShell
+./refresh.sh           # Linux / macOS (bash)
+```
+
+- Setup: prerequisite checks, .env creation, JWT key generation, seed password prompt, Docker build + start
+- Refresh: git pull, rebuild with `--no-cache --force-recreate`, restart
+- Both bash scripts auto-detect platform (ARM/x86_64), memory (applies container limits on < 8 GB), and headless (offers SSL)
+- `--ssl` / `--no-ssl` flags override auto-detection on `setup.sh`
+- `docker-compose.override.yml` auto-generated for SSL and/or memory tuning (no separate ARM scripts needed)
 
 ---
 
