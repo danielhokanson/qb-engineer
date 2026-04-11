@@ -1887,6 +1887,49 @@ Quote Requested → Quoted (Estimate) → Order Confirmed (Sales Order) → Mate
 
 ---
 
+## Efficiency & Memory Leak Prevention (Non-Negotiable)
+
+**Every code change must be evaluated for memory leaks and efficiency.** These rules prevent the most common resource leaks found in this codebase.
+
+### Angular — Subscription & Resource Lifecycle
+
+1. **Every `.subscribe()` in a service constructor or component constructor MUST have `takeUntilDestroyed(this.destroyRef)` in its pipe chain.** Router events, FormControl.valueChanges, and interval observables are the most common offenders. The only exception is fire-and-forget HTTP calls that complete naturally (single POST/PATCH/DELETE with `catchError`).
+
+2. **SignalR hub services MUST call `.off()` on all registered event names before re-registering or on disconnect.** Otherwise, each `connect()` call accumulates duplicate handlers. Pattern:
+   ```typescript
+   private registerHandlers(): void {
+     this.unregisterHandlers(); // Always clean up first
+     this.connection.on('event', (e) => this.callback?.(e));
+   }
+   private unregisterHandlers(): void {
+     this.connection?.off('event');
+   }
+   ```
+
+3. **Never use `.subscribe()` without error handling on user-facing HTTP calls.** At minimum, add a `catchError` in the pipe or an `error` callback. Silent failures cause state inconsistency.
+
+4. **Global event listeners (`document.addEventListener`, `window.addEventListener`) MUST have corresponding `removeEventListener` in `ngOnDestroy` or via `destroyRef.onDestroy()`.** Track handler references as class fields.
+
+5. **Computed signals must not perform O(n*m) filtering.** Pre-group data with `Map` or `Set` before filtering. Example: instead of `users.map(u => jobs.filter(j => j.assigneeId === u.id))`, pre-build a `Map<userId, Job[]>` and look up by key.
+
+### .NET — Query & Resource Efficiency
+
+1. **Never use `db.Entity.Where()` inside a LINQ `.Select()` projection.** This creates N+1 queries. Pre-load related data with `.Include()`, a JOIN, or a dictionary lookup before the projection.
+
+2. **Never load entire tables into memory** (`await db.Parts.ToListAsync()`). Use pagination (`Skip/Take`), filtering, or chunked processing for large datasets. Hangfire jobs are especially prone to this — process in batches of 500.
+
+3. **Never filter a list inside a loop** (`list.Where(x => x.Id == item.Id)` per iteration). Pre-group with `.GroupBy().ToDictionary()` or `.ToLookup()` before the loop to avoid O(n²).
+
+4. **Hangfire job methods MUST accept `CancellationToken` as a parameter** and pass it to all async calls. Hangfire passes a CT automatically when jobs are cancelled/shut down.
+
+5. **Methods returning `Stream` must document ownership** — prefer returning `byte[]` unless streaming is required for large files. Callers of stream-returning methods must use `using` statements.
+
+6. **Use `AsNoTracking()` on all read-only EF Core queries** (those that don't call `SaveChangesAsync` afterward). Tracking adds memory overhead for change detection.
+
+7. **Add database indexes for columns used in WHERE/JOIN/ORDER BY** — especially foreign keys, `UserId`, and any column used in global query filters.
+
+---
+
 ## ⚡ Accounting Boundary (Critical)
 
 Some features duplicate functionality that an accounting system (QuickBooks, Xero, etc.) handles natively. These features must be **cordoned off** so they only activate in standalone mode (no accounting provider connected). See `docs/qb-integration.md` for the authoritative boundary definition.
