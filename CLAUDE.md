@@ -373,7 +373,7 @@ Promotion rule: used by 2+ features → move to `shared/`.
 
 **Fonts:** `$font-family-primary: 'Space Grotesk'` | `$font-family-mono: 'IBM Plex Mono'`
 
-**Borders:** `$border-width: 2px` | `$border-width-thin: 1px` | `$border-radius: 0px` (sharp corners everywhere)
+**Borders:** `$border-width: 2px` | `$border-width-thin: 1px` | `$border-width-accent: 3px` (status/indicator left/top borders) | `$border-radius: 0px` (sharp corners everywhere)
 
 **Z-index:** `$z-sticky: 100` | `$z-sidebar: 200` | `$z-dropdown: 300` | `$z-dialog: 400` | `$z-snackbar: 500` | `$z-loading: 900` | `$z-toast: 1000`
 
