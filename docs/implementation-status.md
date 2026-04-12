@@ -897,6 +897,7 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 | Background Jobs | 1 | — | — |
 | Backup | 1 | — | — |
 | AI Module | 1 | — | — |
+| **MRP/MPS Engine** | 7 | — | — |
 
 ---
 
@@ -1928,3 +1929,46 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 - **Scan page:** `MobileScanComponent` at `/m/scan` — camera viewport with `Html5Qrcode` (environment-facing camera, 250px QR box, 10fps), scan result card with type detection (job/part/asset/unknown), navigate-to-result action, resume scanning, manual entry fallback with keyboard input
 - **Scan routing:** Pattern matching for JOB-XXXX, PT/PART-XXXX, AST/ASSET-XXXX prefixes and URL-based QR codes
 - **Camera fallback:** When camera unavailable (headless, permissions denied), shows fallback UI with manual entry prominently displayed
+
+---
+
+## Batch 22 Changelog — MRP/MPS Engine (2026-04-12)
+
+### Phase A1: Core MRP Entities & Migration
+- **8 enums:** LotSizingRule, MrpDemandSource, MrpSupplySource, MrpOrderType, MrpPlannedOrderStatus, MrpRunType, MrpRunStatus, MrpExceptionType
+- **5 entities:** MrpRun (BaseAuditableEntity), MrpDemand, MrpSupply, MrpPlannedOrder (BaseAuditableEntity), MrpException
+- **5 EF configs:** Full Fluent API with indexes, precision, FK relationships
+- **Part extended:** LotSizingRule?, FixedOrderQuantity?, MinimumOrderQuantity?, OrderMultiple?, PlanningFenceDays?, DemandFenceDays?, IsMrpPlanned
+- **PurchaseOrderLine/Job extended:** MrpPlannedOrderId? FK for order release traceability
+
+### Phase A2: MRP Algorithm
+- **MrpService:** Full MRP algorithm — concurrency guard, demand gathering (SO lines), supply gathering (on-hand, open POs, production runs, firmed orders), low-level code computation, level-by-level netting with lot sizing and lead-time offset, BOM explosion for dependent demand, exception generation (Expedite/Defer/PastDue/OverSupply)
+- **LotSizer:** Static class — LotForLot, FixedQuantity, MinMax, EconomicOrderQuantity, MultiplesOf
+- **Efficiency:** Pre-grouped Dictionary<int, List<>> for O(1) lookups in inner loops, AsNoTracking on all read queries
+- **IMrpService interface:** ExecuteRunAsync, GetPartPlanAsync (weekly time buckets), GetPeggingAsync (demand-to-supply linkage)
+
+### Phase A3: MRP Handlers & Controller
+- **13 MediatR handlers:** ExecuteMrpRun, SimulateMrpRun, GetMrpRuns, GetMrpRunDetail, GetPlannedOrders, UpdatePlannedOrder, ReleasePlannedOrder (creates real PO or Job), BulkReleasePlannedOrders, DeletePlannedOrder, GetMrpExceptions, ResolveMrpException, GetMrpPegging, GetMrpPartPlan
+- **MrpController:** Route `api/v1/mrp`, Authorize(Roles = "Admin,Manager"), full CRUD + RPC endpoints
+- **MrpRunJob:** Hangfire nightly job at 3 AM
+
+### Phase A4: Master Production Schedule
+- **Entities:** MasterSchedule (BaseAuditableEntity), MasterScheduleLine — with cascade delete, Part FK
+- **Enum:** MasterScheduleStatus (Draft, Active, Completed, Cancelled)
+- **6 handlers:** GetMasterSchedules, GetMasterScheduleDetail, CreateMasterSchedule, UpdateMasterSchedule (full line sync), ActivateMasterSchedule, GetMpsVsActual (planned vs actual production)
+- **Controller endpoints:** Under `/api/v1/mrp/master-schedules`
+- **MRP integration:** MrpService gathers demand from active MasterScheduleLines
+
+### Phase A5: Demand Forecasting
+- **Entities:** DemandForecast (BaseAuditableEntity, JSONB forecast data), ForecastOverride
+- **Enums:** ForecastMethod (MovingAverage, ExponentialSmoothing, WeightedMovingAverage), ForecastStatus (Draft, Approved, Applied, Expired)
+- **ForecastService:** Gathers historical SO demand by month, generates forecast using selected statistical method
+- **5 handlers:** GetDemandForecasts, GenerateDemandForecast, ApproveDemandForecast, ApplyForecastToMps (creates MPS lines from forecast), CreateForecastOverride
+- **Controller endpoints:** Under `/api/v1/mrp/forecasts`
+
+### Phase A6: Angular MRP Module
+- **Route:** `/mrp/:tab` with 6 tabs (dashboard, planned-orders, exceptions, runs, master-schedule, forecasts)
+- **MrpService:** Full API client with all MRP, MPS, and forecast endpoints
+- **MrpComponent:** Tab-based UI with DataTable per tab, KPI chips on dashboard, inline firm/release/resolve actions
+- **TypeScript models:** Complete interface definitions for all MRP/MPS/forecast entities
+- **Sidebar:** MRP nav item added to Supply group
