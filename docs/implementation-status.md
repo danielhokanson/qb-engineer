@@ -2143,3 +2143,40 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 - **EdiService:** Full API client with partner CRUD, transaction list/detail/receive/send/retry, mapping CRUD
 - **EdiPanelComponent:** Two sub-tabs (Partners, Transactions), partner CRUD dialog with FormGroup/FormValidation, transaction detail dialog with raw payload viewer, status/direction chip coloring, DataTable columns for both views
 - **Admin integration:** Imported into AdminComponent, 'edi' added to VALID_TABS and ADMIN_ONLY_TABS, sidebar nav item added
+
+## Batch 29 — Multi-Factor Authentication (2026-04-12)
+
+**P1 #8 — MFA (Multi-Factor Authentication)** — Full TOTP-based MFA with admin policy enforcement, recovery codes, and login flow integration.
+
+### Phase H1: Core Entities + Enums
+- **MfaDeviceType enum:** Totp, Sms, Email, WebAuthn
+- **UserMfaDevice entity:** BaseAuditableEntity with encrypted TOTP secret, device name, lockout (5 attempts → 5 min), WebAuthn fields (CredentialId, PublicKey, SignCount)
+- **MfaRecoveryCode entity:** BaseAuditableEntity with SHA256-hashed codes, used tracking
+- **ApplicationUser additions:** MfaEnabled, MfaEnforcedByPolicy, MfaEnabledAt, MfaRecoveryCodesRemaining
+
+### Phase H2: MFA Service
+- **IMfaService interface:** 13 methods covering setup, verification, challenge, recovery, and status
+- **MfaService implementation:** OtpNet TOTP (±1 step tolerance), IMemoryCache challenge tokens (5 min TTL), IDataProtectionProvider secret encryption, SHA256 recovery code hashing, automatic lockout after 5 failed attempts
+
+### Phase H3: MFA Auth Handlers
+- **9 MediatR handlers:** BeginMfaSetup, VerifyMfaSetup, DisableMfa, RemoveMfaDevice, CreateMfaChallenge, ValidateMfaChallenge, GenerateRecoveryCodes, ValidateMfaRecovery, GetMfaStatus
+- **2 admin handlers:** SetMfaPolicy (role-based enforcement), GetMfaPolicyStatus (compliance report)
+
+### Phase H4: Controller Endpoints
+- **AuthController additions:** 10 MFA endpoints (setup, verify-setup, disable, devices/{id} delete, status, challenge, validate, recovery, recovery-codes)
+- **AdminController additions:** GET mfa/compliance, PUT mfa/policy
+- **LoginHandler modification:** Returns MfaRequired + MfaUserId when user has MFA enabled (no token issued until challenge validated)
+
+### Phase H5: Migration
+- **AddMfaEntities migration:** user_mfa_devices + mfa_recovery_codes tables, unique filtered index on (UserId, IsDefault), indexes on CodeHash and (UserId, IsUsed)
+- **ApplicationUser columns:** mfa_enabled, mfa_enforced_by_policy, mfa_enabled_at, mfa_recovery_codes_remaining
+
+### Phase H6: Angular MFA Module
+- **MfaService (Angular):** Full API client — setup, verify, disable, removeDevice, getStatus, createChallenge, validateChallenge, validateRecovery, getCompliance, setPolicy
+- **MfaSetupDialogComponent:** QR code scan wizard with manual key option, 6-digit code verification, success confirmation
+- **MfaRecoveryCodesDialogComponent:** Generates codes, copy/download options, warning display
+- **MfaChallengeComponent:** Login flow component — 6-digit code entry, remember device checkbox, recovery code alternative, back-to-login button
+- **MfaPolicyPanelComponent:** Admin panel — role-based enforcement select, compliance DataTable with MFA status per user
+- **Login flow integration:** LoginResponse extended with mfaRequired/mfaUserId, login component shows MFA challenge when required, AuthService.completeMfaLogin() for post-MFA token handling
+- **Security page integration:** MFA status card with device list, add device, generate recovery codes, disable MFA (blocked when policy-enforced)
+- **Admin integration:** MFA Policy tab added to admin panel with sidebar nav entry

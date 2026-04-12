@@ -140,7 +140,7 @@ qb-engineer-wrapper/
 - **Frontend:** Angular 21, Angular Material 21, SCSS, standalone components, zoneless (signals)
 - **Backend:** .NET 9, MediatR (CQRS), FluentValidation, EF Core + Npgsql
 - **Database:** PostgreSQL with `timestamptz` columns (all DateTimes must be UTC)
-- **Storage:** MinIO (S3-compatible), **Auth:** ASP.NET Identity + JWT + tiered kiosk auth (RFID/NFC/barcode + PIN) + optional SSO (Google/Microsoft/OIDC)
+- **Storage:** MinIO (S3-compatible), **Auth:** ASP.NET Identity + JWT + tiered kiosk auth (RFID/NFC/barcode + PIN) + optional SSO (Google/Microsoft/OIDC) + TOTP MFA
 - **Real-time:** SignalR, **Background:** Hangfire, **Mapping:** Mapperly (source-generated), **Logging:** Serilog
 - **Date lib:** date-fns (tree-shakeable, official Material adapter)
 - **Charts:** ng2-charts (Chart.js), **Dashboard grid:** gridstack, **Tours:** driver.js
@@ -1448,6 +1448,7 @@ _(No pending enhancements — all planned DataTable and UserPreferences work is 
 | Time Corrections | `admin/time-corrections` | `TimeTrackingController` | TimeCorrectionLog | Admin/manager time entry correction with audit trail, original value snapshot, required reason |
 | Contact Interactions | — (customer detail) | `CustomersController` | ContactInteraction | Call/Email/Meeting/Note types, customer detail Interactions tab, per-contact filter |
 | EDI | `admin/edi` | `EdiController` | EdiTradingPartner, EdiTransaction, EdiMapping | X12/EDIFACT trading partners, transaction lifecycle, field mappings, inbound polling, retry support |
+| MFA | `account/security`, `admin/mfa` | `AuthController`, `AdminController` | UserMfaDevice, MfaRecoveryCode | TOTP setup (QR + manual key), challenge/validate login flow, recovery codes, admin role-based policy enforcement |
 
 ### Planned / Partially Implemented
 
@@ -1497,10 +1498,11 @@ BaseEntity (Id, CreatedAt, UpdatedAt, DeletedAt, DeletedBy)
 ├── TimeCorrectionLog
 ├── ContactInteraction
 ├── EdiTradingPartner, EdiTransaction, EdiMapping
+├── UserMfaDevice, MfaRecoveryCode
 ```
 
 ### Enums (in `qb-engineer.core/Enums/`)
-`JobPriority`, `JobLinkType`, `JobDisposition`, `ActivityAction`, `PartType`, `PartStatus` (Draft, Prototype, Active, Obsolete), `BOMSourceType` (Make, Buy, Stock), `LocationType`, `BinContentStatus`, `BinMovementReason`, `LeadStatus`, `ExpenseStatus`, `AssetType`, `AssetStatus`, `ClockEventType`, `SyncStatus`, `AccountingDocumentType`, `PlanningCycleStatus`, `PurchaseOrderStatus`, `SalesOrderStatus`, `QuoteType` (Estimate, Quote), `QuoteStatus` (Draft, Sent, Accepted, Declined, Expired, ConvertedToQuote, ConvertedToOrder), `ShipmentStatus`, `InvoiceStatus`, `PaymentMethod`, `CreditTerms`, `AddressType`, `EventType` (Meeting, Training, Safety, Other), `AttendeeStatus` (Invited, Accepted, Declined, Attended), `InteractionType` (Call, Email, Meeting, Note), `EdiFormat`, `EdiTransportMethod`, `EdiDirection`, `EdiTransactionStatus`
+`JobPriority`, `JobLinkType`, `JobDisposition`, `ActivityAction`, `PartType`, `PartStatus` (Draft, Prototype, Active, Obsolete), `BOMSourceType` (Make, Buy, Stock), `LocationType`, `BinContentStatus`, `BinMovementReason`, `LeadStatus`, `ExpenseStatus`, `AssetType`, `AssetStatus`, `ClockEventType`, `SyncStatus`, `AccountingDocumentType`, `PlanningCycleStatus`, `PurchaseOrderStatus`, `SalesOrderStatus`, `QuoteType` (Estimate, Quote), `QuoteStatus` (Draft, Sent, Accepted, Declined, Expired, ConvertedToQuote, ConvertedToOrder), `ShipmentStatus`, `InvoiceStatus`, `PaymentMethod`, `CreditTerms`, `AddressType`, `EventType` (Meeting, Training, Safety, Other), `AttendeeStatus` (Invited, Accepted, Declined, Attended), `InteractionType` (Call, Email, Meeting, Note), `EdiFormat`, `EdiTransportMethod`, `EdiDirection`, `EdiTransactionStatus`, `MfaDeviceType`
 
 ---
 
