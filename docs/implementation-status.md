@@ -2114,3 +2114,32 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 - **NcrListComponent:** DataTable with type/status filters, create NCR dialog, disposition dialog, create-CAPA-from-NCR action
 - **CapaListComponent:** DataTable with type/status filters, create CAPA dialog, advance-phase action, task progress display
 - **Quality module:** Extended with 2 new tabs (NCRs, CAPAs), ViewChild for create buttons in page header
+
+## Batch 28 — EDI Support (2026-04-12)
+
+### Phase G1: Core Entities, Enums, Migration
+- **4 enums:** EdiFormat (X12, Edifact), EdiTransportMethod (As2, Sftp, Van, Email, Api, Manual), EdiDirection (Inbound, Outbound), EdiTransactionStatus (Received, Parsing, Parsed, Validating, Validated, Processing, Applied, Error, Acknowledged, Rejected)
+- **3 entities:** EdiTradingPartner (BaseAuditableEntity — Customer/Vendor FKs, qualifier IDs, format/transport config, auto-process rules), EdiTransaction (BaseAuditableEntity — TradingPartnerId FK, direction, transaction set, control numbers, raw payload, parsed JSON, status lifecycle, retry tracking, acknowledgment self-FK), EdiMapping (BaseAuditableEntity — TradingPartnerId FK, transaction set, field mappings JSON, value translations JSON)
+- **3 entity configurations:** Fluent API with string-converted enums, jsonb columns, composite indexes, FK-only ApplicationUser pattern
+- **DbContext:** 3 new DbSets (EdiTradingPartners, EdiTransactions, EdiMappings)
+- **Migration:** SyncModelSnapshot — creates edi_trading_partners, edi_transactions, edi_mappings tables with full FK constraints and indexes
+
+### Phase G2: Service Interfaces + Mock Implementation
+- **IEdiService:** ReceiveDocumentAsync, ParseTransactionAsync, ProcessTransactionAsync, RetryTransactionAsync, GenerateAsnAsync, GenerateInvoiceEdiAsync, GeneratePoAckAsync, Generate997Async, SendTransactionAsync, PollInboundAsync
+- **IEdiTransportService:** Method property, SendAsync, PollAsync, TestConnectionAsync
+- **MockEdiService:** Returns canned EdiTransaction objects with mock ISA segments
+- **MockEdiTransportService:** Manual transport method, always returns success
+
+### Phase G3: Request/Response Models
+- **10 model files:** EdiTradingPartnerResponseModel (with transaction/error counts), EdiTransactionResponseModel, EdiTransactionDetailResponseModel (raw payload + parsed JSON), EdiMappingResponseModel, CreateEdiTradingPartnerRequestModel, UpdateEdiTradingPartnerRequestModel, CreateEdiMappingRequestModel, UpdateEdiMappingRequestModel, ReceiveEdiDocumentRequestModel, SendOutboundEdiRequestModel
+
+### Phase G4: Handlers + Controller
+- **13 MediatR handlers:** GetEdiTradingPartners (with aggregated stats), GetEdiTradingPartnerById, CreateEdiTradingPartner (FluentValidation), UpdateEdiTradingPartner, DeleteEdiTradingPartner, GetEdiTransactions (paginated with filters), GetEdiTransactionById, ReceiveEdiDocument, SendOutboundEdi (routes by entity type), RetryEdiTransaction, TestEdiConnection, GetEdiMappings, CreateEdiMapping, UpdateEdiMapping, DeleteEdiMapping
+- **EdiController:** 14 endpoints under `api/v1/edi`, Admin/Manager roles
+- **PollEdiInboundJob:** Hangfire recurring job every 30 minutes
+
+### Phase G5: Angular EDI Module
+- **8 model files:** EdiFormat, EdiTransportMethod, EdiDirection, EdiTransactionStatus, EdiTradingPartner, EdiTransaction, EdiTransactionDetail, EdiMapping
+- **EdiService:** Full API client with partner CRUD, transaction list/detail/receive/send/retry, mapping CRUD
+- **EdiPanelComponent:** Two sub-tabs (Partners, Transactions), partner CRUD dialog with FormGroup/FormValidation, transaction detail dialog with raw payload viewer, status/direction chip coloring, DataTable columns for both views
+- **Admin integration:** Imported into AdminComponent, 'edi' added to VALID_TABS and ADMIN_ONLY_TABS, sidebar nav item added
