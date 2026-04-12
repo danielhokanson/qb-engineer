@@ -2089,3 +2089,28 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
   - SpcOocListComponent — DataTable with severity/status filters, acknowledge dialog, create-CAPA action
 - **Quality module:** Extended with 3 new tabs (SPC Charts, SPC Data Entry, OOC Events), route-based `:tab` pattern, split-panel layout for characteristic selection + chart/data entry
 - **Routes:** Updated to `{ path: ':tab', component: QualityComponent }` with redirect from bare path
+
+## Batch 27 — CAPA / NCR Workflow (2026-04-12)
+
+### Phase F1: Entities, Enums, Migration
+- **9 enums:** NcrType, NcrDetectionStage, NcrDispositionCode, NcrStatus, CapaType, CapaSourceType, RootCauseMethod, CapaStatus, CapaTaskStatus
+- **3 entities:** NonConformance (NCR with detection/containment/disposition/cost), CorrectiveAction (CAPA with root cause/verification/effectiveness phases), CapaTask (assignee-based tasks per CAPA)
+- **3 entity configurations:** Fluent API with FK-only ApplicationUser pattern, unique NCR/CAPA numbers, all FK indexes
+- **Migration:** `20260412100000_AddNcrCapaEntities` — 3 tables (corrective_actions, non_conformances, capa_tasks) with full FK constraints
+- **DbContext:** 3 new DbSets (NonConformances, CorrectiveActions, CapaTasks)
+
+### Phase F2: Service + Response Models
+- **INcrCapaService:** GenerateNcrNumber, GenerateCapaNumber, CreateCapaFromNcr, AdvanceCapaPhase, CanAdvanceCapa, ScheduleEffectivenessCheck, CalculateNcrCosts
+- **NcrCapaService:** Auto-generated NCR-YYYYMMDD-NNN / CAPA-YYYYMMDD-NNN numbers, phase-gated advancement with validation per phase, cost calculation
+- **13 model files:** NcrResponseModel, CapaResponseModel, CapaTaskResponseModel, CreateNcrRequestModel, UpdateNcrRequestModel, DispositionNcrRequestModel, CreateCapaRequestModel, UpdateCapaRequestModel, CreateCapaTaskRequestModel, UpdateCapaTaskRequestModel, CreateCapaFromNcrRequestModel, NcrCostSummary (one class per file)
+
+### Phase F3: Handlers + Controller
+- **16 MediatR handlers:** GetNcrs, GetNcrById, CreateNcr, UpdateNcr, DispositionNcr, CreateCapaFromNcr, GetCapas, GetCapaById, CreateCapa, UpdateCapa, AdvanceCapaPhase, GetCapaTasks, CreateCapaTask, UpdateCapaTask, CheckCapaEffectivenessJob (Hangfire daily)
+- **NcrCapaController:** 12 endpoints under `api/v1/quality` (ncrs + capas sub-routes), FluentValidation on create/disposition, Admin/Manager roles on mutations
+
+### Phase F4: Angular UI
+- **12 model files:** NcrType, NcrDetectionStage, NcrDispositionCode, NcrStatus, NonConformance, CapaType, CapaSourceType, RootCauseMethod, CapaStatus, CapaTaskStatus, CorrectiveAction, CapaTask (one interface/type per file)
+- **NcrCapaService:** Full API service with NCR/CAPA/Task CRUD + filters
+- **NcrListComponent:** DataTable with type/status filters, create NCR dialog, disposition dialog, create-CAPA-from-NCR action
+- **CapaListComponent:** DataTable with type/status filters, create CAPA dialog, advance-phase action, task progress display
+- **Quality module:** Extended with 2 new tabs (NCRs, CAPAs), ViewChild for create buttons in page header
