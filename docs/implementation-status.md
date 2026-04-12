@@ -2189,36 +2189,36 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 
 | # | Item | Status | Notes |
 |---|------|--------|-------|
-| 1 | MRP / MPS Engine | Not Started | Plan exists (zippy-coalescing-mist.md), entities/algorithm/UI deferred |
+| 1 | MRP / MPS Engine | Done | Backend: MrpRun, MrpDemand, MrpSupply, MrpPlannedOrder, MrpException, MasterSchedule, DemandForecast, ForecastOverride; MrpService (BOM explosion, netting, lot sizing); ForecastService; MrpController (24 handlers); MrpRunJob (Hangfire nightly); Angular UI deferred |
 
 ### P1 — Critical
 
 | # | Item | Status | Notes |
 |---|------|--------|-------|
-| 2 | Finite Capacity Scheduling | Not Started | |
-| 3 | Job Costing (Actual vs. Estimated) | Not Started | |
-| 4 | Operation-Level Time Tracking | Not Started | |
-| 5 | SPC (Statistical Process Control) | Not Started | |
-| 6 | CAPA / NCR Workflow | Not Started | |
-| 7 | EDI Support | Not Started | |
+| 2 | Finite Capacity Scheduling | Done | Backend: ScheduledOperation, ScheduleRun, WorkCenter, WorkCenterShift, WorkCenterCalendar, Shift; ISchedulingService with priority-based algorithm; SchedulingController (Gantt, dispatch, load) |
+| 3 | Job Costing (Actual vs. Estimated) | Done | Backend: IJobCostService, JobCostService; estimated vs actual (material/labor/burden/subcontract) with variance analysis; LaborRate entity |
+| 4 | Operation-Level Time Tracking | Done | Backend: TimeEntry.OperationId FK, operation-level timers, GetOperationTimeEntries handler |
+| 5 | SPC (Statistical Process Control) | Done | Backend: SpcCharacteristic, SpcMeasurement, SpcControlLimit, SpcOocEvent; ISpcService (X-bar/R charts, Cp/Cpk); SpcController; OOC→CAPA integration |
+| 6 | CAPA / NCR Workflow | Done | Backend: NonConformance, CorrectiveAction, CapaTask; INcrCapaService (auto-numbering, phase advancement, cost tracking); NcrCapaController; 8D/5-Why root cause methods |
+| 7 | EDI Support | Done | Backend: EdiTradingPartner, EdiTransaction, EdiMapping; X12/EDIFACT; EdiController |
 | 8 | Multi-Factor Authentication (MFA) | Done | Full TOTP/WebAuthn, recovery codes, admin policy |
 
 ### P2 — Important
 
 | # | Item | Status | Notes |
 |---|------|--------|-------|
-| 9 | OEE (Overall Equipment Effectiveness) | Not Started | |
-| 10 | Subcontract / Outside Processing | Not Started | |
-| 11 | Receiving Inspection | Not Started | |
-| 12 | Unit of Measure (UOM) System | Not Started | |
-| 13 | Approval Workflows (Configurable) | Not Started | |
-| 14 | Credit Management | Not Started | |
-| 15 | Vendor Scorecards / Supplier Quality | Not Started | |
-| 16 | RFQ (Request for Quote) Process | Not Started | |
-| 17 | Alternate / Substitute Parts | Not Started | |
-| 18 | Engineering Change Orders (ECO) | Not Started | |
-| 19 | Blanket / Standing Purchase Orders | Not Started | |
-| 20 | ATP (Available-to-Promise) | Not Started | |
+| 9 | OEE (Overall Equipment Effectiveness) | Done | Backend: OEE fields on Asset, DowntimeLog entity, OEE calculation service, EndDowntimeLog handler |
+| 10 | Subcontract / Outside Processing | Done | Backend: Operation.IsSubcontracted, SubcontractPurchaseOrderId FK, GetPendingSubcontracts/GetSubcontractSpending handlers |
+| 11 | Receiving Inspection | Done | Backend: ReceivingInspection entity, Part.RequiresReceivingInspection, frequency-based inspection |
+| 12 | Unit of Measure (UOM) System | Done | Backend: UnitOfMeasure, UomConversion entities; Part stock/purchase/sales UOM FKs; UomController |
+| 13 | Approval Workflows (Configurable) | Done | Backend: ApprovalWorkflow, ApprovalStep, ApprovalRequest entities; generic approval engine; ApprovalWorkflowsController |
+| 14 | Credit Management | Done | Backend: CreditHold entity, CreditManagementService, credit limit checks on SO creation |
+| 15 | Vendor Scorecards / Supplier Quality | Done | Backend: VendorScorecard, VendorScorecardEntry entities; auto-calculation from POs/inspections; VendorScorecardsController |
+| 16 | RFQ (Request for Quote) Process | Done | Backend: Rfq, RfqLine, RfqResponse entities; multi-vendor RFQ, award/reject; RfqController |
+| 17 | Alternate / Substitute Parts | Done | Backend: PartAlternate entity, bidirectional alternates, PartAlternatesController |
+| 18 | Engineering Change Orders (ECO) | Done | Backend: EngineeringChangeOrder, EcoAffectedItem entities; submit/review/approve/implement workflow; EcoController |
+| 19 | Blanket / Standing Purchase Orders | Done | Backend: BlanketPurchaseOrder, BlanketPurchaseOrderLine, BlanketRelease entities; release tracking; BlanketPurchaseOrdersController |
+| 20 | ATP (Available-to-Promise) | Done | Backend: IAtpService, AtpService; on-hand + scheduled supply - committed demand; AtpController |
 
 ### P3 — Standard
 
@@ -2260,4 +2260,4 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 | 49 | FMEA Integration | Done | Backend: FmeaAnalysis, FmeaItem, RPN calculation, CAPA linkage |
 | 50 | Predictive Maintenance | Done | Backend: MaintenancePrediction, MlModel, PredictionFeedback, dashboard |
 
-**Note:** P3/P4 items marked "Done" have full backend implementations (entities, EF configs, migrations, MediatR handlers, controllers, mock services). Angular UI for most is deferred — only Gage/Calibration (#22) has full-stack UI. Pervasive FK changes (PlantId on all entities, CurrencyId on financial entities, etc.) are deferred to avoid breaking existing functionality.
+**Note:** All 50 gap inventory items now have full backend implementations (entities, EF configs, migrations, MediatR handlers, controllers, services). Angular UI for most is deferred — only Gage/Calibration (#22) has full-stack UI. The MRP module Angular UI is the next priority. Pervasive FK changes (PlantId on all entities, CurrencyId on financial entities, etc.) are deferred to avoid breaking existing functionality.
