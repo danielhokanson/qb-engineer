@@ -2060,3 +2060,32 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 - Fixed TimeEntryResponseModel breaking change: converted positional record to property-init style, updated all 9 test methods in StartTimerHandlerTests + StopTimerHandlerTests
 - Fixed SnackbarService test: added missing Router.events mock (Subject), updated duration assertions for warn (8s) and error (10s)
 - All 366 .NET tests pass, all 651 Angular tests pass
+
+## Batch 26 — Statistical Process Control (SPC) (2026-04-12)
+
+### Phase E1: Core Entities + Migration
+- **Enums:** SpcMeasurementType (Variable, Attribute), SpcOocSeverity (Warning, OutOfControl, OutOfSpec), SpcOocStatus (Open, Acknowledged, CapaCreated, Resolved)
+- **Entities:** SpcCharacteristic (BaseAuditableEntity — Part/Operation FKs, spec limits USL/LSL/Nominal, sample config), SpcMeasurement (BaseEntity — CharacteristicId, MeasuredById FK-only, ValuesJson jsonb, computed stats), SpcControlLimit (BaseEntity — X-bar/R/S chart limits, Cp/Cpk/Pp/Ppk capability indices), SpcOocEvent (BaseEntity — rule info, severity, status, AcknowledgedById FK-only)
+- **Entity Configurations:** 4 Fluent API config files with precision(18,6), composite indexes, FK-only ApplicationUser pattern
+- **Migration:** `20260412085000_AddSpcEntities` — 4 tables (spc_characteristics, spc_measurements, spc_control_limits, spc_ooc_events) with full FK constraints and indexes
+
+### Phase E2: SPC Service
+- **ISpcService interface:** CalculateControlLimitsAsync, Cp/Cpk/Pp/Ppk calculators, EvaluateControlRules, GetXBarRChartDataAsync, GetConstants
+- **SpcService:** Full statistical engine — SPC constants table (A2, D3, D4, d2, A3, B3, B4, c4 for sample sizes 2-25), linear interpolation for unlisted sizes, X-bar/R chart limits, estimated σ from R-bar/d2, overall σ from individual values, S-chart limits for n≥10, Western Electric Rules 1-4 (beyond 3σ, 2-of-3 beyond 2σ, 4-of-5 beyond 1σ, 8 consecutive same side), spec limit check, range UCL check
+- **Response Models:** SpcCharacteristicResponseModel, SpcMeasurementResponseModel, SpcChartDataModel (with SpcControlLimitModel, SpcChartPointModel), SpcCapabilityReportModel (with HistogramBucket, NormalCurvePoint), SpcOocEventResponseModel
+
+### Phase E3: Handlers + Controller
+- **11 MediatR handlers:** GetSpcCharacteristics, CreateSpcCharacteristic (FluentValidation: USL > Nominal > LSL), UpdateSpcCharacteristic (triggers recalc on spec limit change), GetSpcChartData, RecordSpcMeasurements (batch subgroups, auto OOC evaluation), GetSpcMeasurements, RecalculateControlLimits, GetProcessCapability (histogram + normal curve), GetOocEvents, AcknowledgeOocEvent, CreateCapaFromOoc
+- **4 request models:** CreateSpcCharacteristicRequestModel, UpdateSpcCharacteristicRequestModel, RecordSpcMeasurementRequestModel (with SpcSubgroupEntry), AcknowledgeOocRequestModel
+- **SpcController:** 12 endpoints under `api/v1/spc` — CRUD characteristics, chart data, measurements, recalculate limits, capability report, OOC events with acknowledge/CAPA actions
+
+### Phase E4: Angular Module
+- **Models:** spc.model.ts — SpcCharacteristic, SpcMeasurement, SpcControlLimits, SpcChartData, SpcChartPoint, SpcCapabilityReport, HistogramBucket, NormalCurvePoint, SpcOocEvent, RecordMeasurementRequest
+- **SpcService:** HTTP service with all API calls (getCharacteristics, createCharacteristic, getChartData, recordMeasurements, recalculateLimits, getCapabilityReport, getOocEvents, acknowledgeOoc, createCapaFromOoc)
+- **Components:**
+  - SpcCharacteristicsComponent — DataTable with create/edit dialog, Cpk color coding (green ≥1.33, yellow ≥1.0, red <1.0), click to select
+  - SpcChartComponent — Dual X-bar/R charts via ng2-charts, control limit lines (UCL/CL/LCL), OOC points highlighted, KPI chips for Cp/Cpk/Ppk/σ, recalculate button
+  - SpcDataEntryComponent — Measurement entry grid (n readings per subgroup), live computed mean/range, job/lot context fields, auto-submit on Enter
+  - SpcOocListComponent — DataTable with severity/status filters, acknowledge dialog, create-CAPA action
+- **Quality module:** Extended with 3 new tabs (SPC Charts, SPC Data Entry, OOC Events), route-based `:tab` pattern, split-panel layout for characteristic selection + chart/data entry
+- **Routes:** Updated to `{ path: ':tab', component: QualityComponent }` with redirect from bare path
