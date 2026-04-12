@@ -899,6 +899,7 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 | AI Module | 1 | — | — |
 | **MRP/MPS Engine** | 7 | — | — |
 | **Finite Capacity Scheduling** | 6 | — | — |
+| **Job Costing (Actual vs. Estimated)** | 5 | — | — |
 
 ---
 
@@ -2003,3 +2004,32 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 
 ### Phase B6: Tests
 - **11 xUnit tests:** WorkCenterHandlerTests (4), ShiftHandlerTests (4), ScheduleOperationHandlerTests (3)
+
+## Batch 24 — Job Costing (Actual vs. Estimated) (2026-04-12)
+
+### Phase C1: Entities, Enums, Configs, Migration
+- **Enum:** MaterialIssueType (Issue, Return, Scrap)
+- **New entities:** LaborRate (effective-dated per user), MaterialIssue (job-part-operation-bin with issue/return/scrap types)
+- **Job fields:** EstimatedMaterialCost, EstimatedLaborCost, EstimatedBurdenCost, EstimatedSubcontractCost, QuotedPrice, EstimatedTotalCost (computed), EstimatedMarginPercent (computed)
+- **Operation fields:** LaborRate, BurdenRate, EstimatedLaborCost, EstimatedBurdenCost
+- **TimeEntry fields:** OperationId FK, LaborCost, BurdenCost
+- **Models:** JobCostSummaryModel, MaterialIssueResponseModel, MaterialIssueRequestModel, JobProfitabilityReportRow, LaborRateResponseModel
+- **Interface:** IJobCostService (cost summary, actuals, labor rate lookup, recalculation)
+- **Migration:** AddJobCostingEntities
+
+### Phase C2: JobCostService
+- **JobCostService:** Full cost aggregation — material actuals (net of returns), labor/burden from time entries, subcontract from PO lines, effective-dated labor rate lookup, batch recalculation of time entry costs
+
+### Phase C3: Handlers + Controllers
+- **Job cost handlers (5):** GetJobCostSummary, GetJobMaterialIssues, CreateMaterialIssue (with bin decrement + movement), ReturnMaterialIssue (with bin restore), RecalculateJobCosts
+- **Admin handlers (2):** GetLaborRates, CreateLaborRate (auto-closes previous effective period)
+- **Report handler (1):** GetJobProfitabilityReport (batch-loaded material/labor/burden/subcontract costs, margin filtering)
+- **Controller endpoints:** Jobs (cost-summary, material-issues CRUD, recalculate-costs), Admin (labor-rates), Reports (job-profitability)
+
+### Phase C4: Angular Module
+- **Models:** JobCostSummary, MaterialIssue, MaterialIssueRequest, LaborRate, JobProfitabilityRow
+- **JobCostService:** Full API client for cost summary, material issues, profitability report, labor rates
+- **JobCostTabComponent:** Cost variance table (estimated vs actual), margin summary, material issues DataTable with return action
+
+### Phase C5: Tests
+- **6 xUnit tests:** GetJobCostSummary (estimated costs, actual material costs with returns), GetJobMaterialIssues, RecalculateJobCosts, CreateLaborRate (closes previous), GetLaborRates (sorted)
