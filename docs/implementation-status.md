@@ -898,6 +898,7 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 | Backup | 1 | — | — |
 | AI Module | 1 | — | — |
 | **MRP/MPS Engine** | 7 | — | — |
+| **Finite Capacity Scheduling** | 6 | — | — |
 
 ---
 
@@ -1972,3 +1973,33 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 - **MrpComponent:** Tab-based UI with DataTable per tab, KPI chips on dashboard, inline firm/release/resolve actions
 - **TypeScript models:** Complete interface definitions for all MRP/MPS/forecast entities
 - **Sidebar:** MRP nav item added to Supply group
+
+## Batch 23 — Finite Capacity Scheduling (2026-04-12)
+
+### Phase B1: Core Entities + Migration
+- **Enums:** ScheduledOperationStatus, ScheduleDirection, ScheduleRunStatus, DaysOfWeek (flags)
+- **Entities:** WorkCenter, WorkCenterCalendar, Shift, WorkCenterShift, ScheduledOperation, ScheduleRun
+- **Operation enhancements:** Added SetupMinutes, RunMinutesEach, RunMinutesLot, OverlapPercent, ScrapFactor, IsSubcontract, SubcontractVendorId, SubcontractCost
+- **Operation FK migration:** WorkCenterId now points to WorkCenter entity (was Asset), added separate AssetId FK
+- **Entity configs:** 6 new IEntityTypeConfiguration classes with precision, indexes, FK relationships
+- **Migration:** AddSchedulingEntities
+
+### Phase B2: Scheduling Engine
+- **ISchedulingService:** Interface with Schedule, Simulate, Reschedule, GetWorkCenterLoad, GetDispatchList, CalculateAvailableCapacity
+- **SchedulingService:** Forward scheduling algorithm with capacity-aware slot finding, priority-based job ordering (DueDate/Priority/FIFO), overlap support, scrap factor, efficiency ratings, shift/calendar-based capacity, locked operation preservation, simulation mode
+- **Response models:** ScheduleRunResponseModel, ScheduledOperationResponseModel, WorkCenterResponseModel, WorkCenterLoadResponseModel, DispatchListItemModel, ShiftResponseModel
+
+### Phase B3+B4: Handlers + Controllers
+- **Scheduling handlers (8):** RunScheduler, SimulateSchedule, GetScheduleRuns, GetGanttData, GetWorkCenterLoad, GetDispatchList, RescheduleOperation, LockScheduledOperation
+- **Work Center CRUD (4):** GetWorkCenters, CreateWorkCenter, UpdateWorkCenter, DeleteWorkCenter
+- **Shift CRUD (4):** GetShifts, CreateShift, UpdateShift, DeleteShift
+- **Controllers:** SchedulingController (`/api/v1/scheduling`), WorkCentersController (`/api/v1/work-centers`), ShiftsController (`/api/v1/shifts`)
+
+### Phase B5: Angular Scheduling Module
+- **Route:** `/scheduling/:tab` with 5 tabs (gantt, dispatch, work-centers, shifts, runs)
+- **SchedulingService:** Full API client for scheduling, work center, and shift endpoints
+- **SchedulingComponent:** Tab-based UI with DataTable per tab, KPI chips, work center selector for dispatch
+- **Sidebar:** Scheduling nav item added to Supply group
+
+### Phase B6: Tests
+- **11 xUnit tests:** WorkCenterHandlerTests (4), ShiftHandlerTests (4), ScheduleOperationHandlerTests (3)
