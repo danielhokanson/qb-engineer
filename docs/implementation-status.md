@@ -1,6 +1,6 @@
 # Implementation Status
 
-Tracks real implementation against all spec docs. Updated: 2026-04-10.
+Tracks real implementation against all spec docs. Updated: 2026-04-12.
 
 Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 
@@ -2180,3 +2180,84 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 - **Login flow integration:** LoginResponse extended with mfaRequired/mfaUserId, login component shows MFA challenge when required, AuthService.completeMfaLogin() for post-MFA token handling
 - **Security page integration:** MFA status card with device list, add device, generate recovery codes, disable MFA (blocked when policy-enforced)
 - **Admin integration:** MFA Policy tab added to admin panel with sidebar nav entry
+
+---
+
+## Gap Inventory — Full ERP Parity (gap-inventory.md)
+
+### P0 — Showstopper
+
+| # | Item | Status | Notes |
+|---|------|--------|-------|
+| 1 | MRP / MPS Engine | Not Started | Plan exists (zippy-coalescing-mist.md), entities/algorithm/UI deferred |
+
+### P1 — Critical
+
+| # | Item | Status | Notes |
+|---|------|--------|-------|
+| 2 | Finite Capacity Scheduling | Not Started | |
+| 3 | Job Costing (Actual vs. Estimated) | Not Started | |
+| 4 | Operation-Level Time Tracking | Not Started | |
+| 5 | SPC (Statistical Process Control) | Not Started | |
+| 6 | CAPA / NCR Workflow | Not Started | |
+| 7 | EDI Support | Not Started | |
+| 8 | Multi-Factor Authentication (MFA) | Done | Full TOTP/WebAuthn, recovery codes, admin policy |
+
+### P2 — Important
+
+| # | Item | Status | Notes |
+|---|------|--------|-------|
+| 9 | OEE (Overall Equipment Effectiveness) | Not Started | |
+| 10 | Subcontract / Outside Processing | Not Started | |
+| 11 | Receiving Inspection | Not Started | |
+| 12 | Unit of Measure (UOM) System | Not Started | |
+| 13 | Approval Workflows (Configurable) | Not Started | |
+| 14 | Credit Management | Not Started | |
+| 15 | Vendor Scorecards / Supplier Quality | Not Started | |
+| 16 | RFQ (Request for Quote) Process | Not Started | |
+| 17 | Alternate / Substitute Parts | Not Started | |
+| 18 | Engineering Change Orders (ECO) | Not Started | |
+| 19 | Blanket / Standing Purchase Orders | Not Started | |
+| 20 | ATP (Available-to-Promise) | Not Started | |
+
+### P3 — Standard
+
+| # | Item | Status | Notes |
+|---|------|--------|-------|
+| 21 | Serial Number Tracking | Done | Backend: entities, handlers, controller, migration |
+| 22 | Gage / Calibration Management | Done | Full stack: backend + Angular UI in Quality tab |
+| 23 | Customer Portal | Not Started | |
+| 24 | Shift Management | Done | Backend: ShiftAssignment entity, CRUD, admin endpoints |
+| 25 | Overtime Calculation | Done | Backend: OvertimeRule, OvertimeService, daily/weekly thresholds |
+| 26 | PTO / Leave Management | Done | Backend: LeavePolicy, LeaveBalance, LeaveRequest, approve/deny workflow |
+| 27 | Performance Reviews | Done | Backend: ReviewCycle, PerformanceReview, update/complete workflow |
+| 28 | Document Approval Workflow | Done | Backend: ControlledDocument, DocumentRevision, approval routing |
+| 29 | Outbound Webhooks | Done | Backend: WebhookSubscription, WebhookDelivery, HMAC-SHA256 signing |
+| 30 | Scheduled Report Delivery | Done | Backend: ReportSchedule, cron expressions, email delivery |
+| 31 | Excel/CSV Export | Done | Backend: ExportReport handler with CSV, XLSX/PDF stubs |
+
+### P4 — Nice-to-Have
+
+| # | Item | Status | Notes |
+|---|------|--------|-------|
+| 32 | CPQ (Configure, Price, Quote) Engine | Done | Backend: ProductConfigurator, ConfiguratorOption, ProductConfiguration, quote/part generation |
+| 33 | Multi-Plant / Multi-Site | Done | Backend: Plant, InterPlantTransfer with ship/receive workflow (PlantId FK deferred) |
+| 34 | Multi-Currency | Done | Backend: Currency, ExchangeRate, conversion service (financial entity FKs deferred) |
+| 35 | Multi-Language Backend | Done | Backend: TranslatedLabel, SupportedLanguage, localization import/export |
+| 36 | IoT / Machine Integration | Done | Backend: MachineConnection, MachineTag, MachineDataPoint, mock service |
+| 37 | E-Commerce Connectors | Done | Backend: ECommerceIntegration, ECommerceOrderSync, mock service |
+| 38 | Andon Board / Visual Management | Done | Backend: AndonAlert with acknowledge/resolve workflow, board data |
+| 39 | Advanced Reporting (BI Integration) | Done | Backend: BiApiKey with PBKDF2 hashing, API key CRUD |
+| 40 | Consignment Inventory | Done | Backend: ConsignmentAgreement, ConsignmentTransaction, consume/receive/reconcile |
+| 41 | ABC Inventory Classification | Done | Backend: AbcClassificationRun, AbcClassification, run/apply workflow |
+| 42 | Wave Planning / Pick Lists | Done | Backend: PickWave, PickLine, auto-generate/release/confirm/complete |
+| 43 | Drop Shipping | Done | Backend: IDropShipService, SO-to-PO direct-ship flow (entity FKs deferred) |
+| 44 | Back-to-Back Orders | Done | Backend: IBackToBackService, SO-to-PO auto-linking (entity FKs deferred) |
+| 45 | Kanban (Lean) Replenishment | Done | Backend: KanbanCard, KanbanTriggerLog, trigger/confirm/board endpoints |
+| 46 | Project Accounting / WBS | Done | Backend: Project, WbsElement (recursive), WbsCostEntry, earned value metrics |
+| 47 | Quality Cost Tracking (COPQ) | Done | Backend: Aggregation queries, 4 ISO 9004 cost categories, trend/pareto |
+| 48 | PPAP | Done | Backend: PpapSubmission, PpapElement (18 AIAG elements), submit/approve workflow |
+| 49 | FMEA Integration | Done | Backend: FmeaAnalysis, FmeaItem, RPN calculation, CAPA linkage |
+| 50 | Predictive Maintenance | Done | Backend: MaintenancePrediction, MlModel, PredictionFeedback, dashboard |
+
+**Note:** P3/P4 items marked "Done" have full backend implementations (entities, EF configs, migrations, MediatR handlers, controllers, mock services). Angular UI for most is deferred — only Gage/Calibration (#22) has full-stack UI. Pervasive FK changes (PlantId on all entities, CurrencyId on financial entities, etc.) are deferred to avoid breaking existing functionality.
