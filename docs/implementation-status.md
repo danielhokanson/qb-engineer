@@ -900,6 +900,7 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 | **MRP/MPS Engine** | 7 | — | — |
 | **Finite Capacity Scheduling** | 6 | — | — |
 | **Job Costing (Actual vs. Estimated)** | 5 | — | — |
+| **Operation-Level Time Tracking** | 4 | — | — |
 
 ---
 
@@ -2033,3 +2034,29 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 
 ### Phase C5: Tests
 - **6 xUnit tests:** GetJobCostSummary (estimated costs, actual material costs with returns), GetJobMaterialIssues, RecalculateJobCosts, CreateLaborRate (closes previous), GetLaborRates (sorted)
+
+## Batch 25 — Operation-Level Time Tracking (2026-04-12)
+
+### Phase D1: Entities + Migration
+- **Enum:** TimeEntryType (Setup, Run, Teardown, Inspection, Rework, Wait, Other)
+- **TimeEntry:** Added EntryType field (default Run)
+- **ClockEvent:** Added OperationId FK
+- **Migration:** AddOperationTimeTracking
+
+### Phase D2: Handlers + Controllers
+- **GetJobOperationTimeSummary:** Per-operation setup/run/total actuals vs estimates, efficiency percent, variance analysis
+- **GetOperationTimeEntries:** Time entries filtered by job + operation
+- **GetTimeByOperationReport:** Cross-job operation time aggregation with estimated vs actual hours and variance percent
+- **StartTimer / CreateTimeEntry:** Extended to accept OperationId and EntryType
+- **Controller endpoints:** Jobs (operation-time-summary, operations/{id}/time-entries), Reports (time-by-operation)
+
+### Phase D3: Angular Module
+- **Model:** OperationTimeAnalysis interface
+- **JobCostService:** Extended with getOperationTimeSummary()
+- **OperationTimeTabComponent:** Summary bar (estimated/actual/efficiency), per-operation table with setup/run breakdown, progress bar visualization, variance coloring
+- **JobCostTabComponent + OperationTimeTabComponent:** Integrated into job detail panel as new sections
+
+### Phase D4: Test Fixes
+- Fixed TimeEntryResponseModel breaking change: converted positional record to property-init style, updated all 9 test methods in StartTimerHandlerTests + StopTimerHandlerTests
+- Fixed SnackbarService test: added missing Router.events mock (Subject), updated duration assertions for warn (8s) and error (10s)
+- All 366 .NET tests pass, all 651 Angular tests pass
