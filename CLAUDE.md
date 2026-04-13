@@ -632,6 +632,7 @@ All list views must show `<app-empty-state>` when data is empty — icon + messa
 | `DetailSidePanelComponent` | `shared/components/detail-side-panel/` | Slide-out right panel (400px, Escape/backdrop close) |
 | `PageLayoutComponent` | `shared/components/page-layout/` | Standard page shell (toolbar + content + actions) |
 | `EntityPickerComponent` | `shared/components/entity-picker/` | Typeahead entity search via API (CVA) |
+| `EntityLinkComponent` | `shared/components/entity-link/` | Inline clickable cross-entity reference link |
 | `FileUploadZoneComponent` | `shared/components/file-upload-zone/` | Drag-and-drop file upload with progress |
 | `AutocompleteComponent` | `shared/components/autocomplete/` | mat-autocomplete form field wrapper (CVA) |
 | `ToolbarComponent` | `shared/components/toolbar/` | Horizontal flex filter/action bar |
@@ -913,6 +914,22 @@ Standard page shell enforcing layout rules (Standard #36). Replaces ad-hoc `<app
 ```
 
 Slots: `toolbar` (header bar, optional), `content` (scrollable body), `actions` (sticky footer, optional — hidden when empty)
+
+### EntityLinkComponent — Usage Guide
+
+Inline clickable link for cross-entity references. Navigates to the target entity's detail dialog via `?detail=type:id` URL. Customers navigate to full-page detail at `/customers/:id/overview`.
+
+```html
+<app-entity-link type="vendor" [entityId]="po.vendorId">{{ po.vendorName }}</app-entity-link>
+<app-entity-link type="purchase-order" [entityId]="rfq.generatedPurchaseOrderId">PO #{{ rfq.generatedPurchaseOrderId }}</app-entity-link>
+<app-entity-link type="customer" [entityId]="inv.customerId">{{ inv.customerName }}</app-entity-link>
+```
+
+**Inputs:** `type` (LinkableEntityType, required), `entityId` (number, required). Content projected as the display text.
+
+**Supported types:** `job`, `part`, `vendor`, `purchase-order`, `sales-order`, `invoice`, `payment`, `shipment`, `quote`, `lead`, `asset`, `lot`, `rfq`, `customer-return`, `training`, `customer`
+
+**Applied to:** RFQ detail (part, PO), Invoice detail (customer, SO, shipment), Shipment detail (SO, invoice), Sales Order detail (customer, quote), Quote detail (customer, SO), PO detail (vendor, job), Job detail (customer, part, parent job, sub-jobs, linked jobs, parts), Asset detail (source job/part), Payment detail (customer)
 
 ### EntityPickerComponent — Usage Guide
 
