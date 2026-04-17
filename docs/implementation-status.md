@@ -460,6 +460,16 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 | Group chats | proposal.md §4.25 | Done | ChatRoom + ChatRoomMember entities, 5 handlers (Create/Get rooms, Get/Send room messages, Add/Remove member), ChatHub JoinRoom/LeaveRoom |
 | File/image sharing | proposal.md §4.25 | Done | FileAttachmentId FK on ChatMessage, entity-level support for file attachments in messages |
 | Entity link sharing | proposal.md §4.25 | Done | LinkedEntityType + LinkedEntityId on ChatMessage, entity reference support |
+| Channel architecture | plan §Phase 1 | Done | ChannelType enum (DM/Group/TeamAuto/Department/Custom/System/Broadcast), ChatRoom extended with ChannelType/Description/TeamId/IsReadOnly/IconName, ChatRoomMember extended with Role/MutedUntil/LastReadMessageId, channel CRUD endpoints, desktop + mobile channel sidebar |
+| Announcements | plan §Phase 2 | Done | Announcement/AnnouncementAcknowledgment/AnnouncementTeam/AnnouncementTemplate entities, AnnouncementsController (8 endpoints), SignalR broadcast via ChatHub, AnnouncementOverlayComponent (severity-colored banner), admin panel with DataTable + template CRUD, CreateAnnouncementDialogComponent |
+| Notification sounds + haptics | plan §Phase 3 | Done | ChatNotificationService (Web Audio chime + navigator.vibrate), user preference toggles in Account > Customization, ChatHubService triggers on incoming messages |
+| Desktop preview popups | plan §Phase 3 | Done | ChatPreviewPopupComponent (upper-right, auto-dismiss 5s, max 3 stacked, backdrop-blur), integrated in app shell |
+| Entity mentions | plan §Phase 4 | Done | @[entityType:id:display] markers, ChatMessageMention entity, MentionParser (source-generated regex), MentionRenderPipe (sanitized HTML chips), mention parsing on all send handlers |
+| Threads | plan §Phase 4 | Done | ParentMessageId self-FK, ThreadReplyCount/ThreadLastReplyAt denormalized, GetThread/ReplyInThread endpoints, thread side panel (desktop), thread slide-over (mobile), topLevelMessages computed filter |
+| File attachments in chat | plan §Phase 5 | Done | FileAttachment FK on ChatMessage, SendMessage/SendChatRoomMessage accept FileAttachmentId, file preview rendering (icon + name + size + download link), attach button in desktop chat input, ChatFileAttachmentResponseModel in API |
+| Event sharing | plan §Phase 5 | Done | Events shared via @[event:id:display] mention markers (same entity mention system), EntityLinkComponent supports event type |
+| Pop-out chat window | plan §Phase 6 | Done | /chat/popout route (ChatPopoutComponent), window.open from panel, BroadcastService chat events (window-opened/closed/open-conversation) |
+| Mobile chat expansion | plan §Phase 6 | Done | Full channel sections, mention rendering (MentionRenderPipe), thread view (mobile-thread-overlay slide-over), file attachment display, topLevelMessages filter |
 
 ### Calendar View
 
