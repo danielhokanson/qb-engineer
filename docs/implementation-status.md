@@ -470,6 +470,90 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 | Event sharing | plan §Phase 5 | Done | Events shared via @[event:id:display] mention markers (same entity mention system), EntityLinkComponent supports event type |
 | Pop-out chat window | plan §Phase 6 | Done | /chat/popout route (ChatPopoutComponent), window.open from panel, BroadcastService chat events (window-opened/closed/open-conversation) |
 | Mobile chat expansion | plan §Phase 6 | Done | Full channel sections, mention rendering (MentionRenderPipe), thread view (mobile-thread-overlay slide-over), file attachment display, topLevelMessages filter |
+| Chat notification preferences UI | plan §Phase 3 | Done | ChatNotificationPrefsComponent in Account > Customization, sound/vibrate toggles |
+| Chat channel list component | plan §Phase 6 | Done | ChatChannelListComponent: reusable sidebar with DM/group/team sections, search, mute toggle, unread badges |
+| Mobile thread view | plan §Phase 4 | Done | MobileThreadViewComponent: slide-over panel for thread replies on mobile |
+
+### Sales Order Detail Redesign (Phase 7)
+
+| Item | Spec | Status | Notes |
+|------|------|--------|-------|
+| Shipment entity expansion | plan §Phase 7 | Done | ServiceType, EstimatedDeliveryDate, FreightClass, InsuredValue, SignatureRequired, BillOfLadingNumber on Shipment |
+| ShipmentLine entity expansion | plan §Phase 7 | Done | Description, Weight, Length, Width, Height, IsHazmat, HandlingInstructions, SerialNumbers on ShipmentLine |
+| SO line job models | plan §Phase 7 | Done | SalesOrderLineJobModel (Id, JobNumber, Title, StageName, AssigneeName, Priority, DueDate, IsArchived) |
+| SO shipment models | plan §Phase 7 | Done | SalesOrderShipmentModel, SalesOrderShipmentLineModel, SalesOrderShipmentPackageModel |
+| SO return models | plan §Phase 7 | Done | SalesOrderReturnModel (ReturnNumber, Status, Reason, OriginalJob, ReworkJob) |
+| Repository expanded includes | plan §Phase 7 | Done | Lines→Jobs→Stage/Assignee, Shipments→Lines/Packages, separate returns query |
+| Tab flag badges | plan §Phase 7 | Done | Warning badges on Line Items (no jobs), Shipments (partial), Returns (open returns) |
+| Frontend TS models | plan §Phase 7 | Done | SalesOrderLineJob, SalesOrderShipment, SalesOrderShipmentLine, SalesOrderShipmentPackage, SalesOrderReturn |
+
+### Event-Driven Connective Tissue (Phase 8)
+
+| Item | Spec | Status | Notes |
+|------|------|--------|-------|
+| Domain event records | plan §Phase 8 | Done | SalesOrderConfirmedEvent, JobStageChangedEvent, PurchaseOrderReceivedEvent, QcInspectionFailedEvent, ShipmentCreatedEvent, ShipmentDeliveredEvent, CustomerReturnReceivedEvent, DeliveryDateChangedEvent, InvoicePastDueEvent, QuoteExpiringEvent, InventoryBelowReorderEvent, JobCostOverrunEvent |
+| OnSalesOrderConfirmed_AutoCreateJobs | plan §Phase 8 | Done | Auto-creates jobs per SO line from part routing/BOM |
+| OnSalesOrderConfirmed_ScheduleMilestones | plan §Phase 8 | Done | Backward scheduling → 7 milestones per SO line (po_order_by through delivery) |
+| OnSalesOrderConfirmed_NotifyPM | plan §Phase 8 | Done | Notification to production manager on SO confirmation |
+| OnSalesOrderConfirmed_CheckBom | plan §Phase 8 | Done | Checks BOM for Buy items, suggests POs |
+| OnJobStageChanged_UpdateSoStatus | plan §Phase 8 | Done | Updates SO status when jobs progress (InProduction, etc.) |
+| OnJobStageChanged_CheckShipReady | plan §Phase 8 | Done | Flags SO line as ship-ready when all jobs complete |
+| OnJobStageChanged_NotifyTeam | plan §Phase 8 | Done | Notifies QC team on QC stage entry, production lead on completion |
+| OnPurchaseOrderReceived_CheckMaterialReady | plan §Phase 8 | Done | Checks if received materials complete BOM for pending jobs |
+| OnShipmentCreated_UpdateSalesOrder | plan §Phase 8 | Done | Updates SO line ShippedQuantity, SO status (PartiallyShipped/Shipped) |
+| OnShipmentDelivered_Notify | plan §Phase 8 | Done | Notifies salesperson/account manager on delivery |
+| OnCustomerReturnReceived_UpdateSO | plan §Phase 8 | Done | Decrements ShippedQuantity, re-opens SO status if needed |
+| OnQcInspectionFailed_CreateFollowUp | plan §Phase 8 | Done | Auto-creates follow-up task for rework on QC failure |
+| OnDeliveryDateChanged_CascadeCheck | plan §Phase 8 | Done | Recalculates backward schedule, flags at-risk jobs |
+| BackwardSchedulingService | plan §Phase 8 | Done | IBackwardSchedulingService interface + implementation, 7 milestone dates from delivery date |
+| ScheduleMilestone entity | plan §Phase 8 | Done | SalesOrderLineId, JobId, MilestoneType, TargetDate, ActualDate, Notes |
+| FollowUpTask entity | plan §Phase 8 | Done | Title, Description, AssignedToUserId, DueDate, SourceEntityType/Id, TriggerType, Status |
+| DomainEventFailure entity | plan §Phase 8 | Done | Dead letter queue: EventType, EventPayload, HandlerName, ErrorMessage, RetryCount, Status |
+| ResilientNotificationPublisher | plan §Phase 8 | Done | MediatR pipeline behavior catching handler exceptions → DomainEventFailureService |
+| Domain event wiring (triggers) | plan §Phase 8 | Done | ConfirmSalesOrder, MoveJobStage, CreateShipment, DeliverShipment, ReceiveItems, UpdateQcInspection, CreateCustomerReturn, UpdateSalesOrder — all publish events via MediatR |
+| CheckInventoryLevelsJob | plan §Phase 8 | Done | Hangfire daily 4 AM: parts with ReorderPoint, publishes InventoryBelowReorderEvent |
+| CheckJobCostOverrunJob | plan §Phase 8 | Done | Hangfire daily 5 AM: actual vs estimated costs > 10% threshold |
+| Calendar auto-events | plan §Phase 8 | Done | System-generated calendar events from workflow triggers (SO milestones, job dates, PO delivery) |
+| Event entity expansion | plan §Phase 8 | Done | IsAllDay, IsSystemGenerated fields on Event entity |
+
+### Auto-PO / MRP Enhancement (Phase 9)
+
+| Item | Spec | Status | Notes |
+|------|------|--------|-------|
+| AutoPoSuggestion entity | plan §Phase 9 | Done | PartId, VendorId, SuggestedQty, NeededByDate, SourceSalesOrderIds (jsonb), Status, ConvertedPurchaseOrderId |
+| Part entity expansion | plan §Phase 9 | Done | SafetyStockQty, PreferredVendorId, ExcludeFromAutoPo |
+| Vendor entity expansion | plan §Phase 9 | Done | AutoPoMode (nullable enum) |
+| AutoPurchaseOrderJob | plan §Phase 9 | Done | Hangfire daily 6 AM: demand projection from confirmed SOs, shortfall calculation, PO suggestion/draft/auto generation |
+| Three-tier automation | plan §Phase 9 | Done | Suggest (queue only), Draft (create Draft PO), Automatic (create + confirm PO) |
+| Admin auto-PO settings | plan §Phase 9 | Done | AutoPoSettingsComponent: mode toggle, buffer days, schedule, master enable/disable |
+| PO suggestion endpoints | plan §Phase 9 | Done | List/convert/dismiss suggestions via PurchaseOrdersController |
+
+### Scanner-Driven Inventory Operations (Phase 10)
+
+| Item | Spec | Status | Notes |
+|------|------|--------|-------|
+| ScanActionOverlayComponent | plan §Phase 10 | Done | Quick action overlay after scanning part/job: Move, Count, Receive, Ship, Inspect, Issue, Return |
+| ScanMoveFlowComponent | plan §Phase 10 | Done | FROM → qty (all/partial) → scan TO location |
+| ScanCountFlowComponent | plan §Phase 10 | Done | Enter actual qty, confirm adjustment, variance threshold warning |
+| ScanReceiveFlowComponent | plan §Phase 10 | Done | Select PO line, qty, scan destination bin |
+| ScanShipFlowComponent | plan §Phase 10 | Done | Select shipment line, qty confirmation |
+| ScanIssueFlowComponent | plan §Phase 10 | Done | Select job, qty, material issue record |
+| ScanInspectFlowComponent | plan §Phase 10 | Done | QC inspection form pre-filled from part template |
+| ScanJobFlowComponent | plan §Phase 10 | Done | Start/stop timer, advance stage, log note |
+| ScanReturnFlowComponent | plan §Phase 10 | Done | Return flow for recently shipped parts |
+| ScanUndoListComponent | plan §Phase 10 | Done | Persistent undo button, scrollable reversal list, PIN auth |
+| ScanDailyLogComponent | plan §Phase 10 | Done | Per-worker scan history with filters and summary stats |
+| ScanDevicesPanelComponent | plan §Phase 10 | Done | Wireless scanner pairing UI (pair/unpair/rename) |
+| ScanLocationViewComponent | plan §Phase 10 | Done | "What's here?" mode: shows all BinContent at scanned location |
+| KioskSessionService | plan §Phase 10 | Done | Multi-session manager: concurrent users, badge switching, session timeouts |
+| ScanActionLog entity | plan §Phase 10 | Done | ActionType, PartId, Quantity, FromLocationId, ToLocationId, UserId, ReversedById, scan audit trail |
+| TrainingScanLog entity | plan §Phase 10 | Done | Non-persisted training mode actions for review |
+| UserScanDevice entity | plan §Phase 10 | Done | Scanner-to-user pairing (DeviceId, DeviceName, PairedAt, IsActive) |
+| Scan validation chain | plan §Phase 10 | Done | Context-aware action visibility: hides/disables invalid actions with tooltip reasons |
+| Multi-scan batch mode | plan §Phase 10 | Done | After completing one action, mode persists for next scan |
+| Training mode banner | plan §Phase 10 | Done | Amber "TRAINING MODE" banner, no-persist actions logged to TrainingScanLog |
+| KioskSessionBarComponent | plan §Phase 10 | Done | Avatar strip showing active sessions, foreground indicator |
+| EF migration (Wave 7-9) | plan §Phase 10 | Done | 20260419101531_AddWave7to9Entities: scan_action_logs, schedule_milestones tables, event fields, follow_up_tasks adjustments |
 
 ### Calendar View
 
@@ -900,7 +984,7 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 | Production Traceability | 5 | — | — |
 | Reporting | 27 | — | — |
 | Notifications | 8 | — | — |
-| Chat | 4 | — | — |
+| Chat | 15 | — | — |
 | Search | 1 | — | — |
 | i18n | 6 | — | — |
 | Testing | 5 | — | — |
@@ -911,6 +995,10 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 | **Finite Capacity Scheduling** | 6 | — | — |
 | **Job Costing (Actual vs. Estimated)** | 5 | — | — |
 | **Operation-Level Time Tracking** | 4 | — | — |
+| **SO Detail Redesign** | 8 | — | — |
+| **Event-Driven Infrastructure** | 24 | — | — |
+| **Auto-PO (MRP Enhancement)** | 7 | — | — |
+| **Scanner Operations** | 22 | — | — |
 
 ---
 
