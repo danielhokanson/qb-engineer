@@ -188,27 +188,39 @@ interface SelectOption { value: unknown; label: string; }
 { value: null, label: '-- None --' }
 ```
 
-### Form Validation — No Inline Errors
-Validation uses hover popover on submit button, not `mat-error` beneath fields. `mat-form-field` subscript wrapper is globally `display: none`.
+### Form Validation — No Inline Errors, Click-to-Reveal Stereotype
+Validation uses a dedicated warning-icon button paired with the disabled submit button — NOT `mat-error` beneath fields, NOT hover popover on the submit button. `mat-form-field` subscript wrapper is globally `display: none`.
+
+**The `<app-validation-button>` stereotype** wraps the submit button. When the form has violations AND is not loading, it renders a compact red warning-triangle icon + count badge to the LEFT of the shrunken submit button. Clicking the icon opens a CDK overlay popover listing violations. Popover auto-positions (right of icon → below → above) with push to stay on-screen. Click-outside / Escape closes with 150ms debounce. Popover auto-closes 1.2s after all violations clear so the user sees the all-clear.
 
 ```typescript
 // Component class:
 readonly violations = FormValidationService.getViolations(this.form, {
   fieldName: 'Human Label',
 });
-
-// Template — on submit button:
-<button [appValidationPopover]="violations"
-        [disabled]="form.invalid || saving()"
-        (click)="save()">Save</button>
 ```
 
-- Submit button disabled when form invalid
-- Hover shows bulleted violation list
+```html
+<!-- Standard submit button wrap (dialog footer, page action bar, login form, etc.): -->
+<app-validation-button [violations]="violations" [loading]="saving()">
+  <button class="action-btn action-btn--primary"
+    [disabled]="form.invalid || saving()"
+    (click)="save()">Save</button>
+</app-validation-button>
+```
+
+- `[violations]` — the `Signal<string[]>` from `FormValidationService.getViolations()` (pass the signal itself, not the value)
+- `[loading]` — boolean coerced; hides the icon during save so users don't see a warning during a pending request
+- Icon button auto-hides when there are 0 violations — submit button expands back to full width
+- Submit button stays `[disabled]="form.invalid || saving()"` — the stereotype only surfaces WHY it's disabled
 - Invalid fields get subtle visual indicator (field highlighting, not text)
-- `FormValidationService` + `ValidationPopoverDirective` (in `shared/`)
+- `FormValidationService` + `ValidationButtonComponent` (in `shared/components/validation-button/`)
 - Async validators: button shows spinner icon while pending
 - Server-side 400 errors: mapped to toast (form was already client-valid)
+
+**When to use which:**
+- `<app-validation-button>` — the default; use on every disabled submit button (dialogs, pages, login, forms). Visible, click-to-reveal, doesn't cover the fields being validated.
+- `[appValidationPopover]` directive (legacy, still exported) — only for buttons where a wrapping element can't work (rare); hover-triggered. Do not use on new code.
 
 ### Dialog Pattern — ALWAYS Use `<app-dialog>`
 Never build custom dialog shells. Every dialog uses the shared component.
@@ -432,8 +444,8 @@ Dark theme auto-swaps via `[data-theme='dark']` on `<html>`.
 
 ### Shared Classes (from `_shared.scss`)
 - `.page-header` — 48px height, `$sp-sm $sp-lg` padding, form fields zero margin
-- `.action-btn` / `.action-btn--primary` / `.action-btn--sm` — 2rem height buttons
-- `.icon-btn` / `.icon-btn--danger` — 24x24 icon buttons
+- `.action-btn` — outlined neutral (2rem height). Modifiers below.
+- `.icon-btn` / `.icon-btn--danger` / `.icon-btn--active` — 24x24 icon buttons
 - `.dialog-backdrop`, `.dialog`, `.dialog__header`, `.dialog__body`, `.dialog__footer`
 - `.dialog-row` — 2-column grid for side-by-side dialog fields (1-column on mobile)
 - `.dialog__body > *` — auto flex column + gap to projected form containers
@@ -444,6 +456,30 @@ Dark theme auto-swaps via `[data-theme='dark']` on `<html>`.
   - Dark theme: 15% opacity bg (vs 10% light)
 - `.page-loading` — centered loading state
 - `.snackbar--success|info|warn|error` — colored snackbar variants
+
+### Button Taxonomy (Non-Negotiable)
+
+Six stereotypes. Choose by **intent**, never aesthetic. Each page MUST have at most one filled (primary-weight) button visible at a time — that button is the page's key action.
+
+| Class | Look | Use for | Typical icon |
+|-------|------|---------|--------------|
+| `.action-btn` | Outlined neutral | Secondary actions, Cancel | any |
+| `.action-btn--primary` | Filled teal | **Save / Submit / Continue / Confirm / Approve** (commit work) | `save`, `check`, `send`, `arrow_forward` |
+| `.action-btn--create` | Filled green | **New / Add / Create** (initiate entity creation) | `add`, `post_add`, `person_add`, `add_circle*` |
+| `.action-btn--destructive` | Filled red | **Delete / Archive / Block** (primary destructive in confirm dialog) | `delete`, `archive`, `block` |
+| `.action-btn--danger` | Outlined red | Low-risk destructive cue (row-level delete's text twin) | `delete`, `remove_circle` |
+| `.action-btn--warn` | Outlined amber | Cautionary, non-destructive (Hold, Flag) | `flag`, `pause` |
+| `.action-btn--link` | Text-only teal | Quiet action embedded in content ("Forgot password?") | none or tiny |
+| `.action-btn--sm` | Compact size | Size modifier — combines with any of the above | any |
+
+**Placement rules:**
+- **Page toolbar / page-header**: the "New X" button is `--create`. Lives on the right side of the page header.
+- **Empty-state CTA**: the "Add first X" button is `--create`.
+- **Dialog footer**: Save is `--primary`, Cancel is plain `.action-btn`. Both sit lower-right, equal-width, primary furthest right.
+- **ConfirmDialog** (`severity: 'danger'`): the confirm button auto-maps to `--destructive`. Cancel is plain.
+- **Never** mix `--create` and `--primary` on the same page header. A page-header is for starting new work; form rows are for committing it.
+
+**Never** use `--primary` on buttons whose intent is entity creation, and never use `--create` on Save/Submit buttons. The color is a signal about what will happen, not a style preference.
 
 ### Material Theme Overrides (styles.scss)
 - All shapes: 0px (sharp corners)
@@ -643,7 +679,8 @@ All list views must show `<app-empty-state>` when data is empty — icon + messa
 | `KanbanColumnHeaderComponent` | `shared/components/kanban-column-header/` | Column header with WIP limits + collapse |
 | `QuickActionPanelComponent` | `shared/components/quick-action-panel/` | Touch-first shop floor actions (88x88px) |
 | `MiniCalendarWidgetComponent` | `shared/components/mini-calendar-widget/` | Dashboard calendar with highlight dates |
-| `ValidationPopoverDirective` | `shared/directives/` | Hover popover showing form violations |
+| `ValidationButtonComponent` | `shared/components/validation-button/` | **Default**: wraps disabled submit button, adds click-to-reveal warn icon + count + CDK overlay |
+| `ValidationPopoverDirective` | `shared/directives/` | Legacy hover popover (do not use on new code) |
 | `FormValidationService` | `shared/services/` | Derives violation messages from FormGroup |
 | `DetailDialogService` | `shared/services/` | Centralized detail dialog opener with `?detail=type:id` URL sync |
 | `UserPreferencesService` | `shared/services/` | Per-user preference storage (localStorage, API-ready) |
@@ -1895,7 +1932,7 @@ Quote Requested → Quoted (Estimate) → Order Confirmed (Sales Order) → Mate
 - Never use `try/catch` in controllers — middleware handles exceptions
 - Never use data annotations on entities — use Fluent API configuration
 - Never hard-delete records — always soft delete via `DeletedAt`
-- Never use `mat-error` / inline validation — use `ValidationPopoverDirective`
+- Never use `mat-error` / inline validation — wrap the disabled submit button with `<app-validation-button>` (stereotype). Do not use `ValidationPopoverDirective` on new code.
 - Never deep-override Material internals with CSS — build a custom component instead
 - Never put HTTP calls in components — always in services
 - Never use `*` or `ng-deep` to override child component styles
