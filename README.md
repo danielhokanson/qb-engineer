@@ -6,6 +6,8 @@ QB Engineer is a locally hosted web application for small and mid-size manufactu
 
 No SaaS fees. No cloud dependency. Runs entirely in Docker on your own infrastructure.
 
+> **Try it live:** [**demo.qb-engineer.com**](https://demo.qb-engineer.com) — a fully interactive, browser-only demo with sample data. No install, no login. All changes are synthesized in your browser and reset on refresh.
+
 ---
 
 ## What's Included
@@ -111,6 +113,8 @@ See [docs/libraries.md](docs/libraries.md) for the complete library reference.
 
 ## Quick Start
 
+> **Want to try it without installing?** Visit [**demo.qb-engineer.com**](https://demo.qb-engineer.com) for a live, browser-only demo with sample data. Continue here to self-host.
+
 ### Prerequisites
 
 - [Docker Desktop](https://www.docker.com/products/docker-desktop/) or Docker Engine + Compose
@@ -183,6 +187,12 @@ The built-in guided tours walk through each major feature on first visit.
 ---
 
 ## Demo / Development Mode
+
+### Hosted Demo
+
+[**demo.qb-engineer.com**](https://demo.qb-engineer.com) runs a static, browser-only build of the full UI against a snapshot of seed data. No server, no database — all reads and writes are synthesized in your browser and reset when you reload. Safe to explore, link, or share; nothing you do persists or affects anyone else.
+
+### Local Dev Mode
 
 Run with realistic seed data and no external dependencies:
 
