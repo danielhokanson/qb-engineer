@@ -192,6 +192,17 @@ The built-in guided tours walk through each major feature on first visit.
 
 [**demo.qb-engineer.com**](https://demo.qb-engineer.com) runs a static, browser-only build of the full UI against a snapshot of seed data. No server, no database — all reads and writes are synthesized in your browser and reset when you reload. Safe to explore, link, or share; nothing you do persists or affects anyone else.
 
+### Host Your Own Demo
+
+Deploy the same static build under your own subdomain — two scripts in the repo root handle everything:
+
+```bash
+./setup-demo.sh      # First-time: builds container + walks through Cloudflare Tunnel setup
+./refresh-demo.sh    # Ongoing: pulls latest, rebuilds, restarts
+```
+
+`setup-demo.sh` prompts for your subdomain, installs `cloudflared` if needed, creates the tunnel, writes the ingress config, sets up DNS, and installs the systemd service. Supports `--container-only` (skip tunnel) and `--tunnel-only` (container already running).
+
 ### Local Dev Mode
 
 Run with realistic seed data and no external dependencies:
