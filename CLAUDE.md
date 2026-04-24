@@ -1738,6 +1738,19 @@ docker compose exec qb-engineer-db psql -U postgres -d qb_engineer  # DB access
 - `--ssl` / `--no-ssl` flags override auto-detection on `setup.sh`
 - `docker-compose.override.yml` auto-generated for SSL and/or memory tuning (no separate ARM scripts needed)
 
+### Port Conflicts — Never Blind-Kill `docker-proxy`
+
+When `docker compose up` fails with "port is already allocated" or "bind: address already in use", the culprit is often a stray `docker-proxy` process from a previous stack. **Do not `kill -9` any `docker-proxy` PID without first identifying its owner** — you can silently take down another user's running container on the same host (co-hosted sites, CI runners, dev stacks on the same box).
+
+**Correct diagnostic flow:**
+1. Find the PID holding the port: `sudo ss -tlnp 'sport = :<port>'` or `sudo lsof -iTCP:<port> -sTCP:LISTEN`
+2. If the process is `docker-proxy`, read its argv: `cat /proc/<pid>/cmdline | tr '\0' ' '; echo` — look for `-host-port <port>` and `-container-id <hash>`
+3. Match the container-id to a running container: `docker ps --format '{{.ID}}\t{{.Names}}\t{{.Ports}}'`
+4. **If the container belongs to this project** (`qb-engineer-*`) → `docker compose down` or `docker rm -f <container>`, then retry `up`
+5. **If the container belongs to another project** → the port is legitimately in use; pick a different port or stop the other stack intentionally
+
+Scripts (`setup.sh`, `refresh.sh`) must follow this ownership check before taking any remediation action. Never blanket-kill all `docker-proxy` processes.
+
 ---
 
 ## IClock Abstraction
