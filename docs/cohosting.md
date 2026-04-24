@@ -5,7 +5,7 @@ QB Engineer can run in two hosting modes:
 | Mode | Who terminates TLS? | Public port | Use when |
 |------|--------------------|-------------|----------|
 | **standalone** (default) | The `qb-engineer-ui` container (nginx in the image) | `:443` (or `:80` plain) on `0.0.0.0` | The host has no other web services, or you're running locally. |
-| **cohost** | An existing host-level reverse proxy (nginx, Caddy, cloudflared, …) | Owned by that proxy | The host already serves another site (e.g. `armory-works.com`), or you want Cloudflare Tunnel to front the app. |
+| **cohost** | An existing host-level reverse proxy (nginx, Caddy, cloudflared, …) | Owned by that proxy | The host already serves another site, or you want Cloudflare Tunnel to front the app. |
 
 This doc covers cohost mode end-to-end.
 
