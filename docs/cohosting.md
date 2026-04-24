@@ -23,6 +23,30 @@ All it changes is **how ports are exposed** and **who owns TLS**:
 
 The app itself is unchanged.
 
+### Port binding: standalone vs cohost
+
+The base `docker-compose.yml` defaults every service's host-side bind to `127.0.0.1` (via `${UI_BIND:-127.0.0.1}`, `${API_BIND:-127.0.0.1}`, etc.). Cohost mode is therefore safe by default — no stray `0.0.0.0` binds. `setup.sh` handles the two modes like this:
+
+| Mode | What `setup.sh` writes to `.env` | Effective bind |
+|------|----------------------------------|----------------|
+| **standalone** | `UI_BIND=0.0.0.0`, `API_BIND=0.0.0.0`, `POSTGRES_BIND=0.0.0.0`, `MINIO_BIND=0.0.0.0`, `AI_BIND=0.0.0.0`, `TTS_BIND=0.0.0.0`, `DOCUSEAL_BIND=0.0.0.0`, `DEMO_BIND=0.0.0.0` | Every service on `0.0.0.0` — same as pre-cohost behavior (DBeaver on `5432`, MinIO console on `9001`, direct API hits from a LAN device, etc. all keep working). |
+| **cohost** | Strips any `*_BIND` keys from `.env` | Compose default of `127.0.0.1` takes over on every service. |
+
+Flipping `./setup.sh --standalone` ↔ `./setup.sh --cohost` rewrites `.env` accordingly — no manual cleanup. If you want a tighter standalone install (say, keep Postgres off the LAN), override any individual bind in `.env` after setup:
+
+```bash
+# .env — standalone install that only exposes the UI publicly
+UI_BIND=0.0.0.0
+API_BIND=127.0.0.1
+POSTGRES_BIND=127.0.0.1
+MINIO_BIND=127.0.0.1
+AI_BIND=127.0.0.1
+TTS_BIND=127.0.0.1
+DOCUSEAL_BIND=127.0.0.1
+```
+
+The dev overlay (`docker-compose.dev.yml`) sidesteps this entirely — it uses `!override` to republish every service on `0.0.0.0` regardless of mode, so device testing over LAN works in dev even when your cohost .env has loopback defaults.
+
 ---
 
 ## Activating cohost mode
