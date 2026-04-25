@@ -211,9 +211,6 @@ Proxy is reaching the UI, but `/api/*` isn't routing. In cohost mode the UI cont
 **SignalR keeps dropping with 1006.**
 Missing WebSocket upgrade headers on the host proxy. See the nginx config above — `Upgrade` and `Connection "upgrade"` are mandatory.
 
-**`/.well-known/openid-configuration` returns the SPA's `index.html` and `POST /connect/register` returns 405.**
-The UI container needs internal nginx rules forwarding `/connect/*` and `/.well-known/*` to the API container. Both are baked into [`qb-engineer-ui/nginx.conf`](../qb-engineer-ui/nginx.conf) and [`nginx-ssl.conf`](../qb-engineer-ui/nginx-ssl.conf) — if you're seeing this, you're running an older image; rebuild the UI: `docker compose up -d --build qb-engineer-ui`. The host vhost above (single `location /` → UI container) keeps working as-is; OIDC paths flow through the same forwarder and the UI nginx routes them onward.
-
 **`setup.sh` didn't detect my host nginx.**
 The detection globs on `qb-engineer*.conf` under `sites-enabled` and `conf.d`. If your vhost file is named differently, pass `--cohost` explicitly (once is enough; it's persisted to `.env`).
 
