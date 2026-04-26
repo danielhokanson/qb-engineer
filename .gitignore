@@ -1,0 +1,27 @@
+# --- Sibling repos (each has its own .git, must not be tracked here) ---
+/qb-engineer-deploy/
+/qb-engineer-server/
+/qb-engineer-ui/
+/qb-engineer-test/
+
+# --- Files hard-linked / junctioned in from sibling repos (owned by deploy) ---
+/docker-compose.yml
+/docker-compose.dev.yml
+/docker-compose.demo.yml
+/docker-compose.cohost.yml
+/docker-compose.export.yml
+/tools/
+
+# --- Local-only runtime artifacts ---
+/.env
+/.env.example
+/.compose-build.log
+/storage/
+
+# --- Local Claude / IDE config ---
+/.claude/
+
+# --- Personal scratch (not part of the meta repo) ---
+/Future Prompts/
+/phase-1-output/
+/RESUME-*.md
