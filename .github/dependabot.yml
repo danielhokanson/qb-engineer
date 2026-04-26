@@ -1,0 +1,12 @@
+# Dependabot config for qb-engineer (master/umbrella repo)
+#
+# Documentation + bootstrap scripts. No package ecosystems beyond Actions.
+
+version: 2
+updates:
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    target-branch: "develop"
