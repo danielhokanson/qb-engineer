@@ -999,6 +999,32 @@ Legend: Done | Partial | Not Started | N/A (deferred or out of scope)
 | **Event-Driven Infrastructure** | 24 | — | — |
 | **Auto-PO (MRP Enhancement)** | 7 | — | — |
 | **Scanner Operations** | 22 | — | — |
+| **Feature Gating / Capability System (Phase 4)** | 8 | — | — |
+
+---
+
+## Feature Gating / Capability System (Phase 4)
+
+Phase 4 (2026-04-26 → 2026-04-28) delivered a per-install capability gating system: 129 named capabilities (e.g. `CAP-MD-CUSTOMERS`, `CAP-INV-LOTS`) registered in a static catalog, gated at the controller and MediatR-pipeline layer with `[RequiresCapability]`, mutated through admin / discovery / preset surfaces, and audited end-to-end.
+
+| Item | Spec | Status | Notes |
+|------|------|--------|-------|
+| Capability catalog (129 codes) | phase-4-output/4A-capability-catalog | Done | Static `CapabilityCatalog.cs` with default-state, dependencies, mutexes; only declared mutex is `CAP-ACCT-EXTERNAL ⊥ CAP-ACCT-BUILTIN` codifying the accounting boundary |
+| Storage + descriptor + middleware foundation | phase-4-output/4D-gating-mechanism | Done | `capabilities` + `capability_configs` tables, snapshot provider, `CapabilityGateMiddleware`, `[RequiresCapability]`, `[CapabilityBootstrap]`, `GET /api/v1/capabilities` descriptor with weak ETag |
+| 57+ controllers gated end-to-end | phase-4-output/4F Phase B + Phase D | Done | Phase B initial slice (10 capabilities — CustomersController, VendorsController, PartsController, QuotesController, etc.) + Phase D bulk registration (12 sub-WUs across IDEN/MD/P2P/O2C/MFG/PLAN/INV/QC/MAINT/HR/RPT/CROSS/EXT) |
+| Mutation surface (admin endpoints) | phase-4-output/4F Phase C | Done | `PUT /capabilities/{code}/enabled`, `bulk-toggle`, `validate`, `audit-log`, with whole-set dependency / mutex validation, audit emission, and SignalR broadcast |
+| Admin UI (Browse / Detail / History) | phase-4-output/4F Phase E | Done | `/admin/capabilities` grid grouped by area, `/admin/capabilities/:code` detail, `/admin/capabilities/audit-log`; consultant-mode toggle, onboarding banner |
+| Discovery wizard (22 questions) | phase-4-output/4F Phase F | Done | `/admin/discovery` — bucketed-headcount / mode / sites routing, branch A/B/C, `DiscoveryRecommendationEngine` (pure function, 17 unit tests), `POST /discovery/preview` and `/discovery/apply` |
+| Preset browser + apply | phase-4-output/4F Phase G | Done | `/admin/presets` with 8 presets (7 named + Custom), compare matrix, custom builder, `PresetApplyDialogComponent` reusable confirmation modal, no-op apply emits audit row |
+| Hangfire / MediatR pipeline gating | phase-4-output/4F Phase H | Done | `CapabilityGateBehavior<TRequest, TResponse>` MediatR pipeline behavior — request types carry `[RequiresCapability]`, behavior throws `CapabilityDisabledException`. `BulkIndexDocumentsCommand` carries the smoke-demonstration attribute (`CAP-EXT-AI-ASSISTANT`) |
+
+**Open follow-ups (post-Phase-4):**
+- ~28 unmapped capabilities have no implementing endpoint today — tracked at `phase-4-output/library-expansion-queue.md`. Each is registered in the catalog and will be gated when the underlying endpoint is added.
+- AdminController grab-bag (roles, role-templates, track-types, etc.) intentionally ungated at the class level; a finer-grained pass would gate individual actions.
+- ShopFloorController kiosk-auth interaction with `CAP-IDEN-AUTH-KIOSK` not exhaustively mapped (kiosk auth is "always available where it exists").
+- Library coverage catch-up (~18-20 capabilities lack test cases — separate effort, see `phase-4-output/library-expansion-queue.md`).
+
+See `phase-4-output/PHASE-4-CLOSEOUT.md` for the closeout artifact.
 
 ---
 

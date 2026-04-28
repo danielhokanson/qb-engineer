@@ -1,5 +1,30 @@
 # Coding Standards
 
+## 0. Adding a New Feature — Step 0: Register the Capability
+
+**Before adding new endpoints or feature surface, decide which capability gates them.** Every controller / endpoint / nav entry / Hangfire job in the system flows through the Phase 4 capability-gating layer. New features must be registered the same way existing features were:
+
+1. **Pick or add a capability code in `qb-engineer-server/qb-engineer.api/Capabilities/CapabilityCatalog.cs`.** Either reuse an existing capability that semantically covers the new endpoint (e.g., adding a new lot-traceability query reuses `CAP-INV-LOTS`), or add a new `CapabilityDefinition` row with:
+   - A stable `CAP-{AREA}-{NAME}` code (e.g., `CAP-PLAN-MPS`, `CAP-QC-GAGE`). Codes are immutable forever once shipped.
+   - A `DefaultState` (on/off) — default-on for capabilities every install needs; default-off for opt-in features.
+   - Optional `Dependencies` and `Mutexes` declared in `CapabilityCatalogRelations.cs`.
+
+2. **Apply `[RequiresCapability("CAP-...")]` to the controller (or specific actions).** Class-level when every action shares one capability; action-level when a controller spans multiple capabilities. The existing `CapabilityGateMiddleware` reads the most-specific attribute and short-circuits with 403 + `X-Capability-Disabled` envelope when the capability is disabled.
+
+3. **For Hangfire-fired or other non-controller execution paths**, apply `[RequiresCapability("CAP-...")]` to the MediatR command type. The `CapabilityGateBehavior` pipeline behavior throws `CapabilityDisabledException` when the capability is disabled, which the global exception middleware translates to a 403.
+
+4. **Bootstrap-exempt endpoints** (auth, descriptor reads, capability admin, kiosk auth) carry `[CapabilityBootstrap]` instead of `[RequiresCapability]`. Bootstrap exemption is intentionally rare — only endpoints that must remain reachable when every capability is disabled qualify.
+
+5. **UI gating**: feature components and nav items consume `CapabilityService.isEnabled('CAP-...')` (signal-based) and either omit themselves with `@if` or use the `*appCap` structural directive. Server gate is the security boundary; UI gate is ergonomics.
+
+6. **Smoke test for the gate** lives in `qb-engineer-server/qb-engineer.tests/Capabilities/`. Pattern: pick one representative endpoint, disable its capability, assert 403 + envelope, restore. The Phase D `CapabilityPhaseDSmokeTests.cs` is the reference.
+
+The full design lives in `phase-4-output/4D-gating-mechanism/` (mechanism), `phase-4-output/4A-capability-catalog/` (the 129 capability codes), and `phase-4-output/PHASE-4-CLOSEOUT.md` (rollup). The catalog is the source of truth for codes; the markdown is the human mirror.
+
+**Rule of thumb:** if you find yourself writing a new controller or feature without thinking about which capability gates it, stop. Either pick the right existing capability or add a new one. Ungated endpoints are a compliance gap on every install.
+
+---
+
 ## 1. One Object Per File
 
 **Angular:**

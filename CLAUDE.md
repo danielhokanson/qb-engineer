@@ -2035,6 +2035,8 @@ Some features duplicate functionality that an accounting system (QuickBooks, Xer
    - Customer Addresses (multi-address model)
    - Margin calculations (estimated from app-owned data)
 
+6. **Codified via Phase 4 capability gating.** The accounting boundary is now enforced through the capability system as the mutex pair `CAP-ACCT-EXTERNAL ⊥ CAP-ACCT-BUILTIN` (the only declared mutex in the catalog). `CAP-ACCT-FULLGL` is registered as an aspirational placeholder — never enabled, gating returns 403 with a "not yet available" tone. See the **Capability Gating** section below for the mechanism.
+
 ### Implementation Pattern
 ```csharp
 // .NET — Controller or handler checks mode
@@ -2045,6 +2047,36 @@ if (_accountingService.IsConfigured)
 readonly isStandalone = this.accountingService.isStandalone;
 // Template: @if (isStandalone()) { <invoice-crud /> }
 ```
+
+---
+
+## Capability Gating (Phase 4)
+
+The system runs on a **per-install capability gate**: 129 named capabilities (e.g., `CAP-MD-CUSTOMERS`, `CAP-INV-LOTS`, `CAP-EXT-AI-ASSISTANT`) are registered in a static catalog. Each install's capability state is stored in the `capabilities` table; controllers and Hangfire-fired commands carry `[RequiresCapability("CAP-...")]` attributes; the `CapabilityGateMiddleware` (controller side) and `CapabilityGateBehavior` (MediatR side) short-circuit with 403 + envelope when a capability is disabled. Bootstrap-exempt endpoints (auth, descriptor, capability admin) carry `[CapabilityBootstrap]` instead so admins are never locked out.
+
+**Where things live:**
+- **Catalog (source of truth)**: `qb-engineer-server/qb-engineer.api/Capabilities/CapabilityCatalog.cs` — 129 capabilities with code, name, area, default-state, dependencies/mutexes
+- **Relations**: `CapabilityCatalogRelations.cs` — dependency edges + mutex pairs (only one declared mutex today: `CAP-ACCT-EXTERNAL ⊥ CAP-ACCT-BUILTIN`)
+- **Snapshot + middleware**: `CapabilitySnapshot.cs`, `ICapabilitySnapshotProvider`, `CapabilityGateMiddleware.cs`, `CapabilityGateBehavior.cs`
+- **Mutation API**: `CapabilitiesController` exposes `PUT /api/v1/capabilities/{code}/enabled`, bulk-toggle, validate, audit-log; preset & discovery endpoints layered on top
+- **Frontend service**: `CapabilityService` (loaded on login, refreshes on SignalR `capabilityChanged` push) + `*appCap` directive + `capabilityGuard` route guard
+
+**Toggling capabilities:**
+- Admin UI at `/admin/capabilities` (browse grid grouped by area), `/admin/capabilities/:code` (detail), `/admin/capabilities/audit-log` (history)
+- Discovery wizard at `/admin/discovery` (22-question flow, server-side recommendation engine, applies a preset)
+- Preset browser at `/admin/presets` (8 presets — 7 named + Custom — with diff modal before apply)
+- Direct API: `PUT /api/v1/capabilities/{code}/enabled` (admin-only, bootstrap-exempt)
+
+**Adding a new feature**: see `docs/coding-standards.md` §0 — every new endpoint either reuses an existing capability or registers a new one in the catalog before it ships.
+
+**Design artifacts (deep-dive, decision history)**:
+- `phase-4-output/4A-capability-catalog/` — all 129 capabilities with rationale
+- `phase-4-output/4B-preset-design/` — 8 presets with target profile + capability set
+- `phase-4-output/4C-discovery-flow/` — 22-question wizard + recommendation algorithm
+- `phase-4-output/4D-gating-mechanism/` — middleware + descriptor + audit pipeline
+- `phase-4-output/4E-admin-ui/` — browse / discovery / preset / detail screens
+- `phase-4-output/4F-implementation-plan/` — phasing strategy + per-phase decisions
+- `phase-4-output/PHASE-4-CLOSEOUT.md` — rollup summary
 
 ---
 
