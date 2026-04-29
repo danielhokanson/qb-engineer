@@ -228,3 +228,46 @@ Phase 7 specifically: `setup.ps1`/`setup.sh` keep their first-time-bootstrap rol
 - **Versioning the meta repo and the deploy repo.** Right now they're on `main` only. If we ever cohost a customer who pins to a specific qb-engineer release, both repos likely want semver tags too. Out of scope until that customer exists.
 - **Pi disk pressure.** Each deploy leaves a previous image on disk. `docker image prune --filter "until=720h"` (30 days) on a weekly cron handles this without manual intervention. Worth adding to the install script.
 - **Migrating off the Pi.** If the production host ever moves from a Pi to a VM/cloud host, only the build runner choice changes (drop the explicit ARM64 target if no longer needed). The CD half is host-agnostic.
+
+## Phase 3+4 addendum (2026-04-28)
+
+Decisions made while implementing the CLI and prod overlay that the
+original design didn't pin down. None of these change the architecture;
+they're just the small calls that needed making.
+
+- **Test image (`qb-engineer-test`) is wired in the CLI from day one.** The
+  design doc predates the test-site decision and only mentions
+  `server` and `ui`. The CLI lists/deploys/rolls-back the third image
+  identically; the prod compose overlay carries it as a commented-out
+  block (uncommented when Phase 6's test-site `release.yml` lands and the
+  base compose grows a `qb-engineer-test` service). This avoids a churn
+  pass through the CLI later.
+- **Healthcheck mapping per service:**
+  - `api` -- HTTP probe to `http://127.0.0.1:${API_PORT}/api/v1/health`
+    (port read from the operative `.env`, default 5000). This is the
+    documented health endpoint and is reachable from the Pi without any
+    container shell hop.
+  - `ui` -- container's own `HEALTHCHECK` (nginx wget `:80/`). Already
+    defined in `qb-engineer-ui/Dockerfile`; `qb-deploy` reads the
+    container's `State.Health.Status` via `docker inspect`.
+  - `test` -- same approach as ui (container `HEALTHCHECK`). The
+    test-site Dockerfile owns the specific probe; the CLI is agnostic.
+- **Tag-format regexes (committed):**
+  - `^main-[a-f0-9]{7}$` for SHA tags (matches `docker/metadata-action`
+    `format=short` output exactly).
+  - `^[0-9]+\.[0-9]+\.[0-9]+$` for semver release tags.
+  - Anything else (including `latest`, `<X.Y>`, `<X>`) is rejected with
+    a clear error pointing the operator at `qb-deploy --list`.
+- **GHCR auth path:** anonymous bearer token via
+  `https://ghcr.io/token?service=ghcr.io&scope=repository:<owner>/<repo>:pull`,
+  then `Authorization: Bearer ...` against `/v2/.../tags/list` and
+  `HEAD /v2/.../manifests/<tag>`. Public-image-friendly; no Pi-side
+  credentials.
+- **State file lives at `/etc/qb-engineer/deploy-state.json`** (0640,
+  owned by deploy user). Three image entries (server, ui, test) are
+  pre-created so jq updates don't have to handle a missing key.
+- **Dev defaults for image tags are `latest`.** `qb-deploy` refuses to
+  *deploy* `latest`, but the prod compose still needs a default value
+  so `docker compose config` validates cleanly even when no `.env` is
+  present. Belt-and-suspenders: production never reaches that default
+  because qb-deploy pins an immutable tag before invoking compose.
