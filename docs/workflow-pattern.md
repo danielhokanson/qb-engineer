@@ -112,7 +112,32 @@ This separation matters because:
 - **Status is the source of truth.** A Part is complete iff its readiness validators pass and the user (or the workflow) has promoted it. List pages filter by status; they never need to evaluate workflow-level predicates.
 - **Pre-existing entities are unambiguous.** They're already `Active`. They satisfied readiness when they got promoted. The workflow concept doesn't touch them.
 
-**Entity readiness validators** are defined per entity type:
+**Entity readiness validators are stored as data in the database**, not hardcoded. This lets workflows be reauthored without code releases and lets the same DSL evaluator drive every entity type.
+
+```sql
+CREATE TABLE entity_readiness_validators (
+  entity_type           varchar(64),
+  validator_id          varchar(64),       -- 'hasBom'
+  predicate             jsonb,             -- the DSL expression
+  display_name_key      varchar(128),      -- i18n key — canonical noun ("BOM")
+  missing_message_key   varchar(128),      -- i18n key — failure phrasing ("BOM not yet defined")
+  PRIMARY KEY (entity_type, validator_id)
+);
+
+CREATE TABLE workflow_definitions (
+  id              varchar(64) PK,           -- 'part-assembly-guided-v1'
+  entity_type     varchar(64),
+  default_mode    varchar(16),
+  steps           jsonb,                    -- ordered list with completionGates references
+  express_template_component varchar(128)
+);
+```
+
+`display_name_key` is the validator's canonical noun (used in admin listings, generic listings); `missing_message_key` is the failure phrasing (used in status-promotion error responses, row-level enrichment "Draft — missing BOM"). Workflow steps have their OWN `labelKey` in the workflow definition, separate from the validator's display name — same validator can appear under different step labels in different workflow variants.
+
+**Predicate DSL** (data-form, evaluated by a shared interpreter on each tier):
+
+
 
 ```typescript
 // Defined on or near the entity model
@@ -369,14 +394,27 @@ Status legend: ⚪ not designed · 🟡 designing · 🟢 designed · 🔵 imple
 
 To concretize the abstract design, here's how Part-Assembly creation maps end-to-end.
 
-**Entity readiness (defined on or near the Part model — not workflow-specific):**
-```typescript
-const partReadiness = {
-  hasBasics:  { code: (p) => !!(p.name && p.type && p.material) },
-  hasBom:     { code: (p) => p.bomEntries?.length > 0 },
-  hasRouting: { code: (p) => p.operations?.length > 0 },
-  hasCost:    { code: (p) => p.manualCostOverride != null || p.currentCostCalculationId != null },
-};
+**Entity readiness validators (stored in `entity_readiness_validators`, seeded once):**
+
+```jsonc
+// (entity_type='Part', validator_id='hasBasics')
+{ "type": "all", "of": [
+    {"type":"fieldPresent","field":"name"},
+    {"type":"fieldPresent","field":"type"},
+    {"type":"fieldPresent","field":"material"}
+]}
+
+// (entity_type='Part', validator_id='hasBom')
+{ "type": "relationExists", "relation": "bomEntries", "minCount": 1 }
+
+// (entity_type='Part', validator_id='hasRouting')
+{ "type": "relationExists", "relation": "operations", "minCount": 1 }
+
+// (entity_type='Part', validator_id='hasCost')
+{ "type": "any", "of": [
+    {"type":"fieldPresent","field":"manualCostOverride"},
+    {"type":"fieldPresent","field":"currentCostCalculationId"}
+]}
 ```
 
 **WorkflowDefinition (references the readiness gates by name):**
