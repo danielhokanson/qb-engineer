@@ -36,11 +36,13 @@ Cons:
 
 First run through is **linear** — step N+1 is disabled until step N is complete. Once step N is complete, a left-hand step guide enables click-back to any earlier completed step.
 
-On re-entry to an in-flight or completed workflow, the same rules apply:
-- Steps the user has completed are navigable
-- Steps not yet completed remain locked behind their predecessor
+**Step rail clickability rules:**
+- Step is **clickable** if it is the **current step** OR a **completed step** (anything to the left of current in the linear flow)
+- Step is **locked (non-clickable)** if it is a **future step** (anything to the right of current that hasn't yet been reached)
 
-This gives the user the wizard's hand-holding on first encounter and the random-access freedom of a process map after they know the shape. Edits to any completed step are tracked separately (audit).
+On re-entry to an in-flight or completed workflow, the same rules apply. The user can navigate back to any completed step at any time. Re-edits trigger entity-audit rows in the normal way.
+
+This gives the user the wizard's hand-holding on first encounter and the random-access freedom of a process map after they know the shape.
 
 ### D3 — Financial complexity: three layers of inheritance, last one wins
 
@@ -83,15 +85,65 @@ ALTER TABLE parts ADD COLUMN costing_mode_override varchar(16) NULL
 ```
 Same column added to other cost-bearing entities (sales-order line, work order, etc.) where per-record override makes sense. The audit log captures who set the override and when, so cost variance investigation has a forensic trail.
 
-### D4 — Express vs. Guided fork persists post-creation
+### D4 — Express vs. Guided fork persists post-creation, available throughout
 
-Both paths edit the same data. The user's choice at creation is just the *initial* surface; they can switch any time via a header toggle on the record's detail page.
+Both paths edit the same data. The user's choice at creation is just the *initial* surface; they can switch **at any point — including mid-workflow** — via a header toggle on the record's detail page.
 
 Default for new records on a per-entity-type basis:
 - **Quick path**: low-friction default. Single-step. All visible fields.
 - **Guided path**: revealed via "Set up step-by-step" affordance on the create flow.
 
+**Mid-flow switching is intentional.** A user halfway through a guided assembly setup can toggle to express, see all fields at once (preview-style), and switch back. Visual transition may feel jarring on first use but the value of letting users *preview* the data-heavy edit shape outweighs the consistency cost — and over time the user builds intuition for both shapes.
+
 Once a record exists, both paths render the same detail page in their respective shapes — the data is the data. The toggle in the header lets the user pick.
+
+### D6 — Step completion is *derived* from entity data, not stored
+
+A step's "complete" status is a **predicate over the entity's data**, evaluated at read time, not a stored flag.
+
+**Examples** (for `part-assembly-guided-v1`):
+| Step | Predicate |
+|---|---|
+| `basics` | `part.name IS NOT NULL AND part.type IS NOT NULL AND part.material IS NOT NULL` |
+| `bom` | `EXISTS (SELECT 1 FROM bom_entries WHERE part_id = part.id)` |
+| `routing` | `EXISTS (SELECT 1 FROM operations WHERE part_id = part.id)` |
+| `costing` | `part.manual_cost_override IS NOT NULL OR part.current_cost_calculation_id IS NOT NULL` |
+| `alternates` | `false  -- optional step; never auto-completes` |
+
+**Why this matters:**
+- **No drift.** If an admin manually adds a BOM row outside the workflow, step 2 immediately becomes "complete" without any workflow code knowing. The workflow can't lie about reality.
+- **Pre-existing entities work seamlessly.** Records that existed before workflows were added simply "appear complete on whichever steps their data covers." No backfill, no migration. Solves the legacy-records concern from the migration question.
+- **Bulk progress at scale is cheap.** A list page rendering "Parts (50)" with progress badges executes a single SQL query with EXISTS subqueries. No workflow_runs join, no per-row N+1.
+- **Predicates are reusable across entity types.** "has BOM" applies the same way whether the entity is a Part-Assembly, a Quote-Line, or a Work-Order step plan.
+
+**workflow_runs is still needed** — but for *user experience metadata*, not step completion:
+- Which `mode` the user prefers for this record (express vs. guided)
+- `current_step_id` — where the user was when they last left
+- `last_activity_at` — for resume affordances
+- Abandonment tracking — for the TTL cleanup
+- Optional steps that have no data side-effect (e.g., a "review and acknowledge" step that wouldn't be derivable)
+
+**Predicates are defined on the WorkflowDefinition** as both:
+- A SQL fragment (for bulk progress queries on list pages)
+- A TypeScript/C# function (for client-side / single-record evaluation)
+
+Both express the same logic. To avoid drift, predicates have a verification test that asserts SQL and code paths return the same boolean for known inputs.
+
+```typescript
+interface StepDefinition {
+  id: string;
+  i18nKey: string;
+  componentName: string;
+  required: boolean;
+  // Completion predicate: derived, not stored
+  completionPredicate: {
+    sql: string;          // joinable expression for bulk queries
+    code: (entity: EntityWithRelations) => boolean;
+  };
+}
+```
+
+This is the architectural simplification: workflow_runs becomes a thin metadata table, not a parallel state-machine implementation.
 
 ### D5 — Cost recalc (proposed, deferred to later phase)
 
@@ -104,24 +156,27 @@ This phase doesn't depend on workflow infrastructure but should be designed alon
 
 ## Storage schema
 
-### `workflow_runs` (new)
+### `workflow_runs` (new) — UX metadata only
+
+Per D6, step completion is derived from entity data, not stored. `workflow_runs` only tracks user-experience metadata.
 
 | Column | Type | Notes |
 |---|---|---|
 | `id` | int PK | |
 | `entity_type` | varchar(64) | `'Part'`, `'Customer'`, `'Quote'`, etc. |
 | `entity_id` | int | FK to the entity's table; NOT a real FK constraint because of polymorphism |
-| `definition_id` | varchar(64) | which `WorkflowDefinition` this run uses (e.g., `'part-assembly-guided-v1'`) |
-| `current_step_id` | varchar(64) | step the user is on |
-| `step_states` | jsonb | per-step: `{started_at, completed_at, completed_by_user_id, validation_status}` |
-| `mode` | varchar(16) | `'express'` \| `'guided'` (the user's most recent choice; affects which surface renders by default) |
+| `definition_id` | varchar(64) | which `WorkflowDefinition` this run uses (pinned at start, e.g., `'part-assembly-guided-v1'`) |
+| `current_step_id` | varchar(64) nullable | last step the user was on (resume target) |
+| `mode` | varchar(16) | `'express'` \| `'guided'` (current presentation choice) |
 | `started_at` | timestamptz | |
 | `started_by_user_id` | int | |
-| `completed_at` | timestamptz nullable | null while in flight |
-| `last_activity_at` | timestamptz | for "resume" prompts |
+| `completed_at` | timestamptz nullable | null while in flight; auto-derives from "all required predicates pass" but user must explicitly mark complete |
+| `abandoned_at` | timestamptz nullable | TTL-driven or user-initiated cleanup |
+| `abandoned_reason` | varchar(64) nullable | `'expired'`, `'user'`, `'definition-deprecated'`, etc. |
+| `last_activity_at` | timestamptz | for "resume" prompts and TTL cleanup |
 | `row_version` | uint8[] | optimistic locking |
 
-One row per (entity_type, entity_id) — UNIQUE constraint. A workflow is the *story* of how this record was filled in; replaying with a new definition is a separate run-history entry tied via a `superseded_by_run_id`.
+One row per (entity_type, entity_id) — UNIQUE constraint. Pre-existing entities have NO workflow_run row (and don't need one — predicates work on raw data state).
 
 ### `costing_profiles` (new — for D3 / D5)
 
@@ -170,17 +225,26 @@ POST   /api/v1/workflows                      Start a new run
        body: { entityType, definitionId, mode, initialEntityData? }
        returns: { runId, entityId, currentStepId }
 
-GET    /api/v1/workflows/{runId}              Get current state
-PATCH  /api/v1/workflows/{runId}/step         Save current step + advance
-       body: { stepId, fields, complete: bool }
+GET    /api/v1/workflows/{runId}              Get current state + computed step progress
+PATCH  /api/v1/workflows/{runId}/step         Save current step's fields, advance pointer
+       body: { stepId, fields }
+       (step "completion" is derived per D6; advancing the pointer just
+        moves current_step_id and validates prior step's predicate passes)
 PATCH  /api/v1/workflows/{runId}/jump         Navigate to a different step
        body: { targetStepId }
-       (server validates targetStepId is reachable per D2 rules)
-POST   /api/v1/workflows/{runId}/complete     Mark run done; flip entity status to Active
+       (server validates targetStepId is current OR an earlier completed
+        step per D2 rules — derived predicates re-evaluated)
+POST   /api/v1/workflows/{runId}/complete     Mark run done; flip entity status Draft → Active
+                                               (server verifies all required steps' predicates pass)
 POST   /api/v1/workflows/{runId}/abandon      Cancel and remove the draft entity
 PATCH  /api/v1/workflows/{runId}/mode         Toggle express ↔ guided
-GET    /api/v1/workflows/{runId}/audit        Per-step change history
 GET    /api/v1/workflows/active               Current user's in-flight runs (for resume prompts)
+
+# Bulk progress for list pages — derives step completion from entity
+# data via SQL EXISTS subqueries; no workflow_runs join needed.
+GET    /api/v1/workflows/progress?entityType={type}&entityIds={csv}
+       returns: { entityId: { completedSteps: [...], totalSteps: N, mode: 'express'|'guided'|null } }
+       (mode is null when no workflow_runs row exists — pre-existing entity)
 ```
 
 ## UI shell
@@ -261,21 +325,112 @@ Status legend: ⚪ not designed · 🟡 designing · 🟢 designed · 🔵 imple
 | Compliance form | ⚪ | (none — guided only) | already a workflow; integrate with this pattern | W-4, I-9, state withholding |
 | Setup wizard | ✅ | — | already a workflow | adapt to new shell? lower priority |
 
+## Worked example: `part-assembly-guided-v1`
+
+To concretize the abstract design, here's how Part-Assembly creation maps end-to-end.
+
+**WorkflowDefinition (code-defined):**
+```typescript
+{
+  id: 'part-assembly-guided-v1',
+  entityType: 'Part',
+  defaultMode: 'guided',  // for assemblies; raw materials default 'express'
+  expressTemplateComponent: 'PartExpressFormComponent',
+  steps: [
+    {
+      id: 'basics',
+      i18nKey: 'workflow.parts.steps.basics',
+      componentName: 'PartBasicsStepComponent',
+      required: true,
+      completionPredicate: {
+        sql: "p.name IS NOT NULL AND p.type IS NOT NULL AND p.material IS NOT NULL",
+        code: (p) => !!(p.name && p.type && p.material),
+      },
+    },
+    {
+      id: 'bom',
+      i18nKey: 'workflow.parts.steps.bom',
+      componentName: 'PartBomStepComponent',
+      required: true,
+      completionPredicate: {
+        sql: "EXISTS (SELECT 1 FROM bom_entries b WHERE b.part_id = p.id)",
+        code: (p) => p.bomEntries?.length > 0,
+      },
+    },
+    {
+      id: 'routing',
+      i18nKey: 'workflow.parts.steps.routing',
+      componentName: 'PartRoutingStepComponent',
+      required: true,
+      completionPredicate: {
+        sql: "EXISTS (SELECT 1 FROM operations o WHERE o.part_id = p.id)",
+        code: (p) => p.operations?.length > 0,
+      },
+    },
+    {
+      id: 'costing',
+      i18nKey: 'workflow.parts.steps.costing',
+      componentName: 'PartCostingStepComponent',
+      required: true,
+      completionPredicate: {
+        sql: "p.manual_cost_override IS NOT NULL OR p.current_cost_calculation_id IS NOT NULL",
+        code: (p) => p.manualCostOverride != null || p.currentCostCalculationId != null,
+      },
+    },
+    {
+      id: 'alternates',
+      i18nKey: 'workflow.parts.steps.alternates',
+      componentName: 'PartAlternatesStepComponent',
+      required: false,  // optional — never auto-completes
+      completionPredicate: {
+        sql: "false",
+        code: () => false,
+      },
+    },
+  ],
+}
+```
+
+**Lifecycle of one part:**
+
+1. User clicks "New Assembly" on /parts list page
+2. UI calls `POST /api/v1/workflows` with `{entityType: 'Part', definitionId: 'part-assembly-guided-v1', mode: 'guided', initialEntityData: {...}}`
+3. Server creates `parts` row with `status='Draft'` and `workflow_runs` row with `current_step_id='basics'`
+4. UI navigates to `/parts/{id}?workflow=part-assembly-guided-v1` and mounts WorkflowComponent
+5. User fills basics fields → `PATCH /api/v1/workflows/{runId}/step` with `{stepId: 'basics', fields: {...}}` → server saves to `parts` table
+6. User clicks "Next" → server re-evaluates `basics.completionPredicate`, confirms it passes, advances `current_step_id='bom'`
+7. User builds out BOM via the BOM step component (which writes to `bom_entries`)
+8. User clicks back to "basics" via the step rail (allowed — completed step). Edits a field. Saves. Step rail still shows basics complete (predicate still passes).
+9. User reaches costing, picks "Tier 1 — Flat rate" override + types a price
+10. User reaches alternates, skips (optional)
+11. User clicks "Complete" → server checks all REQUIRED predicates pass → flips `status='Active'`, sets `workflow_runs.completed_at`
+12. Part now appears in the live /parts list, available for use in quotes / sales orders / etc.
+
+**At the same time, the /parts list page renders 50 parts, each showing a "3 of 4" progress badge:**
+
+13. UI calls `GET /api/v1/workflows/progress?entityType=Part&entityIds=1,2,3,…,50`
+14. Server runs ONE query joining `parts` to bom_entries / operations / cost_calculations with EXISTS subqueries; computes per-part `completedSteps`
+15. UI receives `{1: {completedSteps: ['basics','bom','routing'], totalSteps: 4, mode: 'guided'}, 2: {...}}` and renders the badges
+
+No N+1, no workflow_runs join in the bulk query, no per-row inflation. The workflow concept layered cleanly on top of a normal entity list.
+
 ## Implementation phases
 
 | Phase | Deliverable |
 |---|---|
 | 1 | This design doc — captured |
-| 2 | `workflow_runs` table + EF migration + base API resource (CRUD on workflow runs) |
-| 3 | `WorkflowComponent` UI shell + step-rail + mode-toggle + resume infrastructure |
-| 4 | First end-to-end vertical slice: **Part — assembly guided variant**. Validates the pattern. |
-| 5 | Re-implement **Part — raw material** as the express-only sibling. Validates the spectrum. |
-| 6 | `CostingProfile` resource + tier-1 (flat-rate) implementation |
-| 7 | Roll out next 2-3 entity types per the rolling list — picks based on user pain points |
-| 8 | (Future) Tier-2 / Tier-3 costing modes; cost-recalc tool |
-| 9 | (Future) Graduation suggestions; recalc batch jobs |
+| 2 | Schema: `workflow_runs` (UX metadata only per D6), `workflow_run_entities` junction (per Q3), `costing_profiles`, `cost_calculations`, `cost_calculation_inputs`. EF migration. Per-entity `manual_cost_override` + `current_cost_calculation_id` columns on cost-bearing entities. `status='Draft'` enum value. |
+| 3 | Base API resource — workflow CRUD + bulk progress endpoint. Predicate runtime: TS function evaluator + SQL fragment builder. Drift-verification test that asserts SQL and TS predicates agree on known inputs. |
+| 4 | `WorkflowComponent` UI shell — step-rail with D2 clickability rules, mode-toggle (D4 always-available), resume infrastructure. |
+| 5 | First end-to-end vertical slice: **Part — assembly guided variant**. Validates the pattern. Per-step components for parts: basics, BOM, routing, costing (tier-1 only), alternates. |
+| 6 | **Part — raw material** as the express-only sibling. Validates that `mode='express'` against the same WorkflowDefinition works correctly. |
+| 7 | `CostingProfile` API + tier-1 (flat-rate) costing applied during assembly creation. Manual override UX. |
+| 8 | Drafts ↔ workflow_runs handoff. Express-form draft → entity creation → workflow_run takeover, draft cleanup. |
+| 9 | Roll out next 2-3 entity types per the rolling list — picks based on user pain points (likely customer or quote next). |
+| 10 | (Future) Tier-2 / Tier-3 costing modes; cost-recalc tool (D5 implementation populates the `cost_calculations` interface already in place). |
+| 11 | (Future) Graduation suggestions; recalc batch jobs. TTL cleanup Hangfire job. |
 
-Phases 1–6 establish the substrate. Phases 7+ are entity-type-by-entity-type rollouts at lower ceremony per entity once the base library is proven.
+Phases 1–8 establish the substrate. Phase 9+ are entity-type-by-entity-type rollouts at lower ceremony per entity once the base library is proven.
 
 ## D3 ↔ D5 interface (lock-in)
 
@@ -292,12 +447,28 @@ CREATE TABLE cost_calculations (
   entity_id        int,
   profile_id       int FK costing_profiles,
   profile_version  int,                -- snapshot of profile at calc time
-  inputs_snapshot  jsonb,              -- BOM, routing, hours, drivers — frozen
   result_amount    decimal(18,4),
   result_breakdown jsonb,              -- direct material, direct labor, overhead
   calculated_at    timestamptz,
   calculated_by    int nullable,       -- user (manual) or null (job-driven)
   is_current       bool                -- true on the latest per entity
+);
+
+-- Inputs get their own normalized table with structured columns for the
+-- common cases plus jsonb for tier-3 ABC / custom drivers. This avoids
+-- a single jsonb blob that becomes hard to query / index / migrate.
+CREATE TABLE cost_calculation_inputs (
+  id                       int PK,
+  cost_calculation_id      int FK cost_calculations UNIQUE,
+  -- Common structured inputs (most calculations use these)
+  direct_material_cost     decimal(18,4) nullable,
+  direct_labor_hours       decimal(10,2) nullable,
+  direct_labor_cost        decimal(18,4) nullable,
+  machine_hours            decimal(10,2) nullable,
+  overhead_amount          decimal(18,4) nullable,
+  overhead_rate_pct        decimal(7,4)  nullable,
+  -- Tier-3 ABC pools, custom drivers, future expansion
+  custom_inputs            jsonb         nullable
 );
 
 ALTER TABLE parts
