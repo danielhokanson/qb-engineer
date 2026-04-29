@@ -277,12 +277,93 @@ Status legend: ⚪ not designed · 🟡 designing · 🟢 designed · 🔵 imple
 
 Phases 1–6 establish the substrate. Phases 7+ are entity-type-by-entity-type rollouts at lower ceremony per entity once the base library is proven.
 
-## Open questions
+## D3 ↔ D5 interface (lock-in)
 
-- **Multiple in-flight runs per entity?** A user might want two competing assembly designs side by side. The schema's UNIQUE constraint on (entity_type, entity_id) doesn't allow this. Resolution: probably yes for some entity types but not most; revisit on a per-entity basis.
-- **Workflow definition versioning.** What happens when an in-flight run's definition is updated mid-flight? Current proposal: pin definition_id at start; new definitions only apply to new runs. Old runs complete on their original schema.
-- **Cross-entity workflows.** Some processes span multiple entities (employee onboarding touches user record + employee profile + tax forms + training + kiosk). Is that one workflow with multiple entityIds, or N coordinated workflows? Probably the former; needs schema accommodation.
-- **Audit granularity.** Per-step change-set audit, or per-field? Per-step is simpler; per-field gives precise history. Defer to existing entity-audit conventions.
+D5 (cost recalc engine) will eventually drive D3 (which numbers display per part / quote / etc.). The interface contract is locked in NOW so D5 work later just *populates* the contract instead of reshaping the data model.
+
+**Contract**: cost-bearing entities read their current cost from a `CostCalculation` snapshot if one exists, else fall back to a manually-entered value.
+
+**Schema additions made now** (table empty until D5 lands):
+
+```sql
+CREATE TABLE cost_calculations (
+  id               int PK,
+  entity_type      varchar(64),       -- 'Part', 'Quote.line', 'WorkOrder', etc.
+  entity_id        int,
+  profile_id       int FK costing_profiles,
+  profile_version  int,                -- snapshot of profile at calc time
+  inputs_snapshot  jsonb,              -- BOM, routing, hours, drivers — frozen
+  result_amount    decimal(18,4),
+  result_breakdown jsonb,              -- direct material, direct labor, overhead
+  calculated_at    timestamptz,
+  calculated_by    int nullable,       -- user (manual) or null (job-driven)
+  is_current       bool                -- true on the latest per entity
+);
+
+ALTER TABLE parts
+  ADD COLUMN current_cost_calculation_id int NULL FK cost_calculations,
+  ADD COLUMN manual_cost_override        decimal(18,4) NULL;
+
+-- (similar additions to other cost-bearing entities)
+```
+
+**Read logic** (D3, today and forever):
+```
+displayed_cost(record) =
+  record.manual_cost_override          (user pinned a value)
+  ?? cost_calculations[current_cost_calculation_id].result_amount  (D5)
+  ?? null                              (no calc yet — show "Set price" / "Recalculate")
+```
+
+Manual override always wins (per-record D3 freedom). Until D5 ships, only `manual_cost_override` is ever populated. After D5, recalcs populate `cost_calculations` rows and update `current_cost_calculation_id`.
+
+## Resolved questions (formerly open)
+
+### Q1 — Multiple in-flight runs per entity?
+
+**Resolved: NO. One run per entity (UNIQUE constraint stays).**
+
+Competing designs use the existing "alternates" relationship — two parts, marked as alternates, each with its own workflow_run. Branched drafts on a single entity would require diff/merge UI for which there's no demand.
+
+### Q2 — Workflow definition versioning
+
+**Resolved: pin definition_id at run start; new definitions affect only new runs.**
+
+`WorkflowDefinition.id` includes a version suffix (`part-assembly-guided-v1`, `-v2`). In-flight runs stay on their pinned definition until completed or abandoned. Migrating an in-flight run to a new definition requires explicit user action (audit-trailed).
+
+### Q3 — Cross-entity workflows
+
+**Resolved: one workflow_run with multiple entity refs via junction table.**
+
+```sql
+CREATE TABLE workflow_run_entities (
+  run_id      int FK workflow_runs,
+  entity_type varchar(64),
+  entity_id   int,
+  role        varchar(32),         -- 'primary', 'tax-form', 'training', ...
+  PRIMARY KEY (run_id, entity_type, entity_id)
+);
+```
+
+Steps reference `(entity_type, entity_id)` from this junction. The primary entity stays on the `workflow_runs` main row for the common single-entity case; the junction lets multi-entity flows (employee onboarding, quote-to-SO conversion) declare additional bound entities.
+
+### Q4 — Audit granularity
+
+**Resolved: split into two complementary lenses.**
+
+- **Workflow audit** = step-level events (started, completed, jumped, mode-toggled, abandoned). Stored as `eventType='WorkflowStep…'` rows in the existing `audit_log_entries` table.
+- **Entity audit** = per-row-write events. Already covered by Phase 4's existing audit infrastructure (WU-A2). Entity-row audit rows that originate from inside a workflow get a `workflow_run_id` and `step_id` attribution so cost-variance investigation can trace back: "this BOM row was added during step 3 of the part-assembly-guided workflow on Apr 29 by Jane."
+
+The two audits link via `workflow_run_id`. No duplication; complementary lenses.
+
+### Q5 — Drafts (`DraftService`) vs workflow_runs
+
+**Resolved: coexist with sharp role boundaries.**
+
+- **DraftService = form-state autosave for unsubmitted state.** Open dialog, user types, hasn't clicked Submit. Persists in IndexedDB / via existing draft pattern. Has a TTL. Disappears once submitted or explicitly discarded. **No DB row in workflow_runs** until the user submits.
+- **workflow_runs = persisted workflow state for entities that have been *started*.** "Started" = user clicked Create (express) or Begin (guided), the entity now has a `Draft` row, the workflow run is tracking progress.
+
+**Transition**: a draft autosave becomes a workflow run when the user clicks the form's primary action. The draft entry is deleted; the workflow_run takes over. This preserves the express path's lazy-commit UX (no DB pollution from abandoned what-ifs) while using the unified workflow model once the user commits.
 
 ## Relationship to other phases
 
