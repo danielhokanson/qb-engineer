@@ -97,37 +97,51 @@ Default for new records on a per-entity-type basis:
 
 Once a record exists, both paths render the same detail page in their respective shapes — the data is the data. The toggle in the header lets the user pick.
 
-### D6 — Step completion is *derived* from entity data, not stored
+### D6 — Entity readiness is the source of truth for completeness; workflow steps reference it
 
-A step's "complete" status is a **predicate over the entity's data**, evaluated at read time, not a stored flag.
+**The split:**
 
-**Examples** (for `part-assembly-guided-v1`):
-| Step | Predicate |
+| Concept | Owns |
 |---|---|
-| `basics` | `part.name IS NOT NULL AND part.type IS NOT NULL AND part.material IS NOT NULL` |
-| `bom` | `EXISTS (SELECT 1 FROM bom_entries WHERE part_id = part.id)` |
-| `routing` | `EXISTS (SELECT 1 FROM operations WHERE part_id = part.id)` |
-| `costing` | `part.manual_cost_override IS NOT NULL OR part.current_cost_calculation_id IS NOT NULL` |
-| `alternates` | `false  -- optional step; never auto-completes` |
+| **Entity status** (`Draft` / `Active` / etc.) | Whether the entity is functionally complete |
+| **Entity readiness validators** | Defined at the entity level. List of named conditions that must pass to leave Draft. |
+| **Workflow steps** | Guided UX path to fill the entity to a state where readiness passes. **References** entity readiness gates by name; doesn't define its own predicates. |
 
-**Why this matters:**
-- **No drift.** If an admin manually adds a BOM row outside the workflow, step 2 immediately becomes "complete" without any workflow code knowing. The workflow can't lie about reality.
-- **Pre-existing entities work seamlessly.** Records that existed before workflows were added simply "appear complete on whichever steps their data covers." No backfill, no migration. Solves the legacy-records concern from the migration question.
-- **Bulk progress at scale is cheap.** A list page rendering "Parts (50)" with progress badges executes a single SQL query with EXISTS subqueries. No workflow_runs join, no per-row N+1.
-- **Predicates are reusable across entity types.** "has BOM" applies the same way whether the entity is a Part-Assembly, a Quote-Line, or a Work-Order step plan.
+This separation matters because:
+- **"This needs attention" is broader than workflow.** A user can promote `Draft → Active` from the entity detail page directly without ever opening a workflow. The workflow is one way to fill the entity in; not the only way.
+- **Status is the source of truth.** A Part is complete iff its readiness validators pass and the user (or the workflow) has promoted it. List pages filter by status; they never need to evaluate workflow-level predicates.
+- **Pre-existing entities are unambiguous.** They're already `Active`. They satisfied readiness when they got promoted. The workflow concept doesn't touch them.
 
-**workflow_runs is still needed** — but for *user experience metadata*, not step completion:
-- Which `mode` the user prefers for this record (express vs. guided)
-- `current_step_id` — where the user was when they last left
-- `last_activity_at` — for resume affordances
-- Abandonment tracking — for the TTL cleanup
-- Optional steps that have no data side-effect (e.g., a "review and acknowledge" step that wouldn't be derivable)
+**Entity readiness validators** are defined per entity type:
 
-**Predicates are defined on the WorkflowDefinition** as both:
-- A SQL fragment (for bulk progress queries on list pages)
-- A TypeScript/C# function (for client-side / single-record evaluation)
+```typescript
+// Defined on or near the entity model
+const partReadiness = {
+  hasBasics: {
+    code: (p) => !!(p.name && p.type && p.material),
+    missingMessage: 'workflow.parts.readiness.basicsMissing',
+  },
+  hasBom: {
+    code: (p) => p.bomEntries?.length > 0,
+    missingMessage: 'workflow.parts.readiness.bomMissing',
+  },
+  hasRouting: {
+    code: (p) => p.operations?.length > 0,
+    missingMessage: 'workflow.parts.readiness.routingMissing',
+  },
+  hasCost: {
+    code: (p) => p.manualCostOverride != null || p.currentCostCalculationId != null,
+    missingMessage: 'workflow.parts.readiness.costMissing',
+  },
+};
 
-Both express the same logic. To avoid drift, predicates have a verification test that asserts SQL and code paths return the same boolean for known inputs.
+// Used by entity-level "promote to Active" gate
+function canPromoteToActive(part) {
+  return Object.values(partReadiness).every(v => v.code(part));
+}
+```
+
+**Workflow steps reference these validators by name:**
 
 ```typescript
 interface StepDefinition {
@@ -135,15 +149,39 @@ interface StepDefinition {
   i18nKey: string;
   componentName: string;
   required: boolean;
-  // Completion predicate: derived, not stored
-  completionPredicate: {
-    sql: string;          // joinable expression for bulk queries
-    code: (entity: EntityWithRelations) => boolean;
-  };
+  // The step is "complete" when these named entity validators all pass.
+  // No predicate defined here — just a reference into the entity's
+  // readiness map. Single source of truth.
+  completionGates: string[];   // e.g., ['hasBasics']
 }
+
+// Example for part-assembly-guided-v1:
+{ id: 'basics',     completionGates: ['hasBasics'],   ... },
+{ id: 'bom',        completionGates: ['hasBom'],      ... },
+{ id: 'routing',    completionGates: ['hasRouting'],  ... },
+{ id: 'costing',    completionGates: ['hasCost'],     ... },
+{ id: 'alternates', completionGates: [],   required: false, ... },  // optional
 ```
 
-This is the architectural simplification: workflow_runs becomes a thin metadata table, not a parallel state-machine implementation.
+**Where validators evaluate:**
+
+| Case | Where | API roundtrip? |
+|---|---|---|
+| Workflow component (single record loaded) | UI-tier (TS validators) | No |
+| Entity detail page rendering "promote eligible?" badge | UI-tier (TS validators) | No |
+| List page filtering / "needs attention" | Server-side (filter by `status='Draft'`) | One — the list query itself |
+| `POST /entities/{id}/promote-status` enforcement | Server-tier (C# twin validators) | Yes — authoritative gate |
+
+**No SQL fragment, no bulk progress endpoint, no list-level predicate evaluation.** Status is enough for the list-page case; it always was.
+
+**workflow_runs is still needed** — but only for user experience metadata:
+- `mode` — current presentation choice (express vs. guided)
+- `current_step_id` — resume target
+- `last_activity_at` — resume affordances and TTL cleanup
+- Abandonment tracking
+- The few optional steps with no data side-effect (e.g., "review and acknowledge")
+
+**Mark Complete in a workflow** is sugar for "promote entity status." Same validation, different UX entry point. The workflow's completion button calls the entity's promotion API; if validators pass → `status='Active'`. If they don't → workflow shows "Missing: BOM, routing" with jump-to links to the offending steps.
 
 ### D5 — Cost recalc (proposed, deferred to later phase)
 
@@ -240,12 +278,14 @@ POST   /api/v1/workflows/{runId}/abandon      Cancel and remove the draft entity
 PATCH  /api/v1/workflows/{runId}/mode         Toggle express ↔ guided
 GET    /api/v1/workflows/active               Current user's in-flight runs (for resume prompts)
 
-# Bulk progress for list pages — derives step completion from entity
-# data via SQL EXISTS subqueries; no workflow_runs join needed.
-GET    /api/v1/workflows/progress?entityType={type}&entityIds={csv}
-       returns: { entityId: { completedSteps: [...], totalSteps: N, mode: 'express'|'guided'|null } }
-       (mode is null when no workflow_runs row exists — pre-existing entity)
+# Entity-level promotion (the actual completion gate — not a workflow concern)
+POST   /api/v1/parts/{id}/promote-status      Promote Draft → Active (or other transitions)
+       (server runs entity readiness validators; returns 200 + new status on pass,
+        409 + missing-validator list on fail. The workflow's "Mark Complete"
+        button delegates to this endpoint; no separate completion enforcement.)
 ```
+
+List pages don't need progress — `status='Draft'` is sufficient. The entity layer's status filter answers "what needs attention."
 
 ## UI shell
 
@@ -329,7 +369,17 @@ Status legend: ⚪ not designed · 🟡 designing · 🟢 designed · 🔵 imple
 
 To concretize the abstract design, here's how Part-Assembly creation maps end-to-end.
 
-**WorkflowDefinition (code-defined):**
+**Entity readiness (defined on or near the Part model — not workflow-specific):**
+```typescript
+const partReadiness = {
+  hasBasics:  { code: (p) => !!(p.name && p.type && p.material) },
+  hasBom:     { code: (p) => p.bomEntries?.length > 0 },
+  hasRouting: { code: (p) => p.operations?.length > 0 },
+  hasCost:    { code: (p) => p.manualCostOverride != null || p.currentCostCalculationId != null },
+};
+```
+
+**WorkflowDefinition (references the readiness gates by name):**
 ```typescript
 {
   id: 'part-assembly-guided-v1',
@@ -337,56 +387,11 @@ To concretize the abstract design, here's how Part-Assembly creation maps end-to
   defaultMode: 'guided',  // for assemblies; raw materials default 'express'
   expressTemplateComponent: 'PartExpressFormComponent',
   steps: [
-    {
-      id: 'basics',
-      i18nKey: 'workflow.parts.steps.basics',
-      componentName: 'PartBasicsStepComponent',
-      required: true,
-      completionPredicate: {
-        sql: "p.name IS NOT NULL AND p.type IS NOT NULL AND p.material IS NOT NULL",
-        code: (p) => !!(p.name && p.type && p.material),
-      },
-    },
-    {
-      id: 'bom',
-      i18nKey: 'workflow.parts.steps.bom',
-      componentName: 'PartBomStepComponent',
-      required: true,
-      completionPredicate: {
-        sql: "EXISTS (SELECT 1 FROM bom_entries b WHERE b.part_id = p.id)",
-        code: (p) => p.bomEntries?.length > 0,
-      },
-    },
-    {
-      id: 'routing',
-      i18nKey: 'workflow.parts.steps.routing',
-      componentName: 'PartRoutingStepComponent',
-      required: true,
-      completionPredicate: {
-        sql: "EXISTS (SELECT 1 FROM operations o WHERE o.part_id = p.id)",
-        code: (p) => p.operations?.length > 0,
-      },
-    },
-    {
-      id: 'costing',
-      i18nKey: 'workflow.parts.steps.costing',
-      componentName: 'PartCostingStepComponent',
-      required: true,
-      completionPredicate: {
-        sql: "p.manual_cost_override IS NOT NULL OR p.current_cost_calculation_id IS NOT NULL",
-        code: (p) => p.manualCostOverride != null || p.currentCostCalculationId != null,
-      },
-    },
-    {
-      id: 'alternates',
-      i18nKey: 'workflow.parts.steps.alternates',
-      componentName: 'PartAlternatesStepComponent',
-      required: false,  // optional — never auto-completes
-      completionPredicate: {
-        sql: "false",
-        code: () => false,
-      },
-    },
+    { id: 'basics',     completionGates: ['hasBasics'],  componentName: 'PartBasicsStepComponent',     required: true },
+    { id: 'bom',        completionGates: ['hasBom'],     componentName: 'PartBomStepComponent',        required: true },
+    { id: 'routing',    completionGates: ['hasRouting'], componentName: 'PartRoutingStepComponent',    required: true },
+    { id: 'costing',    completionGates: ['hasCost'],    componentName: 'PartCostingStepComponent',    required: true },
+    { id: 'alternates', completionGates: [],             componentName: 'PartAlternatesStepComponent', required: false },
   ],
 }
 ```
@@ -403,16 +408,12 @@ To concretize the abstract design, here's how Part-Assembly creation maps end-to
 8. User clicks back to "basics" via the step rail (allowed — completed step). Edits a field. Saves. Step rail still shows basics complete (predicate still passes).
 9. User reaches costing, picks "Tier 1 — Flat rate" override + types a price
 10. User reaches alternates, skips (optional)
-11. User clicks "Complete" → server checks all REQUIRED predicates pass → flips `status='Active'`, sets `workflow_runs.completed_at`
+11. User clicks "Mark Complete" → workflow component delegates to `POST /api/v1/parts/{id}/promote-status` → server runs entity readiness validators → all required pass → flips `status='Active'`, sets `workflow_runs.completed_at`
 12. Part now appears in the live /parts list, available for use in quotes / sales orders / etc.
 
-**At the same time, the /parts list page renders 50 parts, each showing a "3 of 4" progress badge:**
+**Alternative: user promotes status directly without a workflow.** A user editing an existing draft entity (perhaps imported from CSV with all required fields) can click "Promote to Active" on the detail page. Same readiness validators run; same outcome. No workflow involved.
 
-13. UI calls `GET /api/v1/workflows/progress?entityType=Part&entityIds=1,2,3,…,50`
-14. Server runs ONE query joining `parts` to bom_entries / operations / cost_calculations with EXISTS subqueries; computes per-part `completedSteps`
-15. UI receives `{1: {completedSteps: ['basics','bom','routing'], totalSteps: 4, mode: 'guided'}, 2: {...}}` and renders the badges
-
-No N+1, no workflow_runs join in the bulk query, no per-row inflation. The workflow concept layered cleanly on top of a normal entity list.
+**Meanwhile, the /parts list page renders 50 parts:** filters by `status` (drafts vs active separately), no per-row predicate evaluation. Status alone tells the user which records need attention.
 
 ## Implementation phases
 
@@ -420,7 +421,7 @@ No N+1, no workflow_runs join in the bulk query, no per-row inflation. The workf
 |---|---|
 | 1 | This design doc — captured |
 | 2 | Schema: `workflow_runs` (UX metadata only per D6), `workflow_run_entities` junction (per Q3), `costing_profiles`, `cost_calculations`, `cost_calculation_inputs`. EF migration. Per-entity `manual_cost_override` + `current_cost_calculation_id` columns on cost-bearing entities. `status='Draft'` enum value. |
-| 3 | Base API resource — workflow CRUD + bulk progress endpoint. Predicate runtime: TS function evaluator + SQL fragment builder. Drift-verification test that asserts SQL and TS predicates agree on known inputs. |
+| 3 | Base API resource — workflow CRUD. Per-entity readiness validators (TS for UI; C# twin for server `promote-status` enforcement). Cross-language drift test asserts both agree on known inputs. No bulk progress endpoint — list pages filter by status. |
 | 4 | `WorkflowComponent` UI shell — step-rail with D2 clickability rules, mode-toggle (D4 always-available), resume infrastructure. |
 | 5 | First end-to-end vertical slice: **Part — assembly guided variant**. Validates the pattern. Per-step components for parts: basics, BOM, routing, costing (tier-1 only), alternates. |
 | 6 | **Part — raw material** as the express-only sibling. Validates that `mode='express'` against the same WorkflowDefinition works correctly. |
