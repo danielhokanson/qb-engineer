@@ -219,7 +219,7 @@ These are deferred deliberately. Each is easy to add later when there's a real m
 | 4 | `docker-compose.prod.yml` overlay | `qb-engineer-deploy` |
 | 5 | Pi bring-up: install `qb-deploy`, do a real deploy | (operational) |
 | 6 | Same `release.yml` adaptation for ui | `qb-engineer-ui` |
-| 7 | Retire/repurpose `setup.ps1` and `refresh.ps1` | `qb-engineer-deploy` |
+| 7 | Add Pi-side guard to `refresh.ps1`/`refresh.sh`; document setup vs. refresh vs. qb-deploy roles | `qb-engineer-deploy` |
 
 Phase 7 specifically: `setup.ps1`/`setup.sh` keep their first-time-bootstrap role on the dev side. `refresh.ps1`/`refresh.sh` -- the proxy CICD scripts -- get retired entirely on the Pi (replaced by `qb-deploy`) but keep their dev-loop role on workstations. Naming may need to drift to make the distinction clearer (e.g., `dev-refresh.ps1`).
 
@@ -271,3 +271,36 @@ they're just the small calls that needed making.
   so `docker compose config` validates cleanly even when no `.env` is
   present. Belt-and-suspenders: production never reaches that default
   because qb-deploy pins an immutable tag before invoking compose.
+
+## Phase 7 addendum (2026-04-28)
+
+Phase 7 was the closing cleanup: now that GHCR-built images flow to the
+Pi via `qb-deploy`, the legacy `refresh.{sh,ps1}` proxy scripts have no
+role on the Pi. The original design tentatively suggested a rename
+(`dev-refresh.ps1`); the actual delivery is a runtime guard, which is
+less disruptive and keeps muscle memory on dev workstations.
+
+- **Runtime guard, not a rename.** `refresh.sh` and `refresh.ps1` now
+  test for `/etc/qb-engineer/deploy-state.json` near the top. If it
+  exists, the script aborts with a clear pointer at `qb-deploy`. The
+  state file is created by `scripts/install-qb-deploy.sh`, so it's
+  present exactly when (and only when) `qb-deploy` is the canonical
+  answer for that host.
+- **Why the state file as the sentinel:** it's the most stable indicator
+  available. `/usr/local/bin/qb-deploy` exists is a viable alternate,
+  but the state file is the explicit "this host is in production-deploy
+  mode" marker. Both are created by the installer; either would work.
+  The state-file check was chosen because it survives accidental binary
+  removals and matches the abstraction qb-deploy itself uses.
+- **No-op on dev workstations.** The path doesn't exist on Windows, on
+  fresh Linux installs, or on any host that hasn't run
+  `install-qb-deploy.sh`. The dev-loop semantics of `refresh.{sh,ps1}`
+  are unchanged for those hosts.
+- **`setup.{sh,ps1}` keeps its first-time-bootstrap role unchanged on
+  every host** (dev workstation, Pi, or anywhere else). It's the only
+  one of the three surfaces (`setup` / `refresh` / `qb-deploy`) that's
+  cross-cutting; the other two are role-specific.
+- **Three roles, three scripts:** `setup.*` for first-time bootstrap,
+  `refresh.*` for dev-side dev-loop, `qb-deploy` for prod CD. See
+  `qb-engineer-deploy/CONTRIBUTING.md` for the operator-facing version
+  of this distinction.

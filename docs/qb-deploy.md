@@ -163,9 +163,14 @@ scripts (`git pull` + `docker compose build` + `up -d`). `qb-deploy`
 replaces them on the Pi side: prod runs from prebuilt images, never
 builds locally.
 
+As of Phase 7, **`refresh.{sh,ps1}` actively refuse to run on the Pi**.
+They check for `/etc/qb-engineer/deploy-state.json` (created by
+`install-qb-deploy.sh`) and abort with a pointer at `qb-deploy` if
+present. On dev workstations the file is absent, so the local-build
+dev loop is unaffected.
+
 `refresh.sh`/`refresh.ps1` keep their dev-loop role on workstations
-(the same script that's been doing `git pull` + local rebuild). Phase 7
-is the actual rename / split.
+(the same script that's been doing `git pull` + local rebuild).
 
 `setup.sh` / `setup.ps1` keep their first-time bootstrap role
 everywhere (they create `.env`, generate JWT keys, prompt for seed
