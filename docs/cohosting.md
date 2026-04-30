@@ -7,7 +7,7 @@ QB Engineer can run in two hosting modes:
 | **standalone** (default) | The `qb-engineer-ui` container (nginx in the image) | `:443` (or `:80` plain) on `0.0.0.0` | The host has no other web services, or you're running locally. |
 | **cohost** | An existing host-level reverse proxy (nginx, Caddy, cloudflared, …) | Owned by that proxy | The host already serves another site, or you want Cloudflare Tunnel to front the app. |
 
-This doc covers cohost mode end-to-end.
+For a one-command standalone-with-HTTPS install on a fresh host, see `./setup.sh --public` — it implies `--standalone --ssl` and runs a system-side preflight (detects port 80/443 conflicts, offers to stop system nginx/apache, configures UFW, picks the cert hostname). Documented in the deploy repo's `CONTRIBUTING.md` § Public deploy. The rest of *this* doc covers cohost mode end-to-end.
 
 ---
 
