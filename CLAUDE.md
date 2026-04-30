@@ -173,6 +173,7 @@ Never raw `<input>`, `<select>`, or `<textarea>` in feature templates.
 | `TextareaComponent` | `<app-textarea>` | `label`, `rows`, `maxlength` |
 | `DatepickerComponent` | `<app-datepicker>` | `label` |
 | `ToggleComponent` | `<app-toggle>` | `label` |
+| `CurrencyInputComponent` | `<app-currency-input>` | `label`, `placeholder`, `currencySymbol` (default `$`), `min`, `max`, `step`, `required`. Use for any monetary amount. Avoids the recurring `<app-input prefix="$">` floating-label overlap (`$lanual cost override`) by laying the symbol out via Material's `matTextPrefix` slot. Emits `number \| null`. |
 
 All implement `ControlValueAccessor`. Use with `ReactiveFormsModule` (`FormGroup`/`FormControl`) — never `ngModel` / `FormsModule`.
 
@@ -650,6 +651,7 @@ All list views must show `<app-empty-state>` when data is empty — icon + messa
 | `TextareaComponent` | `shared/components/textarea/` | Material textarea wrapper (CVA) |
 | `DatepickerComponent` | `shared/components/datepicker/` | Material datepicker wrapper (CVA) |
 | `ToggleComponent` | `shared/components/toggle/` | Material slide-toggle wrapper (CVA) |
+| `CurrencyInputComponent` | `shared/components/currency-input/` | Currency-amount wrapper (CVA) — uses Material `matTextPrefix` slot to avoid the recurring `<app-input prefix="$">` floating-label overlap |
 | `DialogComponent` | `shared/components/dialog/` | Shared dialog shell (content projection) |
 | `PageHeaderComponent` | `shared/components/page-header/` | Standard page header bar |
 | `AvatarComponent` | `shared/components/avatar/` | User avatar with initials fallback |
