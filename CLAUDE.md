@@ -683,6 +683,7 @@ All list views must show `<app-empty-state>` when data is empty — icon + messa
 | `MiniCalendarWidgetComponent` | `shared/components/mini-calendar-widget/` | Dashboard calendar with highlight dates |
 | `ValidationButtonComponent` | `shared/components/validation-button/` | **Default**: wraps disabled submit button, adds click-to-reveal warn icon + count + CDK overlay |
 | `ValidationPopoverDirective` | `shared/directives/` | Legacy hover popover (do not use on new code) |
+| `CapDirective` / `CapNotDirective` | `shared/directives/cap.directive.ts`, `cap-not.directive.ts` | `*appCap="'CAP-X'"` / `*appCapNot="'CAP-X'"` structural directives — mount template only when capability is enabled / disabled. Reactive to `CapabilityService` snapshot changes. |
 | `FormValidationService` | `shared/services/` | Derives violation messages from FormGroup |
 | `DetailDialogService` | `shared/services/` | Centralized detail dialog opener with `?detail=type:id` URL sync |
 | `UserPreferencesService` | `shared/services/` | Per-user preference storage (localStorage, API-ready) |
