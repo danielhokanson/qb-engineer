@@ -555,13 +555,11 @@ To apply the pattern to a third entity (e.g. `Vendor`, `Job`, `Asset`):
 The codebase is at 0.0.x. Several "rollback safety" affordances were added
 during the Pillar 1+3 refactor and explicitly **don't** carry forward:
 
-- **`Part.PartType` legacy column, `Part.IsSerialTracked` boolean,
-  `Part.Material` free-text string, `Part.MoldToolRef`** — all kept on the
-  row as snapshot fallbacks during the multi-step migration. Pre-beta
-  means there's no production data to preserve and these can be dropped
-  in a single migration whenever convenient. The two-axis decomposition
-  (`ProcurementSource` × `InventoryClass` × `ItemKindId`) replaces
-  `PartType`; `TraceabilityType` replaces `IsSerialTracked`;
+- ~~**`Part.PartType` legacy column, `Part.IsSerialTracked` boolean,
+  `Part.Material` free-text string, `Part.MoldToolRef`**~~ — **DONE**:
+  dropped in migration `PreBeta_DropLegacyPartColumns`. The two-axis
+  decomposition (`ProcurementSource` × `InventoryClass` × `ItemKindId`)
+  replaces `PartType`; `TraceabilityType` replaces `IsSerialTracked`;
   `MaterialSpecId` (FK to ref_data) replaces `Material` string;
   `ToolingAssetId` replaces `MoldToolRef`.
 - **MaterialSpec migration tool** — converting existing free-text
@@ -569,13 +567,15 @@ during the Pillar 1+3 refactor and explicitly **don't** carry forward:
   tooling. **NOT NEEDED**: any existing freeform Material strings reset
   to null on the next env refresh; users re-enter via the new dropdown.
   No migration code, no admin tool.
-- **Two transitional workflow definition aliases** (`part-assembly-guided-v1`,
-  `part-raw-material-express-v1`) — seeded alongside the 14 canonical
-  combos so the legacy fork dialog kept working during the rollout.
-  **NOT NEEDED**: pre-beta drops them when the axis-aware fork dialog
-  lands.
-- **`inferAxesFromLegacyPartType` heuristic** in the fork dialog — same
-  rationale; goes when the axis-aware picker ships.
+- ~~**Two transitional workflow definition aliases** (`part-assembly-guided-v1`,
+  `part-raw-material-express-v1`)~~ — **DONE**: seed authors only the 14
+  canonical combos, and `WorkflowSubstrateSeeder` soft-deletes any orphaned
+  alias rows on next boot.
+- ~~**`inferAxesFromLegacyPartType` heuristic** in the fork dialog~~ —
+  **DONE**: replaced by the axis-based picker (`NewPartForkDialogComponent`
+  rewrite). Each of the 11 viable (procurement × inventory) combos maps
+  directly to its canonical workflow definition via
+  `workflowDefinitionForCombo` in `parts.component.ts`.
 - **In-flight workflow run migration shim** — runs started under the
   legacy 2-definition seed don't auto-upgrade to the 14-combo seeds.
   **NOT NEEDED**: pre-beta means no real in-flight runs to preserve.
