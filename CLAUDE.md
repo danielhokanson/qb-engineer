@@ -1558,7 +1558,7 @@ BaseEntity (Id, CreatedAt, UpdatedAt, DeletedAt, DeletedBy)
 ```
 
 ### Enums (in `qb-engineer.core/Enums/`)
-`JobPriority`, `JobLinkType`, `JobDisposition`, `ActivityAction`, `PartType`, `PartStatus` (Draft, Prototype, Active, Obsolete), `BOMSourceType` (Make, Buy, Stock), `LocationType`, `BinContentStatus`, `BinMovementReason`, `LeadStatus`, `ExpenseStatus`, `AssetType`, `AssetStatus`, `ClockEventType`, `SyncStatus`, `AccountingDocumentType`, `PlanningCycleStatus`, `PurchaseOrderStatus`, `SalesOrderStatus`, `QuoteType` (Estimate, Quote), `QuoteStatus` (Draft, Sent, Accepted, Declined, Expired, ConvertedToQuote, ConvertedToOrder), `ShipmentStatus`, `InvoiceStatus`, `PaymentMethod`, `CreditTerms`, `AddressType`, `EventType` (Meeting, Training, Safety, Other), `AttendeeStatus` (Invited, Accepted, Declined, Attended), `InteractionType` (Call, Email, Meeting, Note), `EdiFormat`, `EdiTransportMethod`, `EdiDirection`, `EdiTransactionStatus`, `MfaDeviceType`
+`JobPriority`, `JobLinkType`, `JobDisposition`, `ActivityAction`, `PartType` (legacy — being decomposed into `ProcurementSource` × `InventoryClass` × `ItemKindId`), `ProcurementSource` (Make, Buy, Subcontract, Phantom), `InventoryClass` (Raw, Component, Subassembly, FinishedGood, Consumable, Tool), `TraceabilityType` (None, Lot, Serial — replaces legacy `IsSerialTracked` boolean), `AbcClass` (A, B, C), `PartStatus` (Draft, Prototype, Active, Obsolete), `BOMSourceType` (Make, Buy, Stock), `LocationType`, `BinContentStatus`, `BinMovementReason`, `LeadStatus`, `ExpenseStatus`, `AssetType`, `AssetStatus`, `ClockEventType`, `SyncStatus`, `AccountingDocumentType`, `PlanningCycleStatus`, `PurchaseOrderStatus`, `SalesOrderStatus`, `QuoteType` (Estimate, Quote), `QuoteStatus` (Draft, Sent, Accepted, Declined, Expired, ConvertedToQuote, ConvertedToOrder), `ShipmentStatus`, `InvoiceStatus`, `PaymentMethod`, `CreditTerms`, `AddressType`, `EventType` (Meeting, Training, Safety, Other), `AttendeeStatus` (Invited, Accepted, Declined, Attended), `InteractionType` (Call, Email, Meeting, Note), `EdiFormat`, `EdiTransportMethod`, `EdiDirection`, `EdiTransactionStatus`, `MfaDeviceType`
 
 ---
 
@@ -2079,6 +2079,36 @@ The system runs on a **per-install capability gate**: 129 named capabilities (e.
 - `phase-4-output/4E-admin-ui/` — browse / discovery / preset / detail screens
 - `phase-4-output/4F-implementation-plan/` — phasing strategy + per-phase decisions
 - `phase-4-output/PHASE-4-CLOSEOUT.md` — rollup summary
+
+---
+
+## Part Type Decomposition (Pillar 1)
+
+The legacy `PartType` enum (Part / Assembly / RawMaterial / Consumable / Tooling / Fastener / Electronic / Packaging) overloaded three concepts into one field. It's been decomposed into three orthogonal axes per `phase-4-output/part-type-field-relevance.md`:
+
+1. **`Part.ProcurementSource`** (`ProcurementSource` enum: Make / Buy / Subcontract / Phantom) — how the part is sourced. Subcontract = entire part outsourced (vendor builds it, we never touch it); Make + an `Operation.IsSubcontract = true` op = we make most of it but send out for one step.
+2. **`Part.InventoryClass`** (`InventoryClass` enum: Raw / Component / Subassembly / FinishedGood / Consumable / Tool) — which inventory bucket the part lives in.
+3. **`Part.ItemKindId`** (FK to `reference_data` group `part.item_kind`, admin-configurable) — descriptive taxonomy: Fastener, Electronic, Packaging, Hardware, Material, etc.
+
+Legacy `PartType` column kept on the row for two release cycles for rollback safety. New code reads the three axes; the workflow adapter (`PartWorkflowAdapter`) accepts EITHER the legacy `partType` OR the new axes in `initialEntityData` and falls back to a derived mapping. Same fallback exists client-side in `parts.component.ts` (`inferAxesFromLegacyPartType`).
+
+**Tier 0 additions on Part**: `TraceabilityType` enum (None / Lot / Serial — replaces `IsSerialTracked` boolean), `AbcClass` (was an unused enum, now a column), `ManufacturerName`, `ManufacturerPartNumber` (engineering OEM identity, distinct from `VendorPart.VendorMpn` for the distributor case).
+
+**11 viable (procurement × inventory_class) combinations** are documented in the audit; per-combination workflow definitions are a Pillar 6 deliverable. Today the existing 2 workflow definitions (assembly-guided + raw-material-express) still drive but with axes populated. Tier 2 fields (Material → MaterialSpecId FK, mass/dimensions/volume measurement profile) are deferred.
+
+## Vendor-Part Intersection (Pillar 3)
+
+`VendorPart` entity captures the (Vendor, Part) relationship with vendor-scoped sourcing metadata: vendor's part number, vendor's manufacturer-part-number when distributing someone else's part, per-vendor lead time / MOQ / pack size, country of origin, HTS code, AVL approval flag, preferred flag, certifications, last-quoted date.
+
+`VendorPartPriceTier` 1:N child captures tiered pricing (`MinQuantity` ≤ requested qty wins; effective-from/to dates).
+
+**API**: `/api/v1/vendor-parts` for CRUD, `/api/v1/parts/{partId}/vendor-parts` for the part-detail Sources tab data, `/api/v1/vendors/{vendorId}/vendor-parts` for the vendor-detail Catalog tab data, plus `/{id}/price-tiers` POST/DELETE for tier upserts.
+
+**Capability**: `CAP-MD-VENDORS`. Roles: `Admin, Manager, Engineer, OfficeManager`.
+
+**Preferred-uniqueness invariant**: at most one VendorPart per Part may have `IsPreferred=true`. Setting it true unsets it on every other VendorPart for the same Part within one SaveChanges (handled in CreateVendorPart + UpdateVendorPart).
+
+`Part.PreferredVendorId` stays — points at the canonical preferred vendor. `Part.MinOrderQty` / `Part.PackSize` / `Part.LeadTimeDays` are kept on Part as a snapshot of the preferred VendorPart's values (backward-compat with existing readers); Phase 2/4 work will migrate readers to the VendorPart row.
 
 ---
 
