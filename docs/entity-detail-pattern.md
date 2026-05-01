@@ -235,6 +235,31 @@ render a placeholder rather than blocking the resolver work:
 This keeps the tab resolver / shell consistent across entities even when only
 a subset of clusters has been authored.
 
+### § 3.6 Reusable cluster references (Part)
+
+Pillar 4 Phase 2 ships 12 cluster components on Part that can be referenced
+when extracting clusters on other entities:
+
+| Cluster                                | Pattern surfaced                            | Path                                                                                |
+|----------------------------------------|---------------------------------------------|-------------------------------------------------------------------------------------|
+| `PartIdentityClusterComponent`         | Required fields, two-column form, status    | `parts/components/part-clusters/part-identity-cluster.component.ts`                 |
+| `PartInventoryClusterComponent`        | Numeric thresholds, traceability + ABC      | `parts/components/part-clusters/part-inventory-cluster.component.ts`                |
+| `PartCostClusterComponent`             | Single-field cluster + `<app-currency-input>` | `parts/components/part-clusters/part-cost-cluster.component.ts`                    |
+| `PartFilesClusterComponent`            | Read-only attachment list                   | `parts/components/part-clusters/part-files-cluster.component.ts`                    |
+| `PartActivityClusterComponent`         | Activity timeline wrapper                   | `parts/components/part-clusters/part-activity-cluster.component.ts`                 |
+| `PartMaterialClusterComponent`         | Reference-data dropdown + canonical-SI conversion (weight/dims/volume) | `parts/components/part-clusters/part-material-cluster/`         |
+| `PartUomClusterComponent`              | API-loaded select with fixed-list fallback  | `parts/components/part-clusters/part-uom-cluster/`                                  |
+| `PartMrpClusterComponent`              | Conditional reveal (`@if` driven by form value signals) | `parts/components/part-clusters/part-mrp-cluster/`                       |
+| `PartQualityClusterComponent`          | Toggle + multiple enums + numeric           | `parts/components/part-clusters/part-quality-cluster/`                              |
+| `PartBomClusterComponent`              | Thin wrapper around `<app-bom-tree>`        | `parts/components/part-clusters/part-bom-cluster/`                                  |
+| `PartRoutingClusterComponent`          | Thin wrapper around `<app-routing>`         | `parts/components/part-clusters/part-routing-cluster/`                              |
+| `PartAlternatesClusterComponent`       | Thin wrapper around `<app-part-alternates-tab>` | `parts/components/part-clusters/part-alternates-cluster/`                       |
+
+Material's canonical-SI conversion pattern is reusable wherever the user wants
+to type a value in a chosen unit but the entity stores it canonically (grams,
+mm, mL). Keep `*DisplayUnit` columns alongside the canonical column so the
+edit form round-trips the user's typed unit.
+
 ---
 
 ## § 4. Tabbed-Detail Shell
