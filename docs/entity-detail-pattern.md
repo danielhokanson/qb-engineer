@@ -381,6 +381,18 @@ For full-page detail surfaces (like `customers/:id/:tab`) the active tab lives
 in a route param instead of a query param — the principle is identical, only
 the navigation call changes.
 
+### § 4.5 Per-step conditional fields
+
+Within a single step component, branch the form rendering on form
+control values via `@if (formControlValueSignal() === 'X') { ... }`.
+Use `toSignal(form.controls.foo.valueChanges, { initialValue: ... })`
+to bridge ReactiveForms into a Signal so `@if` can react.
+
+For cross-step conditionality (a later step's fields depend on an
+earlier step's saved values), bind the entity into the step via the
+`entity` input — earlier-step values are persisted on the entity and
+propagate down on workflow run state changes. No engine work needed.
+
 ---
 
 ## § 5. Worked Example: Part
