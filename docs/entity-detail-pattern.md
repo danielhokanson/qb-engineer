@@ -550,13 +550,49 @@ To apply the pattern to a third entity (e.g. `Vendor`, `Job`, `Asset`):
 8. **Tests.** At minimum (a) resolver: each axis value's tab list + invariants;
    (b) one cluster smoke test per authored cluster.
 
-### § 7.1 Future-state hook — admin-overrideable layouts
+### § 7.1 Future-state hook — admin-overrideable layouts (Pillar 5 Phase 2, DEFERRED)
 
-A future `entity_relevance_map` admin table could let ops override resolver
+A future `entity_relevance_map` admin table would let ops override resolver
 output without code changes (one row per `(entity_type, axis_value, tab_id)`).
 Treat that as Phase 2 — the static resolver is sufficient for the first
 several entities. When the table lands, the resolver becomes a fallback for
 unconfigured combos.
+
+**Why deferred** (vs. shipping with Pillar 5 Phase 1):
+
+1. **Cost / value mismatch.** Real shops rarely override layouts per-tenant —
+   the audit's per-combo defaults match well enough for ~95% of installs. The
+   admin UI (CRUD over a JSONB tree) is non-trivial to build well; a lazy
+   half-implementation would do more harm than good.
+2. **Pattern stability concern.** With only two worked examples (Part +
+   Customer), the resolver/cluster shape might still need to evolve. Locking
+   it into a JSONB schema before a third extrapolation (Vendor / Job / Asset)
+   risks codifying premature decisions.
+3. **Capability gating already covers the most common need.** "Some fields
+   shouldn't show on this install" is mostly handled by feature capabilities
+   (`CAP-MD-PART-COMPLIANCE`, `CAP-ACCT-BUILTIN`, etc.) — the resolver can
+   read capability state when ranking tabs. That's incremental work with
+   higher leverage than full layout overrides.
+
+**Sketch when it does land:**
+
+```sql
+CREATE TABLE entity_relevance_map (
+  id              SERIAL PRIMARY KEY,
+  entity_type     VARCHAR(64) NOT NULL,         -- 'part' / 'customer' / 'vendor'
+  axis_signature  VARCHAR(255) NOT NULL,         -- e.g. 'Buy:Raw' for Part, 'Active' for Customer
+  tab_layout      JSONB NOT NULL,                -- ordered TabLayoutEntry[]
+  is_default      BOOLEAN NOT NULL DEFAULT false,
+  is_active       BOOLEAN NOT NULL DEFAULT true,
+  created_at      TIMESTAMPTZ NOT NULL,
+  updated_at      TIMESTAMPTZ NOT NULL,
+  UNIQUE (entity_type, axis_signature)
+);
+```
+
+The resolver service would `SELECT FROM entity_relevance_map WHERE entity_type=? AND axis_signature=?`. On hit, return the JSONB layout. On miss, fall through to the hardcoded resolver. Admin UI: a per-entity layout editor that lets ops add/remove/reorder tabs. Cache invalidation: on row update, broadcast a `LayoutChangedEvent` over SignalR so already-mounted detail dialogs can refresh.
+
+Until ops actually *ask* for tenant-specific layouts, the static resolver wins on simplicity.
 
 ---
 
