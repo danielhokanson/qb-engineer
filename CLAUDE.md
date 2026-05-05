@@ -789,6 +789,7 @@ All list views must show `<app-empty-state>` when data is empty — icon + messa
 | `RowExpandDirective` | `shared/directives/row-expand.directive.ts` | Tags `ng-template` for expandable row content |
 | `ConfirmDialogComponent` | `shared/components/confirm-dialog/` | MatDialog-based confirmation for destructive actions |
 | `DetailSidePanelComponent` | `shared/components/detail-side-panel/` | Slide-out right panel (400px, Escape/backdrop close) |
+| `SlideoutComponent` | `shared/components/slideout/` | Generic transient slideout (left/right/top/bottom) anchored to a `position: relative` parent. Always-on close button, opt-in backdrop, opt-in outside-click close. Use for help sidecars, filter drawers, secondary-region panels — anywhere you'd otherwise hand-roll an absolute-positioned aside. |
 | `PageLayoutComponent` | `shared/components/page-layout/` | Standard page shell (toolbar + content + actions) |
 | `EntityPickerComponent` | `shared/components/entity-picker/` | Typeahead entity search via API (CVA) |
 | `EntityLinkComponent` | `shared/components/entity-link/` | Inline clickable cross-entity reference link |
@@ -1019,6 +1020,46 @@ Slide-out right panel (400px, full-width on mobile). Backdrop click + Escape clo
   </div>
 </app-detail-side-panel>
 ```
+
+### SlideoutComponent — Usage Guide
+
+Generic transient slideout that overlays a parent container (not the viewport). The parent MUST have `position: relative` (or any non-static position) so the slideout's absolute positioning resolves to that surface; otherwise it escapes to whichever ancestor *is* positioned. Designed for help sidecars, filter drawers, info pop-ins, and similar progressive-disclosure surfaces.
+
+```html
+<!-- Right-side help sidecar (default position) -->
+<div class="container" style="position: relative;">
+  <app-slideout
+    [open]="helpOpen()"
+    position="right"
+    size="320px"
+    icon="help_outline"
+    [title]="'Why this step' | translate"
+    (closed)="helpOpen.set(false)">
+    <p>Help content goes here…</p>
+  </app-slideout>
+</div>
+
+<!-- Left filter drawer with backdrop + outside-click close -->
+<app-slideout
+  [open]="filterDrawerOpen()"
+  position="left"
+  size="280px"
+  [title]="'Filters' | translate"
+  [backdrop]="true"
+  [closeOnOutsideClick]="true"
+  (closed)="filterDrawerOpen.set(false)">
+  <!-- filter form -->
+</app-slideout>
+
+<!-- Bottom notification tray -->
+<app-slideout [open]="trayOpen()" position="bottom" size="240px" (closed)="trayOpen.set(false)">
+  <!-- tray content -->
+</app-slideout>
+```
+
+**Inputs:** `open` (Signal\<boolean>, required), `position` ('left'|'right'|'top'|'bottom', default 'right'), `size` (CSS length, default '320px' — width for left/right, height for top/bottom), `title` (string), `icon` (Material icon name), `backdrop` (boolean, default false), `closeOnOutsideClick` (boolean, default false). Always renders a close button; Escape always closes.
+
+**When NOT to use:** viewport-fixed drawers (mobile nav, app shell) — use a dialog or a future viewport-fixed variant instead. Modal forms — use `<app-dialog>`. Right-side detail panels with the standard 400px width and `[panel-actions]` footer — use `<app-detail-side-panel>` so the established pattern stays consistent.
 
 ### DetailDialogService — Usage Guide
 
