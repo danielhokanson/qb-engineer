@@ -90,6 +90,13 @@ Examples: `feat/oem-on-vendorpart`, `fix/sourcing-step-mock-shape`, `chore/docum
     - **UI repo (`qb-engineer-ui`):** `npm run lint && npm run lint:i18n && npm run test -- --watch=false`. The `lint:i18n` script (added 2026-05-03) catches the recurring "{key.path} renders raw because en.json is missing it" bug class — `tsc --noEmit`, `ng build`, and `vitest` all silently allow missing keys (vitest specs use a mocked TranslateLoader). When you add a `'foo.bar' | translate` reference, run this before pushing.
 
       **i18n files live at `qb-engineer-ui/public/assets/i18n/{en,es}.json`. NEVER edit `src/assets/i18n/` — that path is intentionally non-existent.** Angular CLI's static-asset directory migrated from `src/assets/` to `public/` and the migrated project kept `public/assets/i18n/` as the only bundled source (per `angular.json`). For ~3 sessions before 2026-05-04, edits went to a phantom `src/assets/i18n/` that wasn't in any build — every new key showed up at runtime as a raw `foo.bar` token while `tsc`, `ng build`, `vitest`, AND the early `lint:i18n` all stayed green. The fix: deleted `src/assets/i18n/` and the lint script now hard-fails if it ever reappears. Don't recreate it. If you need to add a translation, the path is `public/assets/i18n/en.json` (and `es.json`). Server-supplied keys (workflow step labelKeys, validator displayNameKey/missingMessageKey) are scanned by `lint:i18n` from `qb-engineer-server/qb-engineer.api/Workflows/*.cs` automatically.
+
+      **100% language-parity rule (added 2026-05-05).** Every mapped language file MUST be in 1:1 sync with `en.json` (the canonical source). `lint:i18n` now hard-fails on:
+      - Keys present in `en.json` but missing from `es.json` (untranslated).
+      - Keys present in `es.json` but missing from `en.json` (orphans).
+      - Keys referenced in code but missing from `en.json` (existing rule).
+
+      No "warn-only" lag tolerated — when you add a key to `en.json`, add the matching `es.json` entry in the same commit. When you remove a key from `en.json`, remove the `es.json` entry too. Adding a new mapped language is the same contract: every key in `en.json` must exist in the new file before merge.
     - **Server repo (`qb-engineer-server`):** `dotnet build -warnaserror && dotnet test`.
 
     Spec tests live under a separate `tsconfig.spec.json` that prod-build doesn't compile, so `tsc --noEmit` and `ng build` alone are not enough — explicit test runs are mandatory.
