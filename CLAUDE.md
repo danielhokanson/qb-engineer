@@ -204,6 +204,17 @@ qb-engineer-wrapper/
 
 ## Critical Rules
 
+### Lint discipline (Non-Negotiable)
+
+**No commit may add new lint warnings.** After any UI file edit, run `npm run lint` from `qb-engineer-ui` and ensure:
+
+- **Zero errors.** CI fails on errors via `ng lint`'s exit code; never push with a known error.
+- **Zero NEW non-spec warnings introduced by this commit.** Pre-existing warnings in unrelated files are acceptable to leave alone (separate cleanup PR), but the diff this commit ships must not add any. The standard `--fix` pass handles the easy ones (autofocus, lifecycle interfaces, stale eslint-disable directives).
+
+A PostToolUse hook in `.claude/settings.json` runs eslint on every UI .ts/.html edit so warnings surface immediately at authoring time rather than at commit. If the hook reports new warnings, fix them before continuing.
+
+For .NET: CI runs `dotnet build --configuration Release -warnaserror`. Compiler warnings break the build. There's no broader analyzer/StyleCop pack wired in today (CLAUDE.md previously claimed both — that was aspirational; only `Nullable enable` + `-warnaserror` are actually configured). Adding a real analyzer pack is a separate effort.
+
 ### ONE OBJECT PER FILE (Non-Negotiable)
 - **Angular:** One component, service, pipe, directive, guard, interceptor, or model per file. No barrel files (`index.ts`).
 - **.NET:** One class, interface, enum, or record per file. Exception: related request/response pair if < 20 lines total.
